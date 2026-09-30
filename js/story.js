@@ -1,7 +1,9 @@
 'use strict';
 // ============================================================
-//  STORY — scenes, cutscenes, dialogue, stage flow
+//  SCENES — boot, title, controls, stage data (+ the original story mode, commented out)
+//  The versus flow (character select, stage select, fights) lives in js/versus.js
 // ============================================================
+/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — countries of origin =====
 const COUNTRIES = [
   { id: 'co', name: 'COLOMBIA', airport: 'AEROPUERTO EL DORADO · BOGOTÁ', slang: 'parce', son: 'mijo' },
   { id: 've', name: 'VENEZUELA', airport: 'AEROPUERTO DE MAIQUETÍA · CARACAS', slang: 'pana', son: 'mijo' },
@@ -10,13 +12,15 @@ const COUNTRIES = [
   { id: 'mx', name: 'MÉXICO', airport: 'AEROPUERTO DE LA CIUDAD DE MÉXICO', slang: 'güey', son: 'mijo' },
   { id: 'ec', name: 'ECUADOR', airport: 'AEROPUERTO MARISCAL SUCRE · QUITO', slang: 'ñaño', son: 'mijo' },
 ];
-const GAME = { country: COUNTRIES[0], stage: 0, tutorialShown: false, startTime: 0, continues: 0, diff: 1 };
-try { const v = localStorage.getItem('raval.diff'); if (v === '0' || v === '1' || v === '2') GAME.diff = +v; } catch (e) { }
+===== end of disabled story block ===== */
+// const GAME = { country: COUNTRIES[0], stage: 0, tutorialShown: false, startTime: 0, continues: 0, diff: 1 }; // [STORY]
+const GAME = { stage: 0, diff: 1 };
+try { const v = localStorage.getItem('wolfgvng.diff'); if (v === '0' || v === '1' || v === '2') GAME.diff = +v; } catch (e) { }
 const DIFFS = ['FÁCIL', 'MEDIO', 'DIFÍCIL'];
 const DIFF_COL = ['#8fe08a', '#ffd84a', '#ff5a5a'];
 function setDiff(d) {
   GAME.diff = (d + 3) % 3; sfx('select');
-  try { localStorage.setItem('raval.diff', GAME.diff); } catch (e) { }
+  try { localStorage.setItem('wolfgvng.diff', GAME.diff); } catch (e) { }
 }
 // scale a stage's (hard) AI tuning to the chosen difficulty
 function aiFor(st, d = GAME.diff) {
@@ -39,47 +43,48 @@ function drawDiffOption(g, y, sel, prefix = 'DIFICULTAD') {
   text(g, val, x, y, { color: DIFF_COL[GAME.diff], outline: OUTL }); x += val.length * 8;
   if (sel) text(g, ' ▶', x, y, { color: '#ffd84a', outline: OUTL });
 }
-const C = () => GAME.country;
+// [STORY] const C = () => GAME.country;
 
 const STAGES = [
   {
     name: "CARRER DE L'HOSPITAL", theme: 'hospital', tod: 'afternoon', enemy: 'fumeta', seed: 1101, dist: '850 m', introAnim: 'smoke', music: 'fight',
     ai: { aggr: .52, block: .42, special: .16, jump: .06, react: 12, range: 36, combo: .45, dmg: .95, speed: 1, hp: 110, punish: .45 },
-    intro: () => [['fumeta', 'Amigo... amigo... ¿tiene cigarro?'], ['hero', `No fumo, ${C().slang}. Perdona.`], ['fumeta', '¿No? Pues entonces... me das la maleta y en paz.'], ['hero', 'Ni lo sueñes.']],
-    outro: () => [['fumeta', 'Tranqui, tranqui... Bienvenido al Raval, bro.']]
+    // [STORY] intro: () => [['fumeta', 'Amigo... amigo... ¿tiene cigarro?'], ['hero', `No fumo, ${C().slang}. Perdona.`], ['fumeta', '¿No? Pues entonces... me das la maleta y en paz.'], ['hero', 'Ni lo sueñes.']],
+    // [STORY] outro: () => [['fumeta', 'Tranqui, tranqui... Bienvenido al Raval, bro.']]
   },
   {
     name: 'RAMBLA DEL RAVAL', theme: 'rambla', tod: 'sunset', enemy: 'latero', seed: 2202, dist: '600 m', introAnim: 'canUp', music: 'fight',
     ai: { aggr: .6, block: .52, special: .2, jump: .08, react: 10, range: 36, combo: .55, dmg: 1.05, speed: 1.05, hp: 120, punish: .55 },
-    intro: () => [['latero', '¡Cerveza, beer, un euro! ¡Agua, cerveza!'], ['hero', `No, gracias, ${C().slang}.`], ['latero', '¿Cómo que no? ¡Aquí todo el mundo compra!'], ['latero', 'Una o te la tiro.']],
-    outro: () => [['latero', 'Vale, vale... dos por un euro. Última oferta.']]
+    // [STORY] intro: () => [['latero', '¡Cerveza, beer, un euro! ¡Agua, cerveza!'], ['hero', `No, gracias, ${C().slang}.`], ['latero', '¿Cómo que no? ¡Aquí todo el mundo compra!'], ['latero', 'Una o te la tiro.']],
+    // [STORY] outro: () => [['latero', 'Vale, vale... dos por un euro. Última oferta.']]
   },
   {
     name: 'PLAÇA DELS ÀNGELS', theme: 'macba', tod: 'dusk', enemy: 'carterista', seed: 3303, dist: '400 m', introAnim: 'hipHand', music: 'fight',
     ai: { aggr: .66, block: .56, special: .18, jump: .16, react: 8, range: 38, combo: .65, dmg: 1.1, speed: 1.3, hp: 125, punish: .65 },
-    intro: () => [['carterista', 'Oye guapo, ¿me haces una foto?'], ['hero', 'Claro, ¿con qué móvil...? ¡Oye! ¡Esa es MI cartera!'], ['carterista', 'Uy. Pillada.'], ['carterista', 'Bueno... ¡pues ahora te la quito a golpes!']],
-    outro: () => [['carterista', 'Toma tu cartera. Y tu móvil. Y... este otro móvil, que no sé de quién es.']]
+    // [STORY] intro: () => [['carterista', 'Oye guapo, ¿me haces una foto?'], ['hero', 'Claro, ¿con qué móvil...? ¡Oye! ¡Esa es MI cartera!'], ['carterista', 'Uy. Pillada.'], ['carterista', 'Bueno... ¡pues ahora te la quito a golpes!']],
+    // [STORY] outro: () => [['carterista', 'Toma tu cartera. Y tu móvil. Y... este otro móvil, que no sé de quién es.']]
   },
   {
     name: 'CARRER DE JOAQUÍN COSTA', theme: 'joaquin', tod: 'night', enemy: 'relojero', seed: 4404, dist: '200 m', introAnim: 'showWatch', music: 'fight',
     ai: { aggr: .72, block: .66, special: .2, jump: .1, react: 6, range: 38, combo: .75, dmg: 1.2, speed: 1.2, hp: 135, punish: .75 },
-    intro: () => [['relojero', 'Amigo, amigo... ¿tiene hora?'], ['hero', 'Sí, son las... ¡Oye! ¡Suelta mi muñeca!'], ['relojero', 'Bonito reloj. Ahora tiene hora... pero es mía.']],
-    outro: () => [['relojero', 'Toma, llévate uno. Es Rolex. Casi.']]
+    // [STORY] intro: () => [['relojero', 'Amigo, amigo... ¿tiene hora?'], ['hero', 'Sí, son las... ¡Oye! ¡Suelta mi muñeca!'], ['relojero', 'Bonito reloj. Ahora tiene hora... pero es mía.']],
+    // [STORY] outro: () => [['relojero', 'Toma, llévate uno. Es Rolex. Casi.']]
   },
   {
     name: 'CARRER DE LA RIERA BAIXA', theme: 'riera', tod: 'rain', enemy: 'capo', seed: 5505, dist: '20 m', introAnim: 'knuckles', music: 'boss', boss: true,
     ai: { aggr: .8, block: .74, special: .18, jump: .12, react: 5, range: 40, combo: .85, dmg: 1.3, speed: 1.15, hp: 160, punish: .85 },
-    intro: () => [['capo', 'Amigo... ¿tú de dónde eres?'], ['hero', `De ${C().name.charAt(0) + C().name.slice(1).toLowerCase()}. ¿Algún problema?`], ['capo', 'Aquí en el Raval se paga peaje. Y tú no has pagado.'], ['hero', 'Mi Airbnb está justo ahí. Nadie me va a parar.'], ['capo', 'Eso ya lo veremos, primo.']],
-    outro: () => [['capo', 'Respeto, ' + C().slang + '. Tienes calle. Bienvenido al barrio.']]
+    // [STORY] intro: () => [['capo', 'Amigo... ¿tú de dónde eres?'], ['hero', `De ${C().name.charAt(0) + C().name.slice(1).toLowerCase()}. ¿Algún problema?`], ['capo', 'Aquí en el Raval se paga peaje. Y tú no has pagado.'], ['hero', 'Mi Airbnb está justo ahí. Nadie me va a parar.'], ['capo', 'Eso ya lo veremos, primo.']],
+    // [STORY] outro: () => [['capo', 'Respeto, ' + C().slang + '. Tienes calle. Bienvenido al barrio.']]
   },
 ];
-const WIN_QUOTES = ['¡Doce horas de vuelo y aún me sobra energía!', 'Mi abuela pega más fuerte que tú.', 'En mi barrio esto es un saludo.', '¡Déjame pasar, que llego tarde al check-in!', 'La chancla nunca falla.'];
+// [STORY] const WIN_QUOTES = ['¡Doce horas de vuelo y aún me sobra energía!', 'Mi abuela pega más fuerte que tú.', 'En mi barrio esto es un saludo.', '¡Déjame pasar, que llego tarde al check-in!', 'La chancla nunca falla.'];
 
 // ---------- scene manager ----------
 let SCN = null;
 function go(s) { SCN = s; if (s.init) s.init(); }
 function goFade(mk, sp = 0.045) { fadeTo(() => go(mk()), sp); }
 
+/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — dialogue speakers & dialogue box =====
 // ---------- speakers ----------
 function SP(k) {
   if (k === 'mega') return { name: 'MEGAFONÍA', voice: 700, color: '#9fe8ff' };
@@ -126,6 +131,7 @@ class Dialog {
     if (this.n >= this.total && (this.t >> 4) % 2 === 0) { const ax = right ? bx + bw - 86 : bx + bw - 14; g.fillStyle = '#ffd84a'; g.fillRect(ax, by + bh - 12, 6, 2); g.fillRect(ax + 1, by + bh - 10, 4, 1); g.fillRect(ax + 2, by + bh - 9, 2, 1); }
   }
 }
+===== end of disabled story block ===== */
 
 // ---------- actors ----------
 class Actor {
@@ -164,6 +170,7 @@ function drawSuitcase(g, sx, gy, facing, spr, behind) {
 }
 function drawSuitcaseAt(g, x, gy) { const im = SMALL.suitcase; g.drawImage(im, Math.round(x - im.width / 2), gy - im.height + 1); g.fillStyle = '#6a6e76'; g.fillRect(Math.round(x) - 1, gy - im.height - 5, 1, 6); g.fillRect(Math.round(x) + 2, gy - im.height - 5, 1, 6); g.fillRect(Math.round(x) - 1, gy - im.height - 5, 4, 1); }
 
+/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — cutscene helpers, captions, item-get screen =====
 // ---------- generator helpers ----------
 function* wait(n) { for (let i = 0; i < n; i++) yield; }
 function* until(fn) { while (!fn()) yield; }
@@ -207,6 +214,7 @@ function drawItemGet(g, t, name, hint) {
   tiny(g, hint, Math.round(W / 2 - tinyW(hint) / 2), y + 56, '#9fe8ff');
   if (t % 8 < 4) for (let i = 0; i < 6; i++) { const a2 = i / 6 * Math.PI * 2 + t * .05; g.fillStyle = '#fff4a0'; g.fillRect(Math.round(W / 2 + Math.cos(a2) * 36), Math.round(y + 28 + Math.sin(a2) * 14), 2, 2); }
 }
+===== end of disabled story block ===== */
 
 // ============================================================
 //  BOOT & TITLE
@@ -218,9 +226,10 @@ class BootScene {
 }
 class TitleScene {
   init() {
-    this.t = 0; this.sel = 0; this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES'];
+    // this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES']; // [STORY]
+    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'CONTROLES'];
     this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 }));
-    this.hero = new Actor(CH.hero, 0, 1, { anim: 'idle' }); this.capo = new Actor(CH.capo, 0, -1, { anim: 'idle' });
+    this.hero = new Actor(CH.mario, 0, 1, { anim: 'idle' }); this.capo = new Actor(CH.peno, 0, -1, { anim: 'idle' });
     playMusic('rumba'); ambient('street'); this.started = false;
   }
   update() {
@@ -236,8 +245,10 @@ class TitleScene {
     }
     if (Input.ok()) {
       sfx('confirm');
-      if (this.sel === 0) goFade(() => new CountryScene());
-      if (this.sel === 1) goFade(() => new QuickScene());
+      // if (this.sel === 0) goFade(() => new CountryScene()); // [STORY]
+      // if (this.sel === 1) goFade(() => new QuickScene());   // [STORY]
+      if (this.sel === 0) goFade(() => new SelectScene('cpu'));
+      if (this.sel === 1) goFade(() => new SelectScene('2p'));
       if (this.sel === 3) goFade(() => new ControlsScene());
     }
   }
@@ -249,35 +260,51 @@ class TitleScene {
     drawFade(g, .35, '#05020a');
     // logo
     const bob = Math.round(Math.sin(this.t * .05) * 2);
-    textGrad(g, 'RAVAL', W / 2, 28 + bob, 32, ['#fff8d0', '#ffd860', '#ffa030', '#ff6020', '#d02818']);
-    textGrad(g, 'FIGHTER', W / 2, 64 + bob, 24, ['#ffffff', '#ffb0b8', '#ff4a5a', '#b01830']);
-    text(g, 'UNA HISTORIA DE BARRIO', W / 2, 94, { align: 'center', color: '#c8c0e0', outline: OUTL });
-    drawFlag(g, 'es', W / 2 - 58, 12, 12, 8, this.t, 1); drawFlag(g, 'cat', W / 2 + 46, 12, 12, 8, this.t, 1);
+    textGrad(g, 'WOLFGVNG', W / 2, 28 + bob, 32, ['#fff8d0', '#ffd860', '#ffa030', '#ff6020', '#d02818']);
+    textGrad(g, 'CLUB FIGHT', W / 2, 64 + bob, 24, ['#ffffff', '#ffb0b8', '#ff4a5a', '#b01830']);
+    text(g, '1 VS 1  ·  CPU O 2 JUGADORES', W / 2, 94, { align: 'center', color: '#c8c0e0', outline: OUTL });
+    drawFlag(g, 'es', W / 2 - 86, 12, 12, 8, this.t, 1); drawFlag(g, 'cat', W / 2 + 74, 12, 12, 8, this.t, 1);
     if (!this.started) { if ((this.t >> 5) % 2 === 0) text(g, 'PULSA ENTER', W / 2, 128, { align: 'center', color: '#fff', outline: OUTL, thick: 1 }); }
     else this.items.forEach((it, i) => {
       const y = 116 + i * 14, s = i === this.sel;
       if (s) { g.fillStyle = 'rgba(255,216,74,.18)'; g.fillRect(W / 2 - 100, y - 3, 200, 13); }
       if (it === 'DIFICULTAD') { drawDiffOption(g, y, s); return; }
-      if (s) text(g, '▶', W / 2 - 64, y, { color: '#ffd84a' });
+      if (s) text(g, '▶', W / 2 - 84, y, { color: '#ffd84a' });
       text(g, it, W / 2, y, { align: 'center', color: s ? '#ffd84a' : '#c8c0e0', outline: OUTL });
     });
-    tiny(g, '© 2026 RAVAL FIGHTER  ·  M: SONIDO', Math.round(W / 2 - tinyW('© 2026 RAVAL FIGHTER  ·  M: SONIDO') / 2), 216, 'rgba(255,255,255,.5)');
+    const foot = '© 2026 WOLFGVNG CLUB FIGHT  ·  M: SONIDO';
+    tiny(g, foot, Math.round(W / 2 - tinyW(foot) / 2), 216, 'rgba(255,255,255,.5)');
   }
 }
 let TITLE_STAGE = null;
 class ControlsScene {
   init() { this.t = 0; }
-  update() { this.t++; if (this.t > 10 && (Input.ok() || Input.hit('pause'))) { sfx('back'); goFade(() => new TitleScene()); } }
+  update() { this.t++; if (this.t > 10 && (Input.ok() || Input.backHit())) { sfx('back'); goFade(() => new TitleScene()); } }
   draw(g) {
     g.fillStyle = '#0e0a1c'; g.fillRect(0, 0, W, H);
     for (let y = 0; y < H; y += 4) { g.fillStyle = '#130e24'; g.fillRect(0, y, W, 2); }
-    textGrad(g, 'CONTROLES', W / 2, 12, 16, ['#fff', '#ffd860', '#ff9030']);
-    const rows = [['← →', 'MOVERSE (ATRÁS = BLOQUEAR)'], ['↑', 'SALTAR'], ['↓', 'AGACHARSE (↓+ATRÁS = BLOQ. BAJO)'], ['J / Z', 'PUÑETAZO  (J,J = COMBO)'], ['K / X', 'PATADA  (↓+K = BARRIDO)'], ['L / C', 'ESPECIAL: ¡CHANCLAZO!'], ['↓↘→ + J', 'ESPECIAL (MODO PRO)'], ['I / V', 'SUPER (BARRA AZUL LLENA)'], ['ENTER', 'CONFIRMAR / PASAR DIÁLOGO'], ['ESC / P', 'PAUSA · SALTAR ESCENA'], ['M', 'SONIDO ON/OFF']];
-    rows.forEach(([k, v], i) => { const y = 38 + i * 15; text(g, k, 110, y, { align: 'right', color: '#ffd84a' }); text(g, v, 122, y, { color: '#e8e0ff' }); });
-    tiny(g, 'TAMBIÉN FUNCIONA CON MANDO Y PANTALLA TÁCTIL', Math.round(W / 2 - tinyW('TAMBIÉN FUNCIONA CON MANDO Y PANTALLA TÁCTIL') / 2), 208, '#8a80b0');
+    textGrad(g, 'CONTROLES', W / 2, 8, 16, ['#fff', '#ffd860', '#ff9030']);
+    // keyboard: both players share it
+    const cA = 20, c1 = 214, c2 = 316, y0 = 34;
+    text(g, 'TECLADO', cA, y0, { color: '#9fe8ff' }); text(g, 'J1', c1, y0, { align: 'center', color: '#8fe0ff' }); text(g, 'J2', c2, y0, { align: 'center', color: '#ff8a8a' });
+    const rows = [['MOVERSE', 'W A S D', '← ↑ ↓ →'], ['PUÑETAZO', 'F', 'K · NUM 1'], ['PATADA', 'G', 'L · NUM 2'], ['ESPECIAL', 'H', 'Ñ · NUM 3'], ['SUPER', 'T', 'O · NUM 0']];
+    rows.forEach(([a, k1, k2], i) => {
+      const y = y0 + 14 + i * 12;
+      text(g, a, cA, y, { color: '#e8e0ff' }); text(g, k1, c1, y, { align: 'center', color: '#ffd84a' }); text(g, k2, c2, y, { align: 'center', color: '#ffd84a' });
+    });
+    const tip = (s, y, col) => tiny(g, s, Math.round(W / 2 - tinyW(s) / 2), y, col);
+    tip('ATRAS: BLOQUEAR   ↓ + ATRAS: BLOQUEO BAJO   ↓↘→ + PUÑO: ESPECIAL', 114, '#c8c0e0');
+    tip('VS CPU: EL J1 PUEDE USAR CUALQUIERA DE LOS DOS LADOS DEL TECLADO', 122, '#8a80b0');
+    // gamepads
+    text(g, 'MANDOS  XBOX / PS5', cA, 136, { color: '#9fe8ff' });
+    tip('MANDO 1: J1   ·   MANDO 2: J2   (PULSA UN BOTON PARA ACTIVARLO)', 148, '#8a80b0');
+    const pad = [['CRUCETA / STICK', 'MOVERSE'], ['X  /  CUADRADO', 'PUÑETAZO'], ['A  /  EQUIS', 'PATADA'], ['Y  /  TRIANGULO  ·  LB / L1', 'ESPECIAL'], ['RB / R1  ·  RT / R2', 'SUPER'], ['MENU / OPTIONS', 'PAUSA  ·  CONFIRMAR'], ['B / CIRCULO', 'VOLVER (MENUS)']];
+    pad.forEach(([k, v], i) => { const y = 157 + i * 8; tiny(g, k, 196 - tinyW(k), y, '#ffd84a'); tiny(g, v, 206, y, '#e8e0ff'); });
+    tip('ENTER: CONFIRMAR   ESC: PAUSA / VOLVER   M: SONIDO', 214, '#8a80b0');
   }
 }
 
+/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — country select, airport, flight, route phone, story stages, tutorial, continue, old quick fight, ending, credits =====
 // ============================================================
 //  COUNTRY SELECT
 // ============================================================
@@ -869,10 +896,11 @@ class CreditsScene {
     g.drawImage(sky, 0, 0); g.fillStyle = '#0a0c20'; g.fillRect(0, 150, W, 75);
     g.drawImage(skyline(), -10, 100); g.fillStyle = '#0a0c20'; g.fillRect(0, 164, W, 61);
     for (const f of this.fw) { g.fillStyle = f.t < 40 ? f.col : dk(f.col, .6); g.fillRect(Math.round(f.x), Math.round(f.y), f.t < 20 ? 2 : 1, f.t < 20 ? 2 : 1); }
-    const lines = ['RAVAL FIGHTER', '', 'MATEO LLEGÓ A SU AIRBNB.', 'EL BARRIO LE ABRIÓ LAS PUERTAS...', '...A CHANCLAZOS.', '', 'TIEMPO: ' + this.time + '   CONTINUES: ' + GAME.continues, '', 'GRACIAS POR JUGAR', '', 'UN JUEGO DE FREDDYSAEZ.ES', '', 'DEDICADO A TODOS LOS QUE', 'UN DÍA HICIERON LA MALETA.'];
+    const lines = ['RAVAL FIGHTER', '', 'MATEO LLEGÓ A SU AIRBNB.', 'EL BARRIO LE ABRIÓ LAS PUERTAS...', '...A CHANCLAZOS.', '', 'TIEMPO: ' + this.time + '   CONTINUES: ' + GAME.continues, '', 'GRACIAS POR JUGAR', '', 'DEDICADO A TODOS LOS QUE', 'UN DÍA HICIERON LA MALETA.'];
     const y0 = Math.round(H - this.t * .35);
-    lines.forEach((l, i) => { const y = y0 + i * 16; if (y < -10 || y > H) return; if (i === 0) textGrad(g, l, W / 2, y, 16, ['#fff8d0', '#ffd860', '#ff6020']); else text(g, l, W / 2, y, { align: 'center', color: l.includes('FREDDYSAEZ') ? '#ffd84a' : '#e8e0ff', outline: OUTL }); });
+    lines.forEach((l, i) => { const y = y0 + i * 16; if (y < -10 || y > H) return; if (i === 0) textGrad(g, l, W / 2, y, 16, ['#fff8d0', '#ffd860', '#ff6020']); else text(g, l, W / 2, y, { align: 'center', color: '#e8e0ff', outline: OUTL }); });
     if (y0 + lines.length * 16 < 60) textGrad(g, 'FIN', W / 2, 90, 32, ['#fff', '#ffd860', '#ff9030']);
   }
 }
 let TITLE_SKY = null;
+===== end of disabled story block ===== */

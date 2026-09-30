@@ -117,6 +117,19 @@ function paintHead(def, expr) {
     for (let y = 4; y <= 8; y++) for (let x = -1; x <= 2; x++) { if (y === 8 && x < 1) continue; if (x === -1 && R() < .5) continue; hc(x, y); }
     h(4, 4, H); h(5, 4, H); h(4, 5, H);
     for (let x = 0; x <= 9; x++) if (R() < .3) h(x, -1, HL);
+  } else if (hs === 'curlyLong') {
+    // voluminous long curls falling down the back
+    const shape = { '-3': [1, 8], '-2': [-1, 10], '-1': [-2, 11], '0': [-2, 11], '1': [-2, 10], '2': [-2, 9], '3': [-2, 7] };
+    for (const y in shape) { const [a, b] = shape[y]; for (let x = a; x <= b; x++) { if ((x === a || x === b) && R() < .35) continue; hc(x, +y); } }
+    for (let y = 4; y <= 15; y++) for (let x = -3; x <= 2; x++) { if (x === -3 && R() < .5) continue; if (y > 12 && x > 0) continue; h(x, y, (x + y) % 3 ? H : (R() < .5 ? HL : HD)); }
+    h(4, 4, H); h(3, 4, H);
+  } else if (hs === 'braid') {
+    // hair pulled back into a long braid
+    for (let x = 3; x <= 9; x++) h(x, -2, H);
+    for (let y = -1; y <= 2; y++) for (let x = 1; x <= 10; x++) h(x, y, (x + y) % 3 ? H : HL);
+    h(9, 3, H); h(8, 3, H);
+    for (let y = 3; y <= 5; y++) { h(1, y, H); h(2, y, H); }
+    for (let y = 1; y <= 16; y++) { const x = y < 4 ? 1 - y : -3 + ((y >> 1) % 2); h(x, y, y % 2 ? H : HD); h(x + 1, y, y % 2 ? HD : HL); }
   } else if (hs === 'buzz') {
     const B = mix(H, S, .3);
     for (let x = 3; x <= 8; x++) h(x, 0, (x % 2) ? H : B);
@@ -124,8 +137,9 @@ function paintHead(def, expr) {
     for (let x = 1; x <= 6; x++) h(x, 2, (x % 2) ? H : B);
     for (let y = 3; y <= 6; y++) { h(1, y, H); h(2, y, B); }
     h(4, 4, B);
-  } else if (hs === 'short' || hs === 'slick') {
+  } else if (hs === 'short' || hs === 'slick' || hs === 'quiff') {
     for (let x = 3; x <= 9; x++) h(x, -2, H);
+    if (hs === 'quiff') { for (let x = 4; x <= 10; x++) h(x, -3, x > 8 ? HL : H); for (let x = 6; x <= 10; x++) h(x, -4, x === 9 ? HL : H); h(11, -3, H); h(11, -2, H); }
     for (let x = 1; x <= 10; x++) { h(x, -1, H); h(x, 0, H); }
     for (let x = 1; x <= 10; x++) h(x, 1, x > 8 ? HL : H);
     for (let x = 1; x <= 7; x++) h(x, 2, H);
@@ -168,6 +182,7 @@ function paintHead(def, expr) {
   const acc = def.acc || [];
   if (acc.includes('sunglasses')) { for (let x = 6; x <= 10; x++) h(x, 5, '#111'); h(8, 6, '#111'); h(9, 6, '#111'); h(10, 6, '#111'); h(9, 5, '#556'); h(5, 5, '#111'); }
   if (acc.includes('glassesHead')) { for (let x = 4; x <= 9; x++) h(x, -2, '#1a1a1a'); h(7, -2, '#8ab'); }
+  if (acc.includes('glasses')) { const F = def.glassesCol || '#2a2434'; for (const [x, y] of [[7, 4], [8, 4], [9, 4], [10, 4], [7, 5], [10, 5], [7, 6], [10, 6], [8, 7], [9, 7], [5, 5], [6, 5]]) h(x, y, F); }
   if (acc.includes('earring')) h(3, 8, '#f5c542');
   if (acc.includes('cigarette')) { h(10, 10, '#d9a066'); h(11, 10, '#eee'); h(12, 10, '#eee'); h(13, 10, '#ff7a2a'); }
   return G;
@@ -187,6 +202,7 @@ function paintPortrait(def, expr) {
   const S = def.skin, SS = dk(S, .8), SD = dk(S, .62), SL = lt(S, .14), H = def.hair, HL = lt(H, .22), HD = dk(H, .7), LIP = dk(S, .62);
   const brow = def.brow || (rgb(H)[0] > 150 ? dk(H, .55) : HD);
   const top = def.dress || def.jacket || def.shirt;
+  const chainC = def.chainCol || '#f2c14e';
   // shoulders
   for (let y = 25; y < 32; y++) {
     const xm = Math.max(0, 9 - (y - 25) * 2.2);
@@ -194,6 +210,10 @@ function paintPortrait(def, expr) {
   }
   if (def.jacket) { for (let y = 25; y < 32; y++) for (let x = 13 - (y - 25) * .3; x <= 19 + (y - 25) * .3; x++) G.set(x, y, def.shirt); for (let y = 25; y < 32; y++) { G.set(12 - (y - 25) * .3, y, dk(def.jacket, .6)); G.set(20 + (y - 25) * .3, y, dk(def.jacket, .6)); } }
   if (def.stripe) { for (let y = 26; y < 32; y++) { G.set(4 + (31 - y) * .1, y, def.stripe); G.set(27 - (31 - y) * .1, y, def.stripe); } }
+  if (def.vstripes) for (let y = 25; y < 32; y++) for (let x = 0; x < 32; x++) if (G.get(x, y) && ((x + 1) % 6 < 3)) G.set(x, y, x < 11 ? dk(def.vstripes, .85) : def.vstripes);
+  if (def.bare) { G.hl(9, 14, 30, SS); G.hl(18, 23, 30, SS); G.set(16, 31, SS); }
+  if (def.crop) { for (let y = 29; y < 32; y++) for (let x = 0; x < 32; x++) if (G.get(x, y)) G.set(x, y, x < 11 ? dk(def.crop, .8) : def.crop); for (let y = 25; y < 29; y++) { G.set(10, y, def.crop); G.set(22, y, def.crop); } }
+  if (def.necktie) { for (let y = 26; y < 32; y++) { G.set(16, y, def.necktie); G.set(17, y, y % 2 ? dk(def.necktie, .7) : def.necktie); } }
   // neck
   for (let y = 20; y < 27; y++) for (let x = 12; x <= 20; x++) G.set(x, y, x < 15 ? SD : SS);
   if (!def.jacket && def.sleeve !== 'none') { for (let x = 12; x <= 20; x++) G.set(x, 26, dk(top, .7)); }
@@ -253,13 +273,18 @@ function paintPortrait(def, expr) {
   } else if (hs === 'buzz') {
     for (let y = 2; y <= 10; y++) for (let x = 6; x <= 27; x++) { if (!inHead(x, y) && y > 3) continue; const hl = 5 + Math.abs(x - 16.5) * 0.35; if (y < hl + 2 && ((x + y) % 2 === 0 || y < 6)) G.set(x, y, y < 4 && !inHead(x, y) ? null : H); }
     for (let x = 8; x <= 25; x++) G.set(x, 3, H);
-  } else if (hs === 'short' || hs === 'slick' || hs === 'bun' || hs === 'ponytail' || hs === 'long') {
+  } else if (hs === 'curlyLong') {
+    for (let i = 0; i < 80; i++) { let x = R.r(4, 29), y = R.r(0, 9); if (y > 6 && x > 10 && x < 23) y = R.r(0, 6); G.disc(x, y, R.r(1.6, 3), R() < .2 ? HL : H); }
+    for (let i = 0; i < 40; i++) { const side = R() < .5; G.disc(side ? R.r(2, 8) : R.r(25, 31), R.r(7, 31), R.r(1.4, 2.4), R() < .15 ? HL : R() < .3 ? HD : H); }
+  } else if (hs === 'short' || hs === 'slick' || hs === 'bun' || hs === 'ponytail' || hs === 'long' || hs === 'quiff' || hs === 'braid') {
     for (let y = 0; y <= 12; y++) for (let x = 5; x <= 28; x++) {
       const d = ((x - 16.5) / 9.6) ** 2 + ((y - 9) / 8.6) ** 2; const hl = 7 + Math.abs(x - 16.5) * 0.45;
       if (d <= 1 && y < hl) G.set(x, y, R() < .12 ? HL : H);
     }
     for (let y = 9; y <= 15; y++) { G.set(6, y, H); G.set(7, y, H); G.set(26, y, H); G.set(27, y, H); }
     if (hs === 'slick' || hs === 'short') { G.hl(10, 14, 2, HL); G.hl(9, 12, 3, HL); }
+    if (hs === 'quiff') { for (let y = 0; y <= 4; y++) for (let x = 9; x <= 25; x++) if (((x - 17) / 8.5) ** 2 + ((y - 4) / 4.2) ** 2 <= 1) G.set(x, y, (x + y) % 5 ? H : HL); G.hl(12, 18, 1, HL); }
+    if (hs === 'braid') { for (let y = 10; y <= 30; y++) { const x = 27 + ((y >> 1) % 2); G.set(x, y, y % 2 ? H : HD); G.set(x + 1, y, y % 2 ? HD : HL); } }
     if (hs === 'bun') for (let y = -1; y <= 5; y++) for (let x = 12; x <= 21; x++) if ((x - 16.5) ** 2 + (y - 1.5) ** 2 <= 11) G.set(x, y, (x + y) % 3 ? H : HL);
     if (hs === 'long' || hs === 'ponytail') {
       const bot = hs === 'long' ? 30 : 22;
@@ -282,13 +307,19 @@ function paintPortrait(def, expr) {
   const acc = def.acc || [];
   if (acc.includes('sunglasses')) { G.hl(10, 14, 13, '#111'); for (let y = 14; y <= 15; y++) { G.hl(10, 14, y, '#141418'); G.hl(18, 22, y, '#141418'); } G.hl(18, 22, 13, '#111'); G.hl(15, 17, 14, '#111'); G.set(11, 14, '#667'); G.set(19, 14, '#667'); }
   if (acc.includes('glassesHead')) { G.hl(10, 14, 4, '#141418'); G.hl(18, 22, 4, '#141418'); G.hl(15, 17, 4, '#111'); G.set(11, 4, '#8ab'); }
+  if (acc.includes('glasses')) {
+    const F = def.glassesCol || '#2a2434';
+    for (const x0 of [10, 18]) { G.hl(x0, x0 + 4, 12, F); G.hl(x0, x0 + 4, 16, F); for (let y = 12; y <= 16; y++) { G.set(x0, y, F); G.set(x0 + 4, y, F); } }
+    G.hl(15, 17, 13, F); G.set(7, 13, F); G.set(8, 13, F); G.set(9, 13, F); G.set(23, 13, F); G.set(24, 13, F); G.set(25, 13, F);
+  }
   if (acc.includes('earring')) { G.set(7, 19, '#f5c542'); G.set(26, 19, '#f5c542'); }
-  if (acc.includes('chain')) for (let x = 11; x <= 21; x++) if (x % 2) G.set(x, 27 + (Math.abs(x - 16) < 3 ? 1 : 0), '#f2c14e');
+  if (acc.includes('chain')) for (let x = 11; x <= 21; x++) if (x % 2) G.set(x, 27 + (Math.abs(x - 16) < 3 ? 1 : 0), chainC);
   if (acc.includes('cigarette')) { for (let x = 19; x <= 25; x++) G.set(x, 22 + (x > 22 ? 1 : 0), x < 21 ? '#d9a066' : '#eee'); G.set(26, 23, '#ff7a2a'); G.set(27, 21, '#99a'); G.set(28, 19, '#99a'); }
   return G;
 }
 const _ports = new Map();
 function portraitCanvas(def, expr = 'normal') {
+  if (def.hd) return portraitCanvasHD(def, expr);
   const key = def.id + '|' + expr; let c = _ports.get(key); if (c) return c;
   c = paintPortrait(def, expr).canvas(); _ports.set(key, c); return c;
 }
@@ -346,6 +377,10 @@ const UPPER = X(STANCE, { t: -8, ua2: 172, fa2: 178, ua1: 20, fa1: 120, th1: -10
 defA('upper', 0, [[X(CR, { ua2: 60, fa2: 100 }), 4], [UPPER, 6], [UPPER, 20], [STANCE, 1]]);
 const SNATCH = X(STANCE, { t: 34, hx: 4, ua2: 92, fa2: 92, h2: 'open', th1: -30, sh1: -50, th2: 55, sh2: 25 });
 defA('snatch', 0, [[STANCE, 4], [X(STANCE, { t: -6, ua2: 20, fa2: 60 }), 4], [SNATCH, 14], [SNATCH, 7], [STANCE, 9], [STANCE, 1]]);
+const DPUNCH = X(CROSS_A, { t: 30, hx: 5, th1: -30, sh1: -50, th2: 55, sh2: 25 });
+defA('dpunch', 0, [[STANCE, 4], [CROSS_C, 4], [DPUNCH, 14], [DPUNCH, 7], [STANCE, 9], [STANCE, 1]]);
+const CHARGE = X(DASH, { t: 40, hx: 5, ua2: 70, fa2: 150, ua1: 60, fa1: 160, hdx: 1 });
+defA('charge', 0, [[STANCE, 4], [CR, 4], [CHARGE, 14], [CHARGE, 7], [STANCE, 9], [STANCE, 1]]);
 const POUND_U = P({ air: 1, t: -5, ua1: 170, fa1: 178, ua2: 172, fa2: 178, th1: 40, sh1: -30, th2: 60, sh2: -10 });
 const POUND_D = X(CR, { t: 44, ua1: 75, fa1: 60, ua2: 85, fa2: 62 });
 defA('pound', 0, [[STANCE, 4], [CR, 4], [POUND_U, 12], [POUND_D, 3], [POUND_D, 14], [STANCE, 10], [STANCE, 1]]);
@@ -451,10 +486,12 @@ function renderPose(def, p, expr) {
   const b = def.b, S = def.skin;
   const far = col => dk(col, .8);
   const acc = def.acc || [];
+  const skirtC = def.skirt || (def.dress && !def.noSkirt ? def.dress : null);
   // ---- limb painters
   const armCols = () => {
-    const up = def.jacket || (def.sleeve === 'long' ? (def.dress || def.shirt) : S);
-    const fo = def.jacket || (def.sleeve === 'long' ? (def.dress || def.shirt) : S);
+    const jk = def.jacketShort ? null : def.jacket;
+    const up = jk || (def.sleeve === 'long' ? (def.dress || def.shirt) : S);
+    const fo = jk || (def.sleeve === 'long' ? (def.dress || def.shirt) : S);
     const topC = def.dress || def.jacket || def.shirt;
     return [up === topC ? dk(up, .88) : up, fo === topC ? dk(fo, .88) : fo];
   };
@@ -475,9 +512,10 @@ function renderPose(def, p, expr) {
     let [cu, cf] = armCols(); if (isFar) { cu = far(cu); cf = far(cf); }
     seg(g, sh, el, b.uw + 2, OUTL); seg(g, el, ha, b.fw + 2, OUTL);
     fill2(sh, el, b.uw, cu); fill2(el, ha, b.fw, cf);
-    if (!def.jacket && def.sleeve === 'short') {
-      const top = def.dress || def.shirt, m = plerp(sh, el, .55), sc = isFar ? far(top) : top;
+    if (def.jacketShort || (!def.jacket && def.sleeve === 'short')) {
+      const top = def.jacketShort ? def.jacket : def.dress || def.shirt, m = plerp(sh, el, .55), sc = isFar ? far(top) : top;
       seg(g, sh, m, b.uw + 3, OUTL); fill2(sh, m, b.uw + 1, sc);
+      if (def.vstripes) { const vc = isFar ? far(def.vstripes) : def.vstripes; stripe(sh, m, vc, 1); stripe(sh, m, vc, -1); }
     }
     if (def.stripe) { stripe(sh, el, isFar ? far(def.stripe) : def.stripe, -1); stripe(el, ha, isFar ? far(def.stripe) : def.stripe, -1); }
     if (acc.includes('watches')) {
@@ -486,7 +524,7 @@ function renderPose(def, p, expr) {
     hand(ha, el, htype, isFar);
   }
   function leg(hp, kn, an, ft, isFar) {
-    const legSkin = def.dress && !def.tights;
+    const legSkin = (def.dress || def.skirt) && !def.tights;
     let tc = legSkin ? S : def.pants, sc = (def.shorts || legSkin) ? S : def.pants;
     if (def.tights) { tc = def.tights; sc = def.tights; }
     if (isFar) { tc = far(tc); sc = far(sc); }
@@ -494,6 +532,8 @@ function renderPose(def, p, expr) {
     fill2(hp, kn, b.tw, tc); fill2(kn, an, b.shw, sc);
     if (def.shorts && !legSkin) { const pc = isFar ? far(def.pants) : def.pants; const m = plerp(hp, kn, .8); seg(g, hp, m, b.tw + 3, OUTL); fill2(hp, m, b.tw + 1, pc); }
     if (def.stripe && !def.shorts) { const st = isFar ? far(def.stripe) : def.stripe; stripe(hp, kn, st, 1); stripe(kn, an, st, 1); }
+    if (def.shortsStripe && def.shorts) { const st = isFar ? far(def.shortsStripe) : def.shortsStripe; stripe(hp, plerp(hp, kn, .8), st, 1); }
+    if (def.socks) { const so = isFar ? far(def.socks) : def.socks; seg(g, plerp(kn, an, .72), an, b.shw, so); }
     // shoe
     const f = V(ft, 1), dn = pt(-f.y, f.x);
     const s0 = padd(an, f, -1), s1 = padd(an, f, 4 * b.s);
@@ -505,15 +545,17 @@ function renderPose(def, p, expr) {
   function torso() {
     const u = k.u, n = k.n, hip = k.hip, hw = b.hw / 2, sw = b.sw / 2, T = k.T, bel = b.belly || 0;
     const Q = (uk, nk) => pt(hip.x + u.x * uk + n.x * nk, hip.y + u.y * uk + n.y * nk);
-    const pc = def.dress || def.pants;
+    const pc = def.dress || def.skirt || def.pants;
     const pel = [Q(-2, -hw), Q(-2, hw), Q(5, hw), Q(5, -hw)];
     polyOut(g, pel, pc);
-    if (def.dress && !def.noSkirt) {
+    if (skirtC) {
       // skirt hangs vertically
-      const sk = [pt(hip.x - hw - 1, hip.y - 1), pt(hip.x + hw + 1, hip.y - 1), pt(hip.x + hw + 4, hip.y + 12 * b.s), pt(hip.x - hw - 4, hip.y + 12 * b.s)];
-      polyOut(g, sk, def.dress);
-      polyFill(g, [sk[0], plerp(sk[0], sk[1], .3), plerp(sk[3], sk[2], .3), sk[3]], dk(def.dress, .8));
-      g.fillStyle = dk(def.dress, .7); for (let i = 1; i < 4; i++) { const a = plerp(sk[0], sk[1], i / 4), bb = plerp(sk[3], sk[2], i / 4); seg(g, plerp(a, bb, .4), bb, 1, dk(def.dress, .72)); }
+      const L = (def.skirtLen || 12) * b.s, fl = def.skirtLen ? 6 : 4;
+      const sk = [pt(hip.x - hw - 1, hip.y - 1), pt(hip.x + hw + 1, hip.y - 1), pt(hip.x + hw + fl, hip.y + L), pt(hip.x - hw - fl, hip.y + L)];
+      polyOut(g, sk, skirtC);
+      polyFill(g, [sk[0], plerp(sk[0], sk[1], .3), plerp(sk[3], sk[2], .3), sk[3]], dk(skirtC, .8));
+      g.fillStyle = dk(skirtC, .7); for (let i = 1; i < 4; i++) { const a = plerp(sk[0], sk[1], i / 4), bb = plerp(sk[3], sk[2], i / 4); seg(g, plerp(a, bb, .4), bb, 1, dk(skirtC, .72)); }
+      if (def.skirt) { g.fillStyle = lt(skirtC, .3); for (let yy = 2; yy < L - 1; yy += 3) for (let xx = -hw - 3; xx <= hw + 3; xx += 3) { const px = Math.round(hip.x + xx + (yy % 6 ? 1 : 0)), py = Math.round(hip.y + yy); if (px > sk[3].x + 1 && px < sk[2].x - 1) g.fillRect(px, py, 1, 1); } }
     }
     const topC = def.dress || def.jacket || def.shirt;
     const tor = [Q(3, -hw - .5), Q(3, hw + .5 + bel), Q(T * .55, sw + bel * .6), Q(T, sw), Q(T, -sw)];
@@ -528,13 +570,31 @@ function renderPose(def, p, expr) {
       if (def.stripe) { seg(g, Q(4, -hw + 1), Q(T - 1, -sw + 1.5), 1, def.stripe); }
     }
     if (def.hood) { seg(g, Q(T - 1, -sw + 1), Q(T + 1, -sw + 4), 3, dk(topC, .7)); }
+    if (def.vstripes) for (let nk = -sw + 1.5; nk < sw; nk += 3.4) seg(g, Q(3.5, Math.min(nk, hw)), Q(T - .5, nk), 1, def.vstripes);
+    if (def.bare) {
+      // pecs, abs, navel
+      const SS = dk(S, .8);
+      seg(g, Q(T - 6, 0), Q(T - 6.5, sw - 1.5), 1, SS); seg(g, Q(T - 6, -1), Q(T - 6.5, -sw + 2), 1, dk(S, .88));
+      g.fillStyle = SS;
+      for (const uk of [T - 9, T - 12, 6]) { const q = Q(uk, sw - 3.5); g.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); }
+    }
+    if (def.crop) {
+      const band = [Q(T * .5, -hw - .5), Q(T * .5, hw + .5), Q(T * .9, sw), Q(T * .9, -sw)];
+      polyFill(g, band, def.crop); seg(g, Q(T * .5, -hw), Q(T * .5, hw), 1, dk(def.crop, .6));
+      seg(g, Q(T * .9, sw - 2), Q(T, sw - 2.5), 1, def.crop);
+    }
+    if (def.necktie) {
+      const a = Q(T - 1, sw - 2.4), e = Q(T * .35, sw - 2.4);
+      seg(g, a, e, 3, OUTL); seg(g, a, e, 2, def.necktie); g.fillStyle = dk(def.necktie, .65);
+      for (let i = 1; i < 5; i++) { const q = plerp(a, e, i / 5); g.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); }
+    }
     // belt
-    if (!def.dress) seg(g, Q(3.5, -hw), Q(3.5, hw + bel * .5), 1, dk(def.pants, .6));
+    if (!def.dress && !def.skirt && !def.noBelt) seg(g, Q(3.5, -hw), Q(3.5, hw + bel * .5), 1, def.belt || dk(def.pants, .6));
     // collar
-    if (!def.jacket && def.sleeve !== 'none') seg(g, Q(T - .5, -1), Q(T - .5, sw - 2), 1, dk(topC, .65));
+    if (!def.jacket && def.sleeve !== 'none' && !def.bare) seg(g, Q(T - .5, -1), Q(T - .5, sw - 2), 1, dk(topC, .65));
     if (def.sleeve === 'none' && !def.jacket) { seg(g, Q(T - 1, -sw + 1.5), Q(T - 1, -sw + 2.5), 1, S); }
     // accessories on torso
-    if (acc.includes('chain')) { const a = Q(T - .5, -2), m = Q(T - 5, 1.5), e = Q(T - .5, sw - 1.5); seg(g, a, m, 1, '#f2c14e'); seg(g, m, e, 1, '#f2c14e'); }
+    if (acc.includes('chain')) { const cc = def.chainCol || '#f2c14e', a = Q(T - .5, -2), m = Q(T - 5, 1.5), e = Q(T - .5, sw - 1.5); seg(g, a, m, 1, cc); seg(g, m, e, 1, cc); }
     if (acc.includes('bag')) {
       const bp = Q(2, -hw - 3); seg(g, Q(T - 1, sw - 2), bp, 1, '#d8d8d0');
       g.fillStyle = OUTL; g.fillRect(Math.round(bp.x) - 4, Math.round(bp.y) - 3, 9, 10);
@@ -556,6 +616,15 @@ function renderPose(def, p, expr) {
     if (!rot) g.drawImage(hc, Math.round(k.neck.x - 9 + p.hdx), Math.round(k.neck.y - 18 + p.hdy));
     else g.drawImage(hc, Math.round(k.neck.x - 18), Math.round(k.neck.y - 10));
   }
+  // tennis racket: carried in the back hand, swung with the front hand when that hand is open (serve)
+  function racket(front) {
+    const h = front ? k.ha2 : k.ha1, e = front ? k.el2 : k.el1;
+    const dx = h.x - e.x, dy = h.y - e.y, L = Math.hypot(dx, dy) || 1, d = { x: dx / L, y: dy / L };
+    const neck = padd(h, d, 7), c1 = padd(h, d, 10), c2 = padd(h, d, 14), c = padd(h, d, 12);
+    seg(g, h, neck, 3, OUTL); seg(g, h, neck, 1, '#6a4020');
+    seg(g, c1, c2, 10, OUTL); seg(g, c1, c2, 8, '#9a6a30'); seg(g, c1, c2, 6, '#e8e6dc');
+    g.fillStyle = '#b8b6ac'; for (let i = -2; i <= 2; i += 2) { g.fillRect(Math.round(c.x) + i, Math.round(c.y) - 3, 1, 6); g.fillRect(Math.round(c.x) - 3, Math.round(c.y) + i, 6, 1); }
+  }
   function prop() {
     const h = k.ha2;
     if (p.prop === 'phone') { g.fillStyle = OUTL; g.fillRect(Math.round(h.x) - 2, Math.round(h.y) - 5, 5, 7); g.fillStyle = '#26262e'; g.fillRect(Math.round(h.x) - 1, Math.round(h.y) - 4, 3, 5); g.fillStyle = '#9fe8ff'; g.fillRect(Math.round(h.x), Math.round(h.y) - 4, 2, 3); }
@@ -563,18 +632,30 @@ function renderPose(def, p, expr) {
     if (p.prop === 'chancla') { g.fillStyle = OUTL; g.fillRect(Math.round(h.x) - 1, Math.round(h.y) - 4, 9, 4); g.fillStyle = '#2f7fd1'; g.fillRect(Math.round(h.x), Math.round(h.y) - 3, 7, 2); g.fillStyle = '#f2c14e'; g.fillRect(Math.round(h.x) + 2, Math.round(h.y) - 4, 3, 1); }
   }
   // ---- draw order
+  const racketFront = def.weapon === 'racket' && p.h2 === 'open';
+  if (def.weapon === 'racket' && !racketFront) racket(false); // carried in the back hand, behind the body
   arm(k.sh1, k.el1, k.ha1, true, p.h1);
   leg(k.hp1, k.kn1, k.an1, p.ft1, true);
   leg(k.hp2, k.kn2, k.an2, p.ft2, false);
   torso();
   head();
   arm(k.sh2, k.el2, k.ha2, false, p.h2);
+  if (racketFront) racket(true); // serve: swung with the front hand
   prop();
   return { c, ax: AX, ay: AY, hand1: pt(k.ha1.x - AX, k.ha1.y - AY), hand2: pt(k.ha2.x - AX, k.ha2.y - AY), top: pt(k.neck.x - AX, k.neck.y - AY - 14) };
 }
 
 // ---------- sprite cache ----------
 const _spr = new Map();
+// fighters are drawn (and collide) CHAR_SIZE bigger than the base skeleton; crowd NPCs keep their size
+const CHAR_SIZE = 1.3;
+const _hdd = new Map();
+// HD fighters are painted directly at the bigger size (skeleton + thickness scaled) for full detail
+function hdDef(def) {
+  let d = _hdd.get(def); if (d) return d;
+  const b = def.b, k = CHAR_SIZE, sc = {}; for (const key of ['s', 'sw', 'hw', 'uw', 'fw', 'tw', 'shw', 'fist']) sc[key] = b[key] * k;
+  d = Object.assign({}, def, { id: def.id + '#hd', b: Object.assign({}, b, sc) }); _hdd.set(def, d); return d;
+}
 function getSprite(def, anim, t, expr = 'normal') {
   const A = ANIM[anim] || ANIM.stand;
   let tt = A.loop ? ((Math.floor(t) % A.total) + A.total) % A.total : Math.min(Math.floor(t), A.total);
@@ -582,7 +663,8 @@ function getSprite(def, anim, t, expr = 'normal') {
   const key = def.id + '|' + anim + '|' + tt + '|' + expr;
   let s = _spr.get(key);
   if (!s) {
-    s = renderPose(def, samplePose(def, anim, tt), expr);
+    if (def.hd) { const hd = hdDef(def); s = renderPoseHD(hd, samplePose(hd, anim, tt), expr); }
+    else { s = renderPose(def, samplePose(def, anim, tt), expr); if (def.fighter) s.sc = CHAR_SIZE; }
     if (_spr.size > 2400) { let i = 0; for (const k of _spr.keys()) { _spr.delete(k); if (++i > 600) break; } }
     _spr.set(key, s);
   }
@@ -598,10 +680,11 @@ function tintedOf(s, col, a) {
   const [c, g] = mk(s.c.width, s.c.height); g.drawImage(s.c, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = a; g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
   return s[k] = c;
 }
+// s.hd: sprite painted at hd x resolution (1 sprite pixel = 1 screen pixel); s.sc: low-res sprite drawn scaled up
 function drawSpr(g, s, x, y, facing, img) {
-  const im = img || s.c; x = Math.round(x); y = Math.round(y);
-  if (facing >= 0) g.drawImage(im, x - s.ax, y - s.ay);
-  else { g.save(); g.translate(x, 0); g.scale(-1, 1); g.drawImage(im, -s.ax, y - s.ay); g.restore(); }
+  const im = img || s.c, k = s.hd ? 1 / s.hd : (s.sc || 1), w = im.width * k, h = im.height * k; x = Math.round(x); y = Math.round(y);
+  if (facing >= 0) g.drawImage(im, x - s.ax * k, y - s.ay * k, w, h);
+  else { g.save(); g.translate(x, 0); g.scale(-1, 1); g.drawImage(im, -s.ax * k, y - s.ay * k, w, h); g.restore(); }
 }
 function shadow(g, x, y, w, a = 0.35) {
   g.globalAlpha = a; g.fillStyle = '#0a0612';
@@ -619,8 +702,14 @@ function mkChar(o) {
     jacket: null, stripe: null, pants: '#2d54a3', shorts: false, shoes: '#ecebe6', sole: '#9d9a90', dress: null, acc: [], voice: 300, seed: _cid * 17 + 3, expr: 'normal'
   }, o);
   d.b = Object.assign({ s: 1.22, torso: 19, thigh: 13, shin: 13, upper: 10, fore: 10, sw: 14, hw: 12, tw: 7, shw: 6, uw: 6, fw: 5, fist: 5, belly: 0 }, o.b || {});
+  // shirtless / sports top: the torso is skin, arms bare
+  if (d.bare || d.crop) { d.shirt = d.skin; d.sleeve = 'none'; }
+  if (d.barefoot) { d.shoes = d.skin; d.sole = dk(d.skin, .75); }
   return d;
 }
+const FEM = { s: 1.16, sw: 12, hw: 12, torso: 18, tw: 6, shw: 5, uw: 5, fw: 4, fist: 4 };
+// [OLD CHARS] original Raval Fighter cast, disabled for WOLFGVNG CLUB FIGHT
+/*
 const CH = {
   hero: mkChar({ id: 'hero', name: 'MATEO', skin: '#b77a48', hair: '#1b1411', hairStyle: 'curly', shirt: '#1f6e69', pants: '#2c55a8', shoes: '#ecebe6', voice: 330, seed: 11, color: '#4fb3ff' }),
   mom: mkChar({ id: 'mom', name: 'MAMÁ', skin: '#b98356', hair: '#2a1b14', hairStyle: 'bun', dress: '#b8324a', shoes: '#5a2a1a', sole: '#3a1a10', acc: ['earring'], voice: 520, b: { s: 1.12, sw: 13, hw: 12 }, seed: 21, color: '#ff8fb0' }),
@@ -634,6 +723,50 @@ const CH = {
   capo: mkChar({ id: 'capo', name: 'EL BRAYAN', skin: '#ae7650', hair: '#17110e', hairStyle: 'curly', beard: 'full', jacket: '#7a2432', shirt: '#b9b9bd', pants: '#26262c', shoes: '#eeeeee', acc: ['chain'], voice: 170, b: { s: 1.3, sw: 17, hw: 13, tw: 8, shw: 7, uw: 7, fw: 6, fist: 6, belly: 1 }, seed: 101, color: '#ff4a4a' }),
   host: mkChar({ id: 'host', name: 'JORDI', skin: '#e2b894', hair: '#6b4a2a', hairStyle: 'short', beard: 'stubble', shirt: '#e8e2d0', pants: '#6a7a4a', voice: 380, seed: 111 }),
 };
+*/
+// WOLFGVNG CLUB FIGHT cast — all drawn by the HD renderer (js/art_hd.js); options are documented there.
+// Faces follow the photos in images/, outfits follow the design sheets.
+const HDB = (o) => Object.assign({ hd: true, voice: 300 }, o);
+const CH = {
+  mario: mkChar(HDB({ id: 'mario', name: 'MARIO', seed: 11, color: '#4fb3ff', skin: '#d29a6c',
+    hair: '#2b1f17', hairStyle: 'buzz', beard: 'trim', beardCol: '#261a13', acc: ['glasses'], glasses: 'round', glassesCol: '#9c7a40',
+    top: 'bare', bottom: 'shorts', pants: '#27324e', shortsStripe: '#e8eaf0', shortsLogo: '#f0f0f0', shoe: 'barefoot',
+    b: { sw: 15.5, hw: 10.5, uw: 6.2, fw: 5.2, tw: 7, shw: 5.6, fist: 5 } })),
+  peno: mkChar(HDB({ id: 'peno', name: 'PEÑO', seed: 21, color: '#ff4a4a', skin: '#e2b490', face: { chin: 1 },
+    hair: '#3a2a1e', hair2: '#6a4a32', hairStyle: 'messy', fringe: 2.2, beard: 'goatee', beardCol: '#3a2a1e', acc: ['glasses'], glasses: 'rect', glassesCol: '#241c1a',
+    top: 'tee', shirt: '#d42a32', vstripes: '#f4f0ea', bottom: 'shorts', pants: '#2d4f95', shoe: 'barefoot',
+    b: { sw: 14.5, hw: 12, uw: 5.8, fw: 5, tw: 7, shw: 5.8 } })),
+  alba: mkChar(HDB({ id: 'alba', name: 'ALBA', seed: 31, color: '#9fe8c8', fem: true, skin: '#b87a4c', browTh: 1.1,
+    hair: '#3a2416', hair2: '#6e4528', hairStyle: 'curlyLong', neck: 'goldChain',
+    top: 'crop', cropCol: '#18181c', bottom: 'shorts', fit: 'tight', shortsLen: .5, pants: '#18181c', socks: '#1a1a1a', shoe: 'sneaker', shoes: '#bfeadb', sole: '#7ab8a0', shoeAccent: '#f08a4a',
+    b: { s: 1.16, sw: 12.5, hw: 12.5, torso: 18, tw: 6.4, shw: 5.2, uw: 4.8, fw: 4.2, fist: 4.2 } })),
+  alvaro: mkChar(HDB({ id: 'alvaro', name: 'ÁLVARO', seed: 41, color: '#4a7aff', skin: '#c98e62', smile: true, face: { nose: .6 },
+    hair: '#1e1612', hairStyle: 'cap', cap: '#f2f2f2', earrings: 'small', earCol: '#d8d8e0',
+    top: 'hoodie', shirt: '#2f5cc0', bottom: 'pants', fit: 'baggy', jeans: true, pants: '#aac6e2', shoe: 'sneaker', shoes: '#8ec8f0', sole: '#f4f4f4', shoeAccent: '#ffffff',
+    b: { sw: 15, hw: 12, uw: 6, fw: 5.2, tw: 7 } })),
+  belli: mkChar(HDB({ id: 'belli', name: 'BELLI', seed: 51, color: '#b0b0c8', skin: '#d8a47c', smile: true, browTh: 1.8, face: { jaw: 1 },
+    hair: '#1a1411', hair2: '#3a2c24', hairStyle: 'messy', fringe: 1,
+    top: 'tee', shirt: '#1f2622', bottom: 'pants', fit: 'slim', jeans: true, pants: '#4a74b0', shoe: 'sneaker', shoes: '#1a1a1a', sole: '#f0f0f0',
+    b: { sw: 15, hw: 12, uw: 6, fw: 5.2, tw: 7 } })),
+  bene: mkChar(HDB({ id: 'bene', name: 'BENE', seed: 61, color: '#f2a030', skin: '#e4b492', smile: true, blush: true,
+    hair: '#18120f', hairStyle: 'curlyTop', sunHead: true, neck: 'pendant',
+    top: 'openShirt', jacket: '#d9962a', shirt: '#f4f4f0', bottom: 'shorts', jeans: true, pants: '#9dbad6', shortsLen: .78, belt: '#1e1e1e', socks: '#f4f4f4',
+    shoe: 'sneaker', shoes: '#f2f0ea', sole: '#e0dcd2', shoeAccent: '#7a2030', weapon: 'racket',
+    b: { sw: 14.5, hw: 12.5, uw: 6, fw: 5, tw: 7.2 } })),
+  carlottis: mkChar(HDB({ id: 'carlottis', name: 'CARLOTTIS', seed: 71, color: '#ff8a4a', fem: true, skin: '#c48a5c', smile: true,
+    hair: '#4a2e1c', hair2: '#c8a068', hairStyle: 'braid', earrings: 'big', earCol: '#c8862a', neck: 'choker',
+    top: 'tank', shirt: '#f2f2ee', bottom: 'skirt', skirt: '#e0672e', skirtLen: 26, shoe: 'sandal', shoes: '#8a5a30',
+    b: { s: 1.14, sw: 12.5, hw: 14, torso: 18, tw: 7, shw: 5.6, uw: 5.2, fw: 4.4, fist: 4.4 } })),
+  marcos: mkChar(HDB({ id: 'marcos', name: 'MARCOS', seed: 81, color: '#e8e8e8', skin: '#e6b48e', browTh: 1.5,
+    hair: '#5a3a22', hair2: '#a07a50', hairStyle: 'quiff', beard: 'light', beardCol: '#7a5232', neck: 'chain',
+    top: 'tee', shirt: '#f6f6f2', tucked: true, bottom: 'pants', fit: 'slim', pants: '#1c1c20', belt: '#0c0c0e', shoe: 'sneaker', shoes: '#f2f2ee', sole: '#d8d8d0',
+    b: { sw: 14, hw: 11.5, uw: 5.6, fw: 4.8, tw: 6.8 } })),
+  oso: mkChar(HDB({ id: 'oso', name: 'OSO', seed: 91, color: '#c8a040', skin: '#e6bc98', smile: true, browTh: 1.6, face: { jaw: .6 },
+    hair: '#1e1612', hairStyle: 'sidePart', beard: 'chin', beardCol: '#231a14',
+    top: 'suit', jacket: '#252a36', shirt: '#f4f4f0', necktie: '#c8962a', bottom: 'pants', fit: 'slim', crease: true, pants: '#252a36', shoe: 'dress', shoes: '#141416',
+    b: { s: 1.28, sw: 16, hw: 13, uw: 7, fw: 6, tw: 8, shw: 7, fist: 6 } })),
+};
+for (const id in CH) CH[id].fighter = true;
 // random crowd / pedestrians
 const SKINS = ['#f0c8a0', '#e0b088', '#c99064', '#b07850', '#8a5a3a', '#6a4028', '#d8a878', '#a06a44'];
 const HAIRS = ['#1a1311', '#2a1b14', '#4a2616', '#6b4a2a', '#a07040', '#d8b060', '#111', '#8a8a8a', '#c04a2a'];
@@ -684,6 +817,13 @@ const SMALL = {};
     gridFrom(['..y..y..', '.dyyyyd.', 'bbbbbbbb', '.bbbbbb.'], cp).canvas(),
     gridFrom(['.bb.', 'bbb.', '.ybb', '.ybb', 'ybbb', 'ybbb', 'bbb.', 'bb..'], cp).canvas(),
   ];
+  const sdp = { b: '#8a5a30', d: '#5a3a1e', y: '#e8c060' };
+  SMALL.sandal = [
+    gridFrom(['.bbbbbb.', 'bbbbbbbb', '.dyyyyd.', '..y..y..'], sdp).canvas(),
+    gridFrom(['..bb', '.bbb', 'bbby', 'bbby', 'bby.', 'bby.', 'bbb.', '.bb.'], sdp).canvas(),
+    gridFrom(['..y..y..', '.dyyyyd.', 'bbbbbbbb', '.bbbbbb.'], sdp).canvas(),
+    gridFrom(['.bb.', 'bbb.', '.ybb', '.ybb', 'ybbb', 'ybbb', 'bbb.', 'bb..'], sdp).canvas(),
+  ];
   const kp = { r: '#c8323c', s: '#e0e4ea', d: '#8a1a24', w: '#fff' };
   SMALL.can = [
     gridFrom(['ss', 'rr', 'rw', 'rr', 'dd'], kp).canvas(), gridFrom(['srrd', 'srwd'], kp).canvas(),
@@ -708,6 +848,7 @@ function scale2x(src) {
 }
 const _portHi = new Map();
 function portraitHi(def, expr = 'normal', lvl = 1) {
+  if (def.hd) return portraitCanvasHD(def, expr); // already painted at 2x
   const key = def.id + '|' + expr + '|' + lvl; let c = _portHi.get(key); if (c) return c;
   c = portraitCanvas(def, expr); for (let i = 0; i < lvl; i++) c = scale2x(c);
   _portHi.set(key, c); return c;

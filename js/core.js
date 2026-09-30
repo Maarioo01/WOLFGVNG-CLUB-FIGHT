@@ -1,11 +1,15 @@
 'use strict';
 // ============================================================
-//  RAVAL FIGHTER — core: canvas, utils, color, text, input, fx
+//  WOLFGVNG CLUB FIGHT — core: canvas, utils, color, text, input, fx
 // ============================================================
 const W = 400, H = 225;
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
-cv.width = W; cv.height = H;
+// the canvas has 2x real pixels; all game code keeps drawing in 400x225 logical units.
+// Low-res art is doubled (same look as before); HD character sprites use the extra pixels for detail.
+const RES = 2;
+cv.width = W * RES; cv.height = H * RES;
+ctx.setTransform(RES, 0, 0, RES, 0, 0);
 ctx.imageSmoothingEnabled = false;
 
 function fitCanvas() {
@@ -174,39 +178,74 @@ function tiny(g, str, x, y, col, sc = 1) {
 const tinyW = (s, sc = 1) => String(s).length * 4 * sc - sc;
 
 // ---------- input ----------
-const Input = { held: {}, pressed: {}, _pad: {} };
+// Two players share the keyboard; each gamepad belongs to one player (1st pad = P1, 2nd pad = P2).
+// Input.pl[0] / Input.pl[1] hold each player's state; Input.held / Input.pressed merge both (menus, vs-CPU).
+const Input = { held: {}, pressed: {}, pl: [{ held: {}, pressed: {} }, { held: {}, pressed: {} }], _on: new Set(), _n: [{}, {}], _pad: {} };
+// keyboard: code -> [player, action]
 const KEYS = {
-  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
-  KeyJ: 'punch', KeyZ: 'punch', KeyK: 'kick', KeyX: 'kick', KeyL: 'special', KeyC: 'special', KeyI: 'super', KeyV: 'super',
-  Enter: 'start', Space: 'start', Escape: 'pause', KeyP: 'pause', KeyM: 'mute'
+  // player 1 — left side
+  KeyW: [0, 'up'], KeyA: [0, 'left'], KeyS: [0, 'down'], KeyD: [0, 'right'],
+  KeyF: [0, 'punch'], KeyG: [0, 'kick'], KeyH: [0, 'special'], KeyT: [0, 'super'],
+  // player 2 — right side (letters or numpad)
+  ArrowUp: [1, 'up'], ArrowLeft: [1, 'left'], ArrowDown: [1, 'down'], ArrowRight: [1, 'right'],
+  KeyK: [1, 'punch'], KeyL: [1, 'kick'], Semicolon: [1, 'special'], KeyO: [1, 'super'],
+  Numpad1: [1, 'punch'], Numpad2: [1, 'kick'], Numpad3: [1, 'special'], Numpad0: [1, 'super'],
+  // system
+  Enter: [0, 'start'], NumpadEnter: [1, 'start'], Space: [0, 'start'], Escape: [0, 'pause'], KeyP: [0, 'pause'], Backspace: [0, 'back'], KeyM: [0, 'mute']
 };
-function press(a) { if (!Input.held[a]) Input.pressed[a] = true; Input.held[a] = true; }
-function release(a) { Input.held[a] = false; }
+// source id (key code / pad slot) + player + action -> on/off; a player's action is held while any source holds it
+function setSrc(id, p, a, on) {
+  const k = id + '|' + p + '|' + a;
+  if (Input._on.has(k) === on) return;
+  if (on) Input._on.add(k); else Input._on.delete(k);
+  const n = Input._n[p]; n[a] = (n[a] || 0) + (on ? 1 : -1);
+  const P = Input.pl[p], now = n[a] > 0;
+  if (now && !P.held[a]) P.pressed[a] = true;
+  P.held[a] = now;
+  const any = !!(Input.pl[0].held[a] || Input.pl[1].held[a]);
+  if (any && !Input.held[a]) Input.pressed[a] = true;
+  Input.held[a] = any;
+}
+function press(a, p = 0, id = 'touch:' + a) { setSrc(id, p, a, true); }
+function release(a, p = 0, id = 'touch:' + a) { setSrc(id, p, a, false); }
 addEventListener('keydown', e => {
-  const a = KEYS[e.code]; if (a) { e.preventDefault(); if (!e.repeat) press(a); }
+  const m = KEYS[e.code]; if (m) { e.preventDefault(); if (!e.repeat) setSrc(e.code, m[0], m[1], true); }
   if (typeof unlockAudio === 'function') unlockAudio();
 });
-addEventListener('keyup', e => { const a = KEYS[e.code]; if (a) release(a); });
-addEventListener('blur', () => { Input.held = {}; });
+addEventListener('keyup', e => { const m = KEYS[e.code]; if (m) setSrc(e.code, m[0], m[1], false); });
+addEventListener('blur', () => {
+  Input._on.clear(); Input._n = [{}, {}]; Input.held = {}; Input._pad = {};
+  for (const P of Input.pl) P.held = {};
+});
 Input.hit = a => !!Input.pressed[a];
-Input.ok = () => !!(Input.pressed.start || Input.pressed.punch);
-Input.endFrame = () => { Input.pressed = {}; };
+Input.ok = () => !!(Input.pressed.start || Input.pressed.confirm || Input.pressed.punch);
+Input.backHit = () => !!(Input.pressed.pause || Input.pressed.back);
+// per-player helpers (select screens)
+Input.hitP = (p, a) => !!Input.pl[p].pressed[a];
+Input.okP = p => { const q = Input.pl[p].pressed; return !!(q.start || q.confirm || q.punch); };
+Input.backP = p => { const q = Input.pl[p].pressed; return !!(q.back || (q.kick && !q.confirm)); };
+Input.endFrame = () => { Input.pressed = {}; Input.pl[0].pressed = {}; Input.pl[1].pressed = {}; };
+// Standard gamepad mapping (Xbox and PS4/PS5 in Chrome/Edge on Windows):
+//   0 A/Cross  1 B/Circle  2 X/Square  3 Y/Triangle  4 LB/L1  5 RB/R1  6 LT/L2  7 RT/R2  8 View/Create  9 Menu/Options  12-15 d-pad
 Input.poll = () => {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = pads && [...pads].find(p => p);
-  if (!gp) return;
-  const b = i => gp.buttons[i] && gp.buttons[i].pressed;
-  const st = {
-    left: b(14) || gp.axes[0] < -0.5, right: b(15) || gp.axes[0] > 0.5, up: b(12) || gp.axes[1] < -0.5, down: b(13) || gp.axes[1] > 0.5,
-    punch: b(2), kick: b(0), special: b(3) || b(1), super: b(5) || b(7), start: b(9), pause: b(8)
-  };
-  for (const k in st) {
-    if (st[k] && !Input._pad[k]) press(k);
-    if (!st[k] && Input._pad[k]) release(k);
-    Input._pad[k] = st[k];
-  }
+  const all = navigator.getGamepads ? [...navigator.getGamepads()] : [];
+  const pads = all.filter(p => p && p.connected);
+  const seen = {};
+  pads.slice(0, 2).forEach((gp, p) => {
+    const b = i => !!(gp.buttons[i] && gp.buttons[i].pressed), ax = i => gp.axes[i] || 0;
+    const st = {
+      left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5, down: b(13) || ax(1) > 0.5,
+      punch: b(2), kick: b(0), special: b(3) || b(4), super: b(5) || b(7) || b(6),
+      confirm: b(0), back: b(1), start: b(9), pause: b(8)
+    };
+    const id = 'pad' + gp.index; seen[id] = true;
+    for (const k in st) setSrc(id, p, k, st[k]);
+    Input._pad[id] = p;
+  });
+  // release everything from pads that disappeared or changed slot
+  for (const id in Input._pad) if (!seen[id]) { for (const k of [...Input._on]) if (k.startsWith(id + '|')) { const [, p, a] = k.split('|'); setSrc(id, +p, a, false); } delete Input._pad[id]; }
 };
-// touch
+// touch (player 1)
 (function setupTouch() {
   const coarse = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
   const root = document.getElementById('touch'); if (!root || !coarse) return;

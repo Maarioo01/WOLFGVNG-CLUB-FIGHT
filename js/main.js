@@ -28,7 +28,7 @@ function frame(now) {
   render();
   requestAnimationFrame(frame);
 }
-// dev shortcuts: #airport  #flight  #stage=0..4  #arrival  #ending  #quick
+// dev shortcuts: #cpu  #2p  #fight=0..4  #fight2p=0..4
 const HASH = location.hash.slice(1);
 go(new BootScene());
 if (HASH) {
@@ -36,14 +36,18 @@ if (HASH) {
   b.update = () => {
     if (!b.ready) return orig();
     const [k, v] = HASH.split('=');
-    GAME.startTime = performance.now();
-    if (k === 'airport') go(new AirportScene());
-    else if (k === 'flight') go(new FlightScene());
-    else if (k === 'arrival') go(new StageScene(0, { mode: 'arrival' }));
-    else if (k === 'stage') go(new StageScene(+v || 0));
-    else if (k === 'fight') go(new StageScene(+v || 0, { mode: 'retry' }));
-    else if (k === 'ending') go(new EndingScene(760, 420));
-    else if (k === 'quick') go(new QuickScene());
+    // [STORY] story-mode shortcuts (scenes are commented out in story.js)
+    // GAME.startTime = performance.now();
+    // if (k === 'airport') go(new AirportScene());
+    // else if (k === 'flight') go(new FlightScene());
+    // else if (k === 'arrival') go(new StageScene(0, { mode: 'arrival' }));
+    // else if (k === 'stage') go(new StageScene(+v || 0));
+    // else if (k === 'fight') go(new StageScene(+v || 0, { mode: 'retry' }));
+    // else if (k === 'ending') go(new EndingScene(760, 420));
+    // else if (k === 'quick') go(new QuickScene());
+    if (k === 'cpu' || k === '2p') go(new SelectScene(k));
+    else if (k === 'fight') go(new VersusScene({ mode: 'cpu', p1: 'mario', p2: 'peno', stage: +v || 0 }));
+    else if (k === 'fight2p') go(new VersusScene({ mode: '2p', p1: 'mario', p2: 'peno', stage: +v || 0 }));
     else orig();
   };
 }
