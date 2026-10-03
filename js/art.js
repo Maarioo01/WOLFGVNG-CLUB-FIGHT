@@ -319,6 +319,7 @@ function paintPortrait(def, expr) {
 }
 const _ports = new Map();
 function portraitCanvas(def, expr = 'normal') {
+  const sp = typeof spritePortrait === 'function' && spritePortrait(def, expr); if (sp) return sp; // face cut from the design
   if (def.hd) return portraitCanvasHD(def, expr);
   const key = def.id + '|' + expr; let c = _ports.get(key); if (c) return c;
   c = paintPortrait(def, expr).canvas(); _ports.set(key, c); return c;
@@ -363,6 +364,7 @@ const SW_C = X(CR, { t: 40, th2: 80, sh2: 20 }), SW_A = X(CR, { t: 45, th2: 62, 
 atk('sweep', SW_C, SW_A, 8, 4, 20, CR);
 const JK_A = X(JU, { t: -6, th2: 80, sh2: 100, ft2: 115, th1: 30, sh1: -70 });
 defA('jkick', 0, [[JU, 3], [JK_A, 2], [JK_A, 60]]);
+defA('flip', 0, [[JU, 3], [JK_A, 2], [JK_A, 60]]); // Alba's flip-kick special (own sprite frames)
 const JP_A = X(JU, { t: 20, ua2: 60, fa2: 55 });
 defA('jpunch', 0, [[JU, 2], [X(JU, { ua2: 40, fa2: 120 }), 2], [JP_A, 60]]);
 const TH_C = X(STANCE, { t: -12, ua2: -130, fa2: -165, h2: 'open', ua1: 60, fa1: 120 }), TH_A = X(STANCE, { t: 22, hx: 3, ua2: 100, fa2: 98, h2: 'open', ua1: 20, fa1: -10 });
@@ -657,6 +659,7 @@ function hdDef(def) {
   d = Object.assign({}, def, { id: def.id + '#hd', b: Object.assign({}, b, sc) }); _hdd.set(def, d); return d;
 }
 function getSprite(def, anim, t, expr = 'normal') {
+  if (typeof spriteSet === 'function' && spriteSet(def)) return spriteForAnim(def, anim, t); // drawn from the design images
   const A = ANIM[anim] || ANIM.stand;
   let tt = A.loop ? ((Math.floor(t) % A.total) + A.total) % A.total : Math.min(Math.floor(t), A.total);
   tt = Math.floor(tt / 2) * 2;
@@ -848,6 +851,7 @@ function scale2x(src) {
 }
 const _portHi = new Map();
 function portraitHi(def, expr = 'normal', lvl = 1) {
+  const sp = typeof spritePortrait === 'function' && spritePortrait(def, expr); if (sp) return sp;
   if (def.hd) return portraitCanvasHD(def, expr); // already painted at 2x
   const key = def.id + '|' + expr + '|' + lvl; let c = _portHi.get(key); if (c) return c;
   c = portraitCanvas(def, expr); for (let i = 0; i < lvl; i++) c = scale2x(c);

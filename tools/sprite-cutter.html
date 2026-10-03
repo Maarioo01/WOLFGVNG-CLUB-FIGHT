@@ -1,0 +1,308 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Sprite cutter</title></head>
+<body style="background:#2a2a30;color:#ddd;font:12px monospace;margin:8px">
+<!--
+  Turns design sheets into clean game sprites for one character.
+  Run it through tools/build_sprites.py (it serves the repo and reads the result),
+  or open  http://localhost:8765/tools/sprite-cutter.html?char=alba&debug=1  to see
+  the detected figures, their pose names and the extracted frames.
+-->
+<pre id="out"></pre>
+<div id="dbg"></div>
+<script src="sprites.config.js"></script>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search), CHAR = Q.get('char'), DEBUG = !!Q.get('debug');
+const OUT = document.getElementById('out'), DBG = document.getElementById('dbg');
+const log = [];
+
+// ---------- image helpers ----------
+const loadImage = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('cannot load ' + src)); im.src = src; });
+// area: [x, y, w, h] of the sheet inside a bigger image (e.g. a phone screenshot)
+function pixelsOf(im, area) { const [ax, ay, aw, ah] = area || [0, 0, im.naturalWidth, im.naturalHeight], c = document.createElement('canvas'); c.width = aw; c.height = ah; const g = c.getContext('2d'); g.drawImage(im, -ax, -ay); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; }
+const dist2 = (r, g, b, c) => (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2;
+
+// ---------- 1. background colours (from the sheet borders; handles flat and checker backgrounds) ----------
+function bgColors(P) {
+  const { w, h, d } = P, buckets = new Map(); let total = 0;
+  const add = (x, y) => { const i = (y * w + x) * 4, k = (d[i] >> 4) << 8 | (d[i + 1] >> 4) << 4 | (d[i + 2] >> 4); const e = buckets.get(k) || { n: 0, r: 0, g: 0, b: 0 }; e.n++; e.r += d[i]; e.g += d[i + 1]; e.b += d[i + 2]; buckets.set(k, e); total++; };
+  for (let y = 0; y < h; y += 2) { add(1, y); add(w - 2, y); add(4, y); add(w - 5, y); }
+  for (let x = 0; x < w; x += 2) { add(x, h - 2); add(x, h - 5); }
+  const cols = [...buckets.values()].filter(e => e.n >= total * .08).map(e => [e.r / e.n, e.g / e.n, e.b / e.n]);
+  return cols.length ? cols : [[200, 200, 200]];
+}
+// background = background-coloured pixels connected to the sheet edge, or forming a big gap
+// (between legs / arms). Small enclosed light areas (eye whites, teeth) stay part of the figure.
+function fgMask(P, bg, tol, holeMin = 150) {
+  const { w, h, d } = P, near = new Uint8Array(w * h), m = new Uint8Array(w * h), t2 = tol * tol, seen = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) { const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2]; for (const c of bg) if (dist2(r, g, b, c) < t2) { near[i] = 1; break; } m[i] = near[i] ? 0 : 1; }
+  const st = [], reg = [];
+  for (let s = 0; s < w * h; s++) {
+    if (!near[s] || seen[s]) continue;
+    let edge = false; reg.length = 0; st.push(s); seen[s] = 1;
+    while (st.length) { const i = st.pop(), x = i % w, y = (i / w) | 0; reg.push(i); if (x === 0 || y === 0 || x === w - 1 || y === h - 1) edge = true; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; const j = yy * w + xx; if (near[j] && !seen[j]) { seen[j] = 1; st.push(j); } } }
+    if (!edge && reg.length < holeMin) for (const i of reg) m[i] = 1;
+  }
+  return m;
+}
+
+// ---------- 2. figures = connected components of the foreground ----------
+function components(P, m) {
+  const { w, h } = P, lab = new Int32Array(w * h), boxes = [], stack = [];
+  for (let s = 0; s < w * h; s++) {
+    if (!m[s] || lab[s]) continue;
+    const id = boxes.length + 1; let x0 = w, y0 = h, x1 = 0, y1 = 0, n = 0, white = 0, black = 0; stack.push(s); lab[s] = id;
+    while (stack.length) {
+      const i = stack.pop(), x = i % w, y = (i / w) | 0; n++;
+      const r = P.d[i * 4], g = P.d[i * 4 + 1], b = P.d[i * 4 + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      if (mx - mn < 30) { if (mx > 215) white++; else if (mx < 45) black++; }
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        const j = yy * w + xx; if (m[j] && !lab[j]) { lab[j] = id; stack.push(j); }
+      }
+    }
+    boxes.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, n, ids: [id], text: white > n * .25 && white + black > n * .8 });
+  }
+  boxes.lab = lab;
+  return boxes;
+}
+function figures(P, boxes) {
+  const minH = Math.max(40, P.h * .05);
+  let f = boxes.filter(b => b.h >= minH && b.w < P.w * .75 && b.n > 200 && !b.text); // drop titles / labels (white text, black outline)
+  // merge small fragments (a racket, a loose strand of hair) into the figure they touch; never two figures
+  for (let changed = true; changed;) {
+    changed = false;
+    for (let i = 0; i < f.length && !changed; i++) for (let j = i + 1; j < f.length && !changed; j++) {
+      const a = f[i], b = f[j], sm = a.n < b.n ? a : b, big = sm === a ? b : a;
+      // a fragment joins a figure only if it lies mostly inside the figure's box (labels next to a figure don't)
+      const ox = Math.min(sm.x + sm.w, big.x + big.w) - Math.max(sm.x, big.x), oy = Math.min(sm.y + sm.h, big.y + big.h) - Math.max(sm.y, big.y);
+      if (sm.n < big.n * .2 && ox > 0 && oy > 0 && ox * oy >= sm.w * sm.h * .5) {
+        const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+        f[i] = { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y, n: a.n + b.n, ids: a.ids.concat(b.ids) }; f.splice(j, 1); changed = true;
+      }
+    }
+  }
+  // reading order: rows (by vertical overlap), then left to right
+  f.sort((a, b) => a.y - b.y);
+  const rows = [];
+  for (const b of f) {
+    const r = rows.find(r => Math.min(r.y1, b.y + b.h) - Math.max(r.y0, b.y) > Math.min(b.h, r.y1 - r.y0) * .3);
+    if (r) { r.items.push(b); r.y0 = Math.min(r.y0, b.y); r.y1 = Math.max(r.y1, b.y + b.h); } else rows.push({ y0: b.y, y1: b.y + b.h, items: [b] });
+  }
+  return rows.flatMap(r => r.items.sort((a, b) => a.x - b.x));
+}
+
+// ---------- 3. pixel-grid detection (AI sheets use a fractional art-pixel size, ~3 image px) ----------
+// edge-energy profile of a figure along one axis (colour jumps happen on art-pixel borders)
+function edgeProfile(P, box, axis) {
+  const { w, d } = P, n = axis === 'x' ? box.w : box.h, m = axis === 'x' ? box.h : box.w, E = new Float64Array(n);
+  for (let i = 0; i < n - 1; i++) {
+    let s = 0;
+    for (let j = 0; j < m; j++) {
+      const x = axis === 'x' ? box.x + i : box.x + j, y = axis === 'x' ? box.y + j : box.y + i, a = (y * w + x) * 4, b = axis === 'x' ? a + 4 : a + w * 4;
+      s += Math.abs(d[a] - d[b]) + Math.abs(d[a + 1] - d[b + 1]) + Math.abs(d[a + 2] - d[b + 2]);
+    }
+    E[i] = s;
+  }
+  let mean = 0; for (let i = 0; i < n - 1; i++) mean += E[i]; E.mean = mean / (n - 1);
+  return E;
+}
+// best phase of period p on a profile -> { ph, score }
+function phaseFit(E, p) {
+  let bs = -1, bph = 0;
+  for (let ph = 0; ph < p; ph += .1) { let s = 0, c = 0; for (let k = ph; k < E.length - 1; k += p) { s += E[Math.round(k)]; c++; } s /= c; if (s > bs) { bs = s; bph = ph; } }
+  return { ph: bph, score: bs / E.mean };
+}
+// one art-pixel size for the whole sheet (all figures vote); multiples of the true size fit
+// equally well, so take the smallest size that scores close to the best
+function sheetGrid(profiles) {
+  const res = [];
+  for (let p = 2; p <= 9; p += .01) { let s = 0; for (const E of profiles) s += phaseFit(E, p).score; res.push({ p, score: s / profiles.length }); }
+  // the best-scoring size; its half / third fits the same edges, so step down only if that scores nearly as well
+  const best = res.reduce((a, b) => b.score > a.score ? b : a), at = p => res.reduce((a, b) => Math.abs(b.p - p) < Math.abs(a.p - p) ? b : a);
+  for (const k of [3, 2]) { const q = best.p / k; if (q >= 2.2) { const r = at(q); if (r.score >= best.score * .9) return r; } }
+  return best;
+}
+
+// ---------- 4. sample one colour per art pixel ----------
+function sampleFigure(P, m, box, g, lab, bg, tol) {
+  const own = new Set(box.ids), strong = (tol * 1.6) ** 2;
+  const cols = Math.ceil(box.w / g.p) + 2, rows = Math.ceil(box.h / g.p) + 2, px = new Uint8ClampedArray(cols * rows * 4);
+  const med = a => { a.sort((x, y) => x - y); return a[a.length >> 1]; };
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const x0 = box.x + g.phx + .5 + (c - 1) * g.p, y0 = box.y + g.phy + .5 + (r - 1) * g.p;
+    const xa = Math.floor(x0 + g.p * .25), xb = Math.ceil(x0 + g.p * .75), ya = Math.floor(y0 + g.p * .25), yb = Math.ceil(y0 + g.p * .75);
+    const R = [], G = [], B = []; let fg = 0, tot = 0, edge = false;
+    for (let y = Math.floor(y0); y < Math.ceil(y0 + g.p); y++) for (let x = Math.floor(x0); x < Math.ceil(x0 + g.p); x++) if (x >= 0 && y >= 0 && x < P.w && y < P.h && !m[y * P.w + x]) edge = true;
+    for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) {
+      if (x < box.x || y < box.y || x >= box.x + box.w || y >= box.y + box.h) continue;
+      const i = y * P.w + x; tot++; if (!m[i] || !own.has(lab[i])) continue;
+      const r = P.d[i * 4], gg = P.d[i * 4 + 1], b = P.d[i * 4 + 2]; if (edge && bg.some(c => dist2(r, gg, b, c) < strong)) continue; // JPG halo at the silhouette
+      fg++; R.push(r); G.push(gg); B.push(b);
+    }
+    const o = (r * cols + c) * 4;
+    if (tot && fg >= tot * .42) { px[o] = med(R); px[o + 1] = med(G); px[o + 2] = med(B); px[o + 3] = 255; }
+  }
+  return trim({ w: cols, h: rows, px });
+}
+function trim(F) {
+  let x0 = F.w, y0 = F.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) if (F.px[(y * F.w + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return { w: 1, h: 1, px: new Uint8ClampedArray(4) };
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, px = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let k = 0; k < 4; k++) px[(y * w + x) * 4 + k] = F.px[((y + y0) * F.w + x + x0) * 4 + k];
+  return { w, h, px };
+}
+// drop specks: opaque islands smaller than 4 art pixels
+function despeckle(F) {
+  const { w, h, px } = F, lab = new Int32Array(w * h), sizes = [0];
+  for (let s = 0; s < w * h; s++) {
+    if (!px[s * 4 + 3] || lab[s]) continue;
+    const id = sizes.length, st = [s]; lab[s] = id; let n = 0;
+    while (st.length) { const i = st.pop(), x = i % w, y = (i / w) | 0; n++; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; const j = yy * w + xx; if (px[j * 4 + 3] && !lab[j]) { lab[j] = id; st.push(j); } } }
+    sizes.push(n);
+  }
+  for (let i = 0; i < w * h; i++) if (lab[i] && sizes[lab[i]] < 4) px[i * 4 + 3] = 0;
+  return trim(F);
+}
+const flipH = F => { const px = new Uint8ClampedArray(F.px.length); for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) for (let k = 0; k < 4; k++) px[(y * F.w + x) * 4 + k] = F.px[(y * F.w + (F.w - 1 - x)) * 4 + k]; return { w: F.w, h: F.h, px }; };
+
+// ---------- 5. one palette for the whole character (removes JPG noise, keeps frames consistent) ----------
+function medianCut(colors, n) {
+  let boxes = [colors];
+  while (boxes.length < n) {
+    let bi = -1, br = -1, bc = 0;
+    boxes.forEach((b, i) => { if (b.length < 2) return; for (let c = 0; c < 3; c++) { let lo = 255, hi = 0; for (const p of b) { if (p[c] < lo) lo = p[c]; if (p[c] > hi) hi = p[c]; } const r = (hi - lo) * Math.sqrt(b.length); if (r > br) { br = r; bi = i; bc = c; } } });
+    if (bi < 0) break;
+    const b = boxes[bi].sort((p, q) => p[bc] - q[bc]), mid = b.length >> 1;
+    boxes.splice(bi, 1, b.slice(0, mid), b.slice(mid));
+  }
+  return boxes.map(b => { const s = [0, 0, 0]; for (const p of b) { s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; } return s.map(v => Math.round(v / b.length)); });
+}
+function applyPalette(F, pal) {
+  for (let i = 0; i < F.w * F.h; i++) {
+    if (!F.px[i * 4 + 3]) continue;
+    let best = 0, bd = 1e9; for (let k = 0; k < pal.length; k++) { const dd = dist2(F.px[i * 4], F.px[i * 4 + 1], F.px[i * 4 + 2], pal[k]); if (dd < bd) { bd = dd; best = k; } }
+    F.px[i * 4] = pal[best][0]; F.px[i * 4 + 1] = pal[best][1]; F.px[i * 4 + 2] = pal[best][2];
+  }
+}
+
+// ---------- 6. mirror-match colours: skin & hair kept, clothes tinted ----------
+function rgb2hsl([r, g, b]) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0, s = 0; if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; } return [h, s, l]; }
+function hsl2rgb([h, s, l]) { const f = n => { const k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); }; return [f(0), f(8), f(4)]; }
+function altColor(c) {
+  const [h, s, l] = rgb2hsl(c);
+  const skinOrHair = h >= 5 && h <= 48 && s >= .18 && l >= .12 && l <= .9;
+  if (skinOrHair) return c;
+  if (s < .2) return hsl2rgb([350, .42, Math.min(.9, l * 1.05 + .02)]);
+  return hsl2rgb([(h + 150) % 360, s, l]);
+}
+
+// ---------- 7. anchors & portraits ----------
+// anchor: x on the waist (median of the silhouette at hip height, so punches/kicks don't shift the body),
+// y on the floor line (bottom row). Lying frames are centred.
+function bodyAnchor(F) {
+  if (F.w > F.h * 1.4) return { ax: F.w / 2, ay: F.h };
+  const xs = [];
+  for (let y = Math.floor(F.h * .4); y < Math.ceil(F.h * .52); y++) for (let x = 0; x < F.w; x++) if (F.px[(y * F.w + x) * 4 + 3]) xs.push(x);
+  xs.sort((a, b) => a - b);
+  return { ax: xs.length ? xs[xs.length >> 1] + .5 : F.w / 2, ay: F.h };
+}
+// square crop around the head. The head column is found at face/neck height (below raised arms or a
+// racket), then the crop starts at the top of the hair in that column.
+function headCrop(F) {
+  const S = Math.round(F.h * .27), xs = [], op = (x, y) => F.px[(y * F.w + x) * 4 + 3];
+  for (let y = Math.floor(F.h * .16); y < Math.ceil(F.h * .27); y++) for (let x = 0; x < F.w; x++) if (op(x, y)) xs.push(x);
+  xs.sort((a, b) => a - b); const cx = xs.length ? xs[xs.length >> 1] : F.w / 2;
+  let top = 0; search: for (let y = 0; y < F.h; y++) for (let x = Math.round(cx - S / 5); x <= Math.round(cx + S / 5); x++) if (x >= 0 && x < F.w && op(x, y)) { top = y; break search; }
+  return { x: Math.round(cx - S / 2), y: top - 1, w: S, h: S };
+}
+function crop(F, r) {
+  const px = new Uint8ClampedArray(r.w * r.h * 4);
+  for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) { const sx = x + r.x, sy = y + r.y; if (sx < 0 || sy < 0 || sx >= F.w || sy >= F.h) continue; for (let k = 0; k < 4; k++) px[(y * r.w + x) * 4 + k] = F.px[(sy * F.w + sx) * 4 + k]; }
+  return { w: r.w, h: r.h, px };
+}
+
+// ---------- 8. atlas ----------
+function pack(items) { // shelf packing, 1px gap
+  const W = 512; let x = 0, y = 0, rowH = 0;
+  for (const it of items.sort((a, b) => b.F.h - a.F.h)) { if (x + it.F.w > W) { x = 0; y += rowH + 1; rowH = 0; } it.x = x; it.y = y; x += it.F.w + 1; rowH = Math.max(rowH, it.F.h); }
+  return { w: W, h: y + rowH };
+}
+function atlasCanvas(items, size, recolor) {
+  const c = document.createElement('canvas'); c.width = size.w; c.height = size.h; const g = c.getContext('2d');
+  for (const it of items) {
+    const id = g.createImageData(it.F.w, it.F.h); id.data.set(it.F.px);
+    if (recolor) for (let i = 0; i < it.F.w * it.F.h; i++) if (id.data[i * 4 + 3]) { const n = recolor([id.data[i * 4], id.data[i * 4 + 1], id.data[i * 4 + 2]]); id.data[i * 4] = n[0]; id.data[i * 4 + 1] = n[1]; id.data[i * 4 + 2] = n[2]; }
+    g.putImageData(id, it.x, it.y);
+  }
+  return c;
+}
+function frameCanvas(F, z = 1) { const c = document.createElement('canvas'); c.width = F.w; c.height = F.h; const id = c.getContext('2d').createImageData(F.w, F.h); id.data.set(F.px); c.getContext('2d').putImageData(id, 0, 0); if (z === 1) return c; const d = document.createElement('canvas'); d.width = F.w * z; d.height = F.h * z; const g = d.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, d.width, d.height); return d; }
+
+// ---------- main ----------
+async function build(id) {
+  const cfg = SPRITE_CONFIG[id]; if (!cfg) throw new Error('no config for ' + id);
+  const frames = {}, flips = new Set(cfg.flip || []);
+  for (const sh of cfg.sheets) {
+    const im = await loadImage('../' + sh.src), P = pixelsOf(im, sh.area), bg = bgColors(P), m = fgMask(P, bg, sh.tol || 24);
+    const comps = components(P, m), figs = figures(P, comps), tol = sh.tol || 24;
+    log.push(`${sh.src}: ${P.w}x${P.h}, bg ${bg.map(c => c.map(Math.round).join(',')).join(' | ')}, ${figs.length} figures, ${sh.poses.length} names`);
+    if (DEBUG) debugSheet(im, figs, sh.poses, sh.area);
+    const prof = figs.map(b => ({ x: edgeProfile(P, b, 'x'), y: edgeProfile(P, b, 'y') }));
+    // crisp pixel grid -> use it; smooth "pixel-style" art (weak fit) -> size the grid so the
+    // fight stance is `height` art pixels tall (same size for every character)
+    const det = sheetGrid(prof.flatMap(q => [q.x, q.y])), si = sh.poses.indexOf('stance');
+    let p = det.p, how = 'detected';
+    if (sh.grid) { p = sh.grid; how = 'config'; }
+    else if (det.score < 1.2 && si >= 0 && figs[si]) { p = figs[si].h / (cfg.height || 88); how = 'stance height'; }
+    log.push(`  art pixel = ${p.toFixed(2)} image px (${how}; grid fit ${det.score.toFixed(2)})`);
+    figs.forEach((b, i) => {
+      const name = sh.poses[i]; if (!name || name === 'skip') return;
+      const fx = phaseFit(prof[i].x, p), fy = phaseFit(prof[i].y, p);
+      let F = despeckle(sampleFigure(P, m, b, { p, phx: fx.ph, phy: fy.ph }, comps.lab, bg, tol));
+      for (const [x, y, w, h] of (cfg.erase && cfg.erase[name]) || []) for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) if (xx >= 0 && yy >= 0 && xx < F.w && yy < F.h) F.px[(yy * F.w + xx) * 4 + 3] = 0;
+      if (cfg.erase && cfg.erase[name]) F = trim(F);
+      if (flips.has(name)) F = flipH(F);
+      frames[name] = F;
+      log.push(`  ${name}: ${F.w}x${F.h} (fit x ${fx.score.toFixed(2)} / y ${fy.score.toFixed(2)})`);
+    });
+  }
+  // palette
+  const all = []; for (const F of Object.values(frames)) for (let i = 0; i < F.w * F.h; i++) if (F.px[i * 4 + 3]) all.push([F.px[i * 4], F.px[i * 4 + 1], F.px[i * 4 + 2]]);
+  const pal = medianCut(all, cfg.colors || 40); for (const F of Object.values(frames)) applyPalette(F, pal);
+  // atlas items: frames + portraits
+  const items = [], meta = { frames: {}, portraits: {} };
+  for (const [name, F] of Object.entries(frames)) { const a = bodyAnchor(F); a.ax += (cfg.dx && cfg.dx[name]) || 0; items.push({ kind: 'f', name, F, a }); }
+  for (const [expr, src] of Object.entries(cfg.portraits || {})) { const F = frames[src]; if (!F) continue; const r = (cfg.faceRect && cfg.faceRect[src]) || headCrop(F); items.push({ kind: 'p', name: expr, F: crop(F, r) }); }
+  const size = pack(items);
+  for (const it of items) {
+    if (it.kind === 'f') meta.frames[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h, ax: +it.a.ax.toFixed(1), ay: it.a.ay };
+    else meta.portraits[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h };
+  }
+  const st = frames.stance || Object.values(frames)[0];
+  meta.height = st.h; meta.size = size; meta.body = cfg.body !== false;
+  const main = atlasCanvas(items, size), alt = atlasCanvas(items, size, altColor);
+  if (DEBUG) debugFrames(items, alt);
+  return { id, meta, png: main.toDataURL('image/png'), altPng: alt.toDataURL('image/png'), log };
+}
+
+// ---------- debug views ----------
+function debugSheet(im, figs, names, area) {
+  const [ax, ay, aw, ah] = area || [0, 0, im.naturalWidth, im.naturalHeight], c = document.createElement('canvas'); c.width = aw; c.height = ah; const g = c.getContext('2d'); g.drawImage(im, -ax, -ay);
+  g.lineWidth = 2; g.font = 'bold 16px monospace';
+  figs.forEach((b, i) => { g.strokeStyle = '#ff00ff'; g.strokeRect(b.x, b.y, b.w, b.h); g.fillStyle = '#000'; g.fillRect(b.x, b.y - 18, 150, 18); g.fillStyle = '#0f0'; g.fillText(i + ': ' + (names[i] || '?'), b.x + 2, b.y - 4); });
+  DBG.appendChild(c);
+}
+function debugFrames(items, alt) {
+  const z = 4, wrap = document.createElement('div'); wrap.style = 'display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:#8a9ab0;padding:8px';
+  for (const it of items) { const c = frameCanvas(it.F, z), box = document.createElement('div'); box.style = 'text-align:center;color:#000'; box.appendChild(c); box.appendChild(document.createElement('br')); box.appendChild(document.createTextNode(it.name + ' ' + it.F.w + 'x' + it.F.h)); wrap.appendChild(box); }
+  DBG.appendChild(wrap);
+  const a = document.createElement('img'); a.src = alt.toDataURL(); a.style = 'image-rendering:pixelated;width:' + alt.width * 2 + 'px;background:#8a9ab0;margin-top:8px'; DBG.appendChild(a);
+}
+
+build(CHAR).then(r => { OUT.textContent = DEBUG ? r.log.join('\n') : JSON.stringify(r); document.title = 'DONE'; })
+  .catch(e => { OUT.textContent = JSON.stringify({ error: String(e.stack || e), log }); document.title = 'ERROR'; });
+</script>
+</body></html>

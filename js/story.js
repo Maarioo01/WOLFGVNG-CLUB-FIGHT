@@ -220,7 +220,11 @@ function drawItemGet(g, t, name, hint) {
 //  BOOT & TITLE
 // ============================================================
 class BootScene {
-  init() { this.t = 0; this.ready = false; const done = () => { _tc.clear(); this.ready = true; }; try { Promise.race([document.fonts.load("8px 'Press Start 2P'"), new Promise(r => setTimeout(r, 2500))]).then(done, done); } catch (e) { done(); } }
+  init() {
+    this.t = 0; this.ready = false; const done = () => { _tc.clear(); this.ready = true; };
+    let fonts; try { fonts = Promise.race([document.fonts.load("8px 'Press Start 2P'"), new Promise(r => setTimeout(r, 2500))]); } catch (e) { fonts = Promise.resolve(); }
+    Promise.all([fonts, loadSprites()]).then(done, done); // web font + fighter sprites
+  }
   update() { this.t++; if (this.ready && this.t > 10) go(new TitleScene()); }
   draw(g) { g.fillStyle = '#07060b'; g.fillRect(0, 0, W, H); g.fillStyle = '#ffd84a'; for (let i = 0; i < 3; i++) if ((this.t >> 3) % 3 >= i) g.fillRect(W / 2 - 10 + i * 8, H / 2, 4, 4); }
 }
@@ -287,7 +291,7 @@ class ControlsScene {
     // keyboard: both players share it
     const cA = 20, c1 = 214, c2 = 316, y0 = 34;
     text(g, 'TECLADO', cA, y0, { color: '#9fe8ff' }); text(g, 'J1', c1, y0, { align: 'center', color: '#8fe0ff' }); text(g, 'J2', c2, y0, { align: 'center', color: '#ff8a8a' });
-    const rows = [['MOVERSE', 'W A S D', '← ↑ ↓ →'], ['PUÑETAZO', 'F', 'K · NUM 1'], ['PATADA', 'G', 'L · NUM 2'], ['ESPECIAL', 'H', 'Ñ · NUM 3'], ['SUPER', 'T', 'O · NUM 0']];
+    const rows = [['MOVERSE', 'W A S D', '← ↑ ↓ →'], ['PUÑETAZO', 'F', 'K · NUM 1'], ['PATADA', 'G', 'L · NUM 2'], ['ESPECIAL', 'H', 'Ñ · NUM 3']/* , ['SUPER', 'T', 'O · NUM 0'] [SUPER disabled for now] */];
     rows.forEach(([a, k1, k2], i) => {
       const y = y0 + 14 + i * 12;
       text(g, a, cA, y, { color: '#e8e0ff' }); text(g, k1, c1, y, { align: 'center', color: '#ffd84a' }); text(g, k2, c2, y, { align: 'center', color: '#ffd84a' });
@@ -298,7 +302,7 @@ class ControlsScene {
     // gamepads
     text(g, 'MANDOS  XBOX / PS5', cA, 136, { color: '#9fe8ff' });
     tip('MANDO 1: J1   ·   MANDO 2: J2   (PULSA UN BOTON PARA ACTIVARLO)', 148, '#8a80b0');
-    const pad = [['CRUCETA / STICK', 'MOVERSE'], ['X  /  CUADRADO', 'PUÑETAZO'], ['A  /  EQUIS', 'PATADA'], ['Y  /  TRIANGULO  ·  LB / L1', 'ESPECIAL'], ['RB / R1  ·  RT / R2', 'SUPER'], ['MENU / OPTIONS', 'PAUSA  ·  CONFIRMAR'], ['B / CIRCULO', 'VOLVER (MENUS)']];
+    const pad = [['CRUCETA / STICK', 'MOVERSE'], ['X  /  CUADRADO', 'PUÑETAZO'], ['A  /  EQUIS', 'PATADA'], ['Y  /  TRIANGULO  ·  LB / L1', 'ESPECIAL'], /* ['RB / R1  ·  RT / R2', 'SUPER'], [SUPER disabled for now] */ ['MENU / OPTIONS', 'PAUSA  ·  CONFIRMAR'], ['B / CIRCULO', 'VOLVER (MENUS)']];
     pad.forEach(([k, v], i) => { const y = 157 + i * 8; tiny(g, k, 196 - tinyW(k), y, '#ffd84a'); tiny(g, v, 206, y, '#e8e0ff'); });
     tip('ENTER: CONFIRMAR   ESC: PAUSA / VOLVER   M: SONIDO', 214, '#8a80b0');
   }

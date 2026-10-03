@@ -19,7 +19,7 @@ Abre http://localhost:8765 (también funciona abriendo `index.html` directamente
 | Puñetazo | F | K · Num 1 |
 | Patada (↓ + patada = barrido) | G | L · Num 2 |
 | Especial (o ↓↘→ + puño) | H | Ñ (`;` en teclado US) · Num 3 |
-| Súper (barra azul llena) | T | O · Num 0 |
+<!-- Súper desactivado por ahora: | Súper (barra azul llena) | T | O · Num 0 | -->
 
 En modo **vs CPU** el jugador 1 puede usar cualquiera de los dos lados del teclado (y cualquier mando).
 
@@ -40,34 +40,59 @@ El primer mando conectado es el J1 y el segundo el J2 (pulsa un botón para que 
 | X / □ | Puñetazo |
 | A / ✕ | Patada · confirmar en menús |
 | Y / △ · LB / L1 | Especial |
-| RB / R1 · RT / R2 | Súper |
+<!-- Súper desactivado por ahora: | RB / R1 · RT / R2 | Súper | -->
 | B / ○ | Volver (menús) |
 | Menu / Options | Pausa · confirmar |
 | View / Create | Pausa |
 
 ## Personajes
 
-Diseños de referencia en `images/`. Los personajes se dibujan por código (`CH` en `js/art.js`); sus especiales y súpers están en `SPECIALS` en `js/fight.js`.
+Diseños de referencia en `images/`. Los personajes se dibujan por código (`CH` en `js/art.js`); sus especiales están en `SPECIALS` en `js/fight.js` (los súpers están comentados por ahora).
 
-| Personaje | Especial | Súper |
-|---|---|---|
-| Mario | ¡Directo! (puñetazo con carrerilla) | ¡KO Técnico! |
-| Peño | ¡Golazo! (balón que bota) | ¡Hat-trick! |
-| Alba | ¡Mortal! (patada voladora) | ¡Sin piedad! |
-| Álvaro | ¡Gorrazo! (lanza la gorra) | ¡A lo loco! |
-| Belli | ¡Embestida! (carga que derriba) | ¡Modo bestia! |
-| Bene | ¡Saque! (pelota de tenis rápida) | ¡Match point! |
-| Carlottis | ¡Chanclazo! (lanza la sandalia) | ¡Trenzazo! |
-| Marcos | ¡Agarrón! (embestida con agarre) | ¡A lo grande! |
-| Oso | ¡Terremoto! (pisotón con onda) | ¡Abrazo de oso! |
+| Personaje | Especial |
+|---|---|
+| Mario | ¡Directo! (puñetazo con carrerilla) |
+| Peño | ¡Golazo! (balón que bota) |
+| Alba | ¡Mortal! (patada voladora) |
+| Álvaro | ¡Gorrazo! (lanza la gorra) |
+| Belli | ¡Embestida! (carga que derriba) |
+| Bene | ¡Saque! (pelota de tenis rápida) |
+| Carlottis | ¡Chanclazo! (lanza la sandalia) |
+| Marcos | ¡Agarrón! (embestida con agarre) |
+| Oso | ¡Terremoto! (pisotón con onda) |
 
 **Dificultad de la CPU:** Fácil / Medio / Difícil, en el menú principal y en el menú de pausa.
+
+## Sprites de los personajes
+
+Los luchadores se dibujan con los fotogramas de los diseños (`images/`). Una herramienta los recorta, limpia el fondo, los ajusta a la rejilla de píxeles y genera `assets/fighters/`:
+
+```
+python3 tools/build_sprites.py          # todos los personajes
+python3 tools/build_sprites.py alba     # solo uno
+```
+
+Necesita Google Chrome instalado. Qué dibujo es qué pose se define en `tools/sprites.config.js`. Para ver lo que detecta: `python3 serve.py` y abrir `http://localhost:8765/tools/sprite-cutter.html?char=alba&debug=1`.
+
+**Añadir poses nuevas.** Una imagen PNG por pose en `images/sprites/<personaje>/<pose>.png` (p. ej. `images/sprites/alba/crouch.png`):
+
+- un solo personaje, cuerpo entero, mirando a la **derecha**
+- fondo de un solo color (magenta `#FF00FF`), sin cuadros, sombras ni texto
+- mismo tamaño y ropa que el resto de sus dibujos
+
+Luego añadir la imagen a `sheets` en `tools/sprites.config.js` y volver a ejecutar el comando.
+
+Poses que entiende el juego (si falta alguna usa la más parecida): ver la lista completa y el prompt para generarlas en [`docs/pose-prompts.md`](docs/pose-prompts.md).
+
+Mario y Peño todavía usan el cuerpo dibujado por código (sus hojas no tienen patada, bloqueo, golpe, K.O. ni victoria); sus caras del HUD ya salen del diseño.
 
 ## Estructura
 - `js/core.js` — canvas, utilidades, texto pixel, input (teclado por jugador / mandos / táctil), efectos
 - `js/audio.js` — sintetizador chiptune (pulso/triángulo/ruido), SFX y secuenciador de música
 - `js/art.js` — esqueleto + poses con keyframes, y la definición de cada personaje (`CH`)
-- `js/art_hd.js` — dibujo detallado de los luchadores: cuerpo, ropa, cabeza grande con cara, pelo, barba y gafas, y retratos del HUD / selección
+- `js/art_hd.js` — luchadores dibujados por código (para los que aún no tienen sprites)
+- `js/sprites.js` — luchadores con los sprites de los diseños: carga, animaciones y caras del HUD
+- `tools/` — herramienta que convierte los diseños en sprites (`build_sprites.py`, `sprite-cutter.html`, `sprites.config.js`)
 - `js/world.js` — escenarios procedurales con parallax, suelo en perspectiva, público, palomas, lluvia
 - `js/fight.js` — luchadores, frame data, IA, proyectiles, HUD
 - `js/story.js` — título, controles, datos de escenarios (el modo historia está comentado)

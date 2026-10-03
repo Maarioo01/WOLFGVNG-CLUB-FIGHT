@@ -22,18 +22,18 @@ const SPECIALS = {
   capo: { special: { anim: 'pound', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' }, super: { name: '¡PEAJE!', dmg: 3, fin: 12 } },
 };
 */
-// special move + super per fighter. pop = text shown when the special comes out
+// special move per fighter (supers are commented out for now). pop = text shown when the special comes out
 const SUP = (name) => ({ name, dmg: 3, fin: 12 });
 const SPECIALS = {
-  mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 }, super: SUP('¡KO TÉCNICO!') },
-  peno: { special: { anim: 'kick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' }, super: SUP('¡HAT-TRICK!') },
-  alba: { special: { anim: 'jkick', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 }, super: SUP('¡SIN PIEDAD!') },
-  alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' }, super: SUP('¡A LO LOCO!') },
-  belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 }, super: SUP('¡MODO BESTIA!') },
-  bene: { special: { anim: 'throw', pop: '¡SAQUE!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'tennis' }, cd: 50, snd: 'throw' }, super: SUP('¡MATCH POINT!') },
-  carlottis: { special: { anim: 'throw', pop: '¡CHANCLAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'sandal' }, cd: 45, snd: 'throw' }, super: SUP('¡TRENZAZO!') },
-  marcos: { special: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 }, super: SUP('¡A LO GRANDE!') },
-  oso: { special: { anim: 'pound', pop: '¡TERREMOTO!', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' }, super: SUP('¡ABRAZO DE OSO!') },
+  mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } /* , super: SUP('¡KO TÉCNICO!') [SUPER disabled for now] */ },
+  peno: { special: { anim: 'kick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' } /* , super: SUP('¡HAT-TRICK!') [SUPER disabled for now] */ },
+  alba: { special: { anim: 'flip', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 } /* , super: SUP('¡SIN PIEDAD!') [SUPER disabled for now] */ },
+  alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' } /* , super: SUP('¡A LO LOCO!') [SUPER disabled for now] */ },
+  belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 } /* , super: SUP('¡MODO BESTIA!') [SUPER disabled for now] */ },
+  bene: { special: { anim: 'throw', pop: '¡SAQUE!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'tennis' }, cd: 50, snd: 'throw' } /* , super: SUP('¡MATCH POINT!') [SUPER disabled for now] */ },
+  carlottis: { special: { anim: 'throw', pop: '¡CHANCLAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'sandal' }, cd: 45, snd: 'throw' } /* , super: SUP('¡TRENZAZO!') [SUPER disabled for now] */ },
+  marcos: { special: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } /* , super: SUP('¡A LO GRANDE!') [SUPER disabled for now] */ },
+  oso: { special: { anim: 'pound', pop: '¡TERREMOTO!', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' } /* , super: SUP('¡ABRAZO DE OSO!') [SUPER disabled for now] */ },
 };
 const JUMP_V = -6.3, GRAV = 0.3;
 
@@ -45,7 +45,9 @@ class Fighter {
     this.flash = 0; this.inv = 0; this.combo = 0; this.comboShow = 0; this.comboN = 0; this.projCD = 0; this.bounced = false; this.blinkT = rndi(100, 240);
     this.moves = Object.assign({}, MOVES, SPECIALS[this.kind] || {});
     this.spd = 1.35 * (def.speed || 1); this.dmgMul = 1; this.opp = null; this.ctrl = null; this.hitDone = false; this.hitConfirmed = false; this.stun = 0;
-    this.s = def.b.s * CHAR_SIZE;
+    // body size for hurtboxes / hitboxes: from the sprite's standing height when drawn from the designs
+    const set = typeof spriteSet === 'function' && spriteSet(def);
+    this.s = set ? set.meta.height * ART_PX / 2 / 63 : def.b.s * CHAR_SIZE;
   }
   get grounded() { return this.y >= 0 && !['jump', 'knock', 'ko'].includes(this.state) && !(this.move && this.move.air); }
   setState(s) { if (this.state !== s) { this.state = s; this.st = 0; } }
@@ -575,13 +577,15 @@ class Fight {
         const xx = side ? x0 + BW - 1 - i : x0 + i;
         g.fillStyle = col; g.fillRect(xx, BY, 1, BH); g.fillStyle = lt(col, .35); g.fillRect(xx, BY + 1, 1, 1); g.fillStyle = dk(col, .75); g.fillRect(xx, BY + BH - 2, 1, 2);
       }
-      // super meter
-      const MW = 100, MY = 21, mx0 = side ? W - XL - MW : XL, mw = Math.round(MW * f.meter / 100);
-      g.fillStyle = OUTL; g.fillRect(mx0 - 1, MY - 1, MW + 2, 6); g.fillStyle = '#10102a'; g.fillRect(mx0, MY, MW, 4);
-      const full = f.meter >= 100, mc = full ? (t % 8 < 4 ? '#8ff0ff' : '#ffffff') : '#2a6aff';
-      g.fillStyle = mc; if (!side) g.fillRect(mx0, MY, mw, 4); else g.fillRect(mx0 + MW - mw, MY, mw, 4);
-      g.fillStyle = lt(mc, .4); if (!side) g.fillRect(mx0, MY, mw, 1); else g.fillRect(mx0 + MW - mw, MY, mw, 1);
-      if (full && f.moves.super) text(g, 'SUPER', side ? mx0 - 4 : mx0 + MW + 4, MY - 2, { color: t % 8 < 4 ? '#8ff0ff' : '#fff', outline: OUTL, align: side ? 'right' : 'left' });
+      // super meter — [SUPER disabled for now] only drawn when the fighter has a super
+      if (f.moves.super) {
+        const MW = 100, MY = 21, mx0 = side ? W - XL - MW : XL, mw = Math.round(MW * f.meter / 100);
+        g.fillStyle = OUTL; g.fillRect(mx0 - 1, MY - 1, MW + 2, 6); g.fillStyle = '#10102a'; g.fillRect(mx0, MY, MW, 4);
+        const full = f.meter >= 100, mc = full ? (t % 8 < 4 ? '#8ff0ff' : '#ffffff') : '#2a6aff';
+        g.fillStyle = mc; if (!side) g.fillRect(mx0, MY, mw, 4); else g.fillRect(mx0 + MW - mw, MY, mw, 4);
+        g.fillStyle = lt(mc, .4); if (!side) g.fillRect(mx0, MY, mw, 1); else g.fillRect(mx0 + MW - mw, MY, mw, 1);
+        if (full) text(g, 'SUPER', side ? mx0 - 4 : mx0 + MW + 4, MY - 2, { color: t % 8 < 4 ? '#8ff0ff' : '#fff', outline: OUTL, align: side ? 'right' : 'left' });
+      }
       // portrait
       const px = side ? W - 4 - PB : 4, py = 4;
       g.fillStyle = OUTL; g.fillRect(px - 2, py - 2, PB + 4, PB + 4); g.fillStyle = '#e8dcc0'; g.fillRect(px - 1, py - 1, PB + 2, PB + 2);
