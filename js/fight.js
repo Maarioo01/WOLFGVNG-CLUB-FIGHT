@@ -26,7 +26,7 @@ const SPECIALS = {
 const SUP = (name) => ({ name, dmg: 3, fin: 12 });
 const SPECIALS = {
   mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } /* , super: SUP('¡KO TÉCNICO!') [SUPER disabled for now] */ },
-  peno: { special: { anim: 'kick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' } /* , super: SUP('¡HAT-TRICK!') [SUPER disabled for now] */ },
+  peno: { special: { anim: 'ballkick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' } /* , super: SUP('¡HAT-TRICK!') [SUPER disabled for now] */ },
   alba: { special: { anim: 'flip', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 } /* , super: SUP('¡SIN PIEDAD!') [SUPER disabled for now] */ },
   alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' } /* , super: SUP('¡A LO LOCO!') [SUPER disabled for now] */ },
   belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 } /* , super: SUP('¡MODO BESTIA!') [SUPER disabled for now] */ },

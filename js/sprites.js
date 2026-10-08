@@ -19,7 +19,7 @@ const SPRITE_FALLBACK = {
   kick_1: 'stance', kick_2: 'kick', kick: 'stance', block: 'stance', hit: 'stance',
   crouch: 'stance', crouch_block: 'crouch', crouch_punch: 'punch_2', crouch_hit: 'hit', sweep_1: 'crouch', sweep_2: 'kick_2',
   jump_1: 'crouch', jump_2: 'stance', jump_3: 'jump_2', jump_kick: 'kick_2', jump_punch: 'punch_2',
-  knockdown_1: 'knockdown', knockdown_2: 'knockdown_1', knockdown: 'hit', ko: 'hit', getup_1: 'crouch', getup_2: 'getup_1',
+  knockdown_1: 'knockdown', knockdown_2: 'ko', knockdown: 'hit', ko: 'hit', getup_1: 'crouch', getup_2: 'getup_1',
   victory_1: 'victory', victory_2: 'victory_1', victory: 'stance',
   special_1: 'stance', special_2: 'special', special_3: 'special_2', special: 'punch_2',
   super_1: 'special_2', super_2: 'punch_2', super_3: 'special_2', // [SUPER disabled for now]
@@ -40,6 +40,7 @@ const SPRITE_ANIM = {
   jkick: ['jump_2', 'jump_kick', 'jump_kick'], jpunch: ['jump_2', 'jump_punch', 'jump_punch'],
   flip: ['special_1', 'special_2', 'special_3'],
   throw: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
+  ballkick: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   blow: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   snatch: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   dpunch: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
@@ -48,7 +49,7 @@ const SPRITE_ANIM = {
   dash: ['super_1', 'super_1'], rush: ['super_2', 'punch_2'], upper: ['crouch', 'super_3', 'super_3', 'idle_1'], // [SUPER disabled for now]
   hit: ['hit', 'hit', 'idle_1', 'idle_1'], hitC: ['crouch_hit', 'crouch', 'crouch'],
   block: ['block'], blockC: ['crouch_block'],
-  knock: ['knockdown_1', 'knockdown_2'], lie: ['ko'], getup: ['ko', 'getup_1', 'getup_2', 'idle_1'],
+  knock: ['knockdown_1', 'knockdown_2'], lie: ['knockdown_2'], getup: ['knockdown_2', 'getup_1', 'getup_2', 'idle_1'], // knockdown_2 = lying (old sheets: ko)
   win: { loop: ['victory_1', 'victory_2+'], d: 12 }, laugh: { loop: ['victory_1', 'victory_2+'], d: 12 },
 };
 

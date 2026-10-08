@@ -19,7 +19,7 @@ const log = [];
 // ---------- image helpers ----------
 const loadImage = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('cannot load ' + src)); im.src = src; });
 // area: [x, y, w, h] of the sheet inside a bigger image (e.g. a phone screenshot)
-function pixelsOf(im, area) { const [ax, ay, aw, ah] = area || [0, 0, im.naturalWidth, im.naturalHeight], c = document.createElement('canvas'); c.width = aw; c.height = ah; const g = c.getContext('2d'); g.drawImage(im, -ax, -ay); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; }
+function pixelsOf(im, area) { const [ax, ay, aw, ah] = area || [0, 0, im.naturalWidth, im.naturalHeight], c = document.createElement('canvas'); c.width = aw; c.height = ah; const g = c.getContext('2d'); g.fillStyle = '#ff00ff'; g.fillRect(0, 0, aw, ah); /* transparent PNGs -> magenta background */ g.drawImage(im, -ax, -ay); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; }
 const dist2 = (r, g, b, c) => (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2;
 
 // ---------- 1. background colours (from the sheet borders; handles flat and checker backgrounds) ----------
@@ -128,6 +128,8 @@ function sheetGrid(profiles) {
 // ---------- 4. sample one colour per art pixel ----------
 function sampleFigure(P, m, box, g, lab, bg, tol) {
   const own = new Set(box.ids), strong = (tol * 1.6) ** 2;
+  // magenta background: drop magenta-ish fringe pixels (the characters never use magenta)
+  const magBg = bg.some(c => c[0] > 150 && c[2] > 150 && c[1] < 90), magenta = (r, g, b) => magBg && r > 110 && b > 110 && g < Math.min(r, b) * .62;
   const cols = Math.ceil(box.w / g.p) + 2, rows = Math.ceil(box.h / g.p) + 2, px = new Uint8ClampedArray(cols * rows * 4);
   const med = a => { a.sort((x, y) => x - y); return a[a.length >> 1]; };
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
@@ -139,6 +141,7 @@ function sampleFigure(P, m, box, g, lab, bg, tol) {
       if (x < box.x || y < box.y || x >= box.x + box.w || y >= box.y + box.h) continue;
       const i = y * P.w + x; tot++; if (!m[i] || !own.has(lab[i])) continue;
       const r = P.d[i * 4], gg = P.d[i * 4 + 1], b = P.d[i * 4 + 2]; if (edge && bg.some(c => dist2(r, gg, b, c) < strong)) continue; // JPG halo at the silhouette
+      if (magenta(r, gg, b)) continue;
       fg++; R.push(r); G.push(gg); B.push(b);
     }
     const o = (r * cols + c) * 4;
@@ -251,17 +254,25 @@ async function build(id) {
     log.push(`${sh.src}: ${P.w}x${P.h}, bg ${bg.map(c => c.map(Math.round).join(',')).join(' | ')}, ${figs.length} figures, ${sh.poses.length} names`);
     if (DEBUG) debugSheet(im, figs, sh.poses, sh.area);
     const prof = figs.map(b => ({ x: edgeProfile(P, b, 'x'), y: edgeProfile(P, b, 'y') }));
-    // crisp pixel grid -> use it; smooth "pixel-style" art (weak fit) -> size the grid so the
-    // fight stance is `height` art pixels tall (same size for every character)
-    const det = sheetGrid(prof.flatMap(q => [q.x, q.y])), si = sh.poses.indexOf('stance');
+    // Every sheet is scaled so its fight stance (stance or idle_1) is `height` art pixels tall (88), or as
+    // tall as the stance already cut from an earlier sheet: all frames of all characters share one size.
+    // (keepGrid: true keeps a crisp detected grid instead.)
+    const det = sheetGrid(prof.flatMap(q => [q.x, q.y]));
+    let si = sh.poses.indexOf('stance'); if (si < 0) si = sh.poses.indexOf('idle_1');
+    const refH = frames.stance ? frames.stance.h : (cfg.height || 88);
     let p = det.p, how = 'detected';
     if (sh.grid) { p = sh.grid; how = 'config'; }
-    else if (det.score < 1.2 && si >= 0 && figs[si]) { p = figs[si].h / (cfg.height || 88); how = 'stance height'; }
+    else if (sh.match && frames[sh.match[1]] && figs[sh.poses.indexOf(sh.match[0])]) { // sheet drawn at another size:
+      p = figs[sh.poses.indexOf(sh.match[0])].h / frames[sh.match[1]].h; how = `${sh.match[0]} = ${sh.match[1]} height`; // match a pose already cut
+    }
+    else if (si >= 0 && figs[si] && (det.score < 1.2 || frames.stance || frames.idle_1 || !cfg.keepGrid)) { p = figs[si].h / refH; how = 'stance height ' + refH; }
     log.push(`  art pixel = ${p.toFixed(2)} image px (${how}; grid fit ${det.score.toFixed(2)})`);
     figs.forEach((b, i) => {
       const name = sh.poses[i]; if (!name || name === 'skip') return;
       const fx = phaseFit(prof[i].x, p), fy = phaseFit(prof[i].y, p);
-      let F = despeckle(sampleFigure(P, m, b, { p, phx: fx.ph, phy: fy.ph }, comps.lab, bg, tol));
+      const pp = p / ((cfg.scale && cfg.scale[name]) || 1); // per-pose size fix (a row drawn smaller by the AI)
+      const fx2 = pp === p ? fx : phaseFit(prof[i].x, pp), fy2 = pp === p ? fy : phaseFit(prof[i].y, pp);
+      let F = despeckle(sampleFigure(P, m, b, { p: pp, phx: fx2.ph, phy: fy2.ph }, comps.lab, bg, tol));
       for (const [x, y, w, h] of (cfg.erase && cfg.erase[name]) || []) for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) if (xx >= 0 && yy >= 0 && xx < F.w && yy < F.h) F.px[(yy * F.w + xx) * 4 + 3] = 0;
       if (cfg.erase && cfg.erase[name]) F = trim(F);
       if (flips.has(name)) F = flipH(F);
@@ -269,6 +280,8 @@ async function build(id) {
       log.push(`  ${name}: ${F.w}x${F.h} (fit x ${fx.score.toFixed(2)} / y ${fy.score.toFixed(2)})`);
     });
   }
+  // aliases: one drawing used for two poses (e.g. Alba's flip-kick crouch is also her jump take-off)
+  for (const [to, from] of Object.entries(cfg.alias || {})) if (frames[from] && !frames[to]) frames[to] = frames[from];
   // palette
   const all = []; for (const F of Object.values(frames)) for (let i = 0; i < F.w * F.h; i++) if (F.px[i * 4 + 3]) all.push([F.px[i * 4], F.px[i * 4 + 1], F.px[i * 4 + 2]]);
   const pal = medianCut(all, cfg.colors || 40); for (const F of Object.values(frames)) applyPalette(F, pal);
@@ -281,7 +294,7 @@ async function build(id) {
     if (it.kind === 'f') meta.frames[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h, ax: +it.a.ax.toFixed(1), ay: it.a.ay };
     else meta.portraits[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h };
   }
-  const st = frames.stance || Object.values(frames)[0];
+  const st = frames.stance || frames.idle_1 || Object.values(frames)[0];
   meta.height = st.h; meta.size = size; meta.body = cfg.body !== false;
   const main = atlasCanvas(items, size), alt = atlasCanvas(items, size, altColor);
   if (DEBUG) debugFrames(items, alt);
@@ -302,7 +315,18 @@ function debugFrames(items, alt) {
   const a = document.createElement('img'); a.src = alt.toDataURL(); a.style = 'image-rendering:pixelated;width:' + alt.width * 2 + 'px;background:#8a9ab0;margin-top:8px'; DBG.appendChild(a);
 }
 
-build(CHAR).then(r => { OUT.textContent = DEBUG ? r.log.join('\n') : JSON.stringify(r); document.title = 'DONE'; })
+// inspect mode: ?src=images/...png shows the detected figures of any image, numbered in reading order
+async function inspect(src, tol) {
+  const im = await loadImage('../' + src), P = pixelsOf(im), bg = bgColors(P), m = fgMask(P, bg, tol);
+  const figs = figures(P, components(P, m));
+  const c = document.createElement('canvas'); c.width = P.w; c.height = P.h; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  g.lineWidth = 3; g.font = 'bold 34px monospace';
+  figs.forEach((b, i) => { g.strokeStyle = '#00ff00'; g.strokeRect(b.x, b.y, b.w, b.h); g.fillStyle = '#000'; g.fillRect(b.x, b.y, 56, 38); g.fillStyle = '#ffff00'; g.fillText(i, b.x + 4, b.y + 30); });
+  DBG.appendChild(c);
+  return `${src}: ${figs.length} figures, heights ${figs.map(b => b.h).join(' ')}`;
+}
+if (Q.get('src')) inspect(Q.get('src'), +(Q.get('tol') || 24)).then(t => { OUT.textContent = t; document.title = 'DONE'; }, e => { OUT.textContent = String(e); });
+else build(CHAR).then(r => { OUT.textContent = DEBUG ? r.log.join('\n') : JSON.stringify(r); document.title = 'DONE'; })
   .catch(e => { OUT.textContent = JSON.stringify({ error: String(e.stack || e), log }); document.title = 'ERROR'; });
 </script>
 </body></html>

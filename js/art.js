@@ -358,6 +358,7 @@ const CROSS_C = X(STANCE, { t: 14, ua1: 50, fa1: 120 }), CROSS_A = X(STANCE, { t
 atk('cross', CROSS_C, CROSS_A, 6, 3, 14, STANCE);
 const KICK_C = X(STANCE, { t: -4, th1: -6, sh1: -12, th2: 95, sh2: -20 }), KICK_A = X(STANCE, { t: -16, ua1: 10, fa1: 140, ua2: 30, fa2: 150, th1: -8, sh1: -10, th2: 98, sh2: 94, ft2: 105 });
 atk('kick', KICK_C, KICK_A, 7, 4, 15, STANCE);
+ANIM.ballkick = ANIM.kick; // Peño's football special (own sprite frames)
 const CP_C = X(CR, { ua2: 65, fa2: 120 }), CP_A = X(CR, { ua2: 86, fa2: 88, t: 36, hx: 2 });
 atk('cpunch', CP_C, CP_A, 4, 3, 8, CR);
 const SW_C = X(CR, { t: 40, th2: 80, sh2: 20 }), SW_A = X(CR, { t: 45, th2: 62, sh2: 86, ft2: 100, ua1: 20, fa1: 60, ua2: 34, fa2: 80, hx: -2 });

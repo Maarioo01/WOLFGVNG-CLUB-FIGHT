@@ -7,6 +7,7 @@ These prompts are for the AI image tool that made the original character sheets.
 - **Walking looks static:** the walk frames in the current sheets are casual strolls, and all four show nearly the same stride. **Sheet A** and **Sheet B** add a real walk cycle forward and backward with the guard up, plus a breathing idle.
 - **Missing moves:** crouch, jump, sweep, low and air attacks, the special, knockdown and get-up currently borrow the closest pose (the stance or the punch). **Sheets C** and **D** add them.
 - **Mario and Peño** also need **Sheet E**. Their sheets have no block, hit, K.O. or victory, and their walk frames show trousers instead of shorts.
+- **New characters (Manu, Casado, MadeverXP)** only have photos. They need a **base design sheet** first (see [New characters](#new-characters-manu-casado-madeverxp)), then sheets **A, B, C, D and E**.
 
 **Priority:** A and B first (movement), then D (special and knockdowns), then C (attacks).
 
@@ -25,6 +26,9 @@ These prompts are for the AI image tool that made the original character sheets.
    | Carlottis | `images/Carlottis.jpg` |
    | Marcos | `images/marcos.jpg` |
    | Oso | `images/oso.jpg` |
+   | Manu | `images/manu.png` (make it first, see [New characters](#new-characters-manu-casado-madeverxp)) |
+   | Casado | `images/casado.png` (make it first) |
+   | MadeverXP | `images/madeverxp.png` (make it first) |
 
 2. Paste three things, in this order:
    1. the **general prompt**
@@ -32,7 +36,7 @@ These prompts are for the AI image tool that made the original character sheets.
    3. **one sheet list** (A, B, C, D or E)
 3. Check the result against the **checklist** at the end. Regenerate if something is off.
 4. Save it as PNG, named `images/sprites/<character>/sheet_A.png` (then `sheet_B.png`, and so on).
-   - Folder names: `mario`, `peno`, `alba`, `alvaro`, `belli`, `bene`, `carlottis`, `marcos`, `oso`.
+   - Folder names: `mario`, `peno`, `alba`, `alvaro`, `belli`, `bene`, `carlottis`, `marcos`, `oso`, `manu`, `casado`, `madeverxp`.
    - You don't have to cut the poses out: the game's tool finds each figure in the sheet by itself, reading left to right and top to bottom, as long as the figures don't touch.
    - If you prefer to cut them yourself, save one PNG per pose, named after the pose, e.g. `images/sprites/alba/walk_fwd_3.png`.
 5. Tell me when they're in, and I'll add them to `tools/sprites.config.js` and rebuild.
@@ -154,6 +158,65 @@ SPECIAL MOVE (ground pound), used in sheet D:
 - special_3: standing back up into the fighting stance.
 ```
 
+### Manu
+```
+CHARACTER DETAILS: young man, short dark-brown hair with a short messy fringe, full reddish-brown beard and mustache, thin gold rectangular glasses, friendly smile. Black t-shirt with a small white printed picture on the chest, dark charcoal zip-up bomber jacket worn open (with a hood at the back), brown baggy cargo trousers with side pockets, dark sneakers.
+SPECIAL MOVE (headbutt rush), used in sheet D:
+- special_1: crouched low, head down, ready to charge.
+- special_2: lunging far forward head first, body almost horizontal, arms back.
+- special_3: recovering into the fighting stance.
+```
+
+### Casado
+```
+CHARACTER DETAILS: young man in a Spanish Army dress uniform: olive-green peaked cap with a gold badge and a yellow band, olive-green jacket with gold buttons and chest pockets, white shirt, black tie, silver braided cord (aiguillette) across the right shoulder and chest, black leather belt with a gold buckle, black shoulder strap, olive-green trousers, black polished dress shoes. Short light-brown hair, short trimmed light-brown beard, thin rectangular glasses, big smile. No weapons.
+SPECIAL MOVE (military salute shout), used in sheet D (the game adds the sound wave):
+- special_1: standing straight at attention, hand raised in a military salute.
+- special_2: leaning forward, shouting an order with the mouth wide open, one arm pointing forward.
+- special_3: returning to the fighting stance.
+```
+
+### MadeverXP
+```
+CHARACTER DETAILS: young man with voluminous dark-brown curly hair, thin round-square gold glasses, light stubble. White oversized t-shirt, black crossbody bag with the strap across his chest, black shorts, black flip-flops.
+SPECIAL MOVE (cat throw), used in sheet D (draw the cat ONLY in special_1; the game draws it flying):
+- special_1: holding a small black cat with green eyes in both hands, pulled back over his shoulder.
+- special_2: both arms thrown forward, hands open, the cat already gone (no cat drawn).
+- special_3: returning to the fighting stance.
+```
+
+---
+
+## New characters: Manu, Casado, MadeverXP
+
+They only have photos (`images/manu.jpeg` + `manu2.jpeg`, `casado.jpeg` + `casado2.jpeg`, `madeverXP.jpeg` + `madeverXP2.jpeg`). Make them in two steps:
+
+1. **Base design sheet.** Attach both photos of the person and paste the prompt below, followed by their character block (from [Character blocks](#character-blocks), without the SPECIAL MOVE lines). Save the result as `images/manu.png`, `images/casado.png` or `images/madeverxp.png`. Check the face, glasses, hair and clothes look like them; regenerate until they do.
+2. **Sheets A, B, C, D and E.** Exactly like everyone else: attach the base sheet you just made as the reference, then paste the general prompt + the character block + one sheet list. Save them in `images/sprites/manu/`, `images/sprites/casado/` and `images/sprites/madeverxp/`.
+
+### Base design sheet prompt
+```
+Create a pixel-art character design sheet for a 2D side-view fighting game (like Street Fighter II), based on the person in the attached photos.
+
+CHARACTER
+- Recognisably the same person as in the photos: same face shape, hair, facial hair, glasses, skin tone and body build.
+- Wearing the outfit described below.
+
+STYLE
+- Crisp pixel art: hard square pixels, dark outline around the whole character, 2–3 flat shades per colour, limited palette, the same style as a 16-bit fighting game sprite.
+- No anti-aliasing, blur, gradients, glow, effects or shadows.
+
+LAYOUT
+- Background: one solid flat colour, pure magenta #FF00FF. No checkerboard, gradient, floor or shadow. No magenta on the character.
+- 4 full-body poses in one row, all the same size, with wide empty space between them, never touching:
+  1. standing facing the viewer (front view), relaxed, arms at the sides
+  2. standing in side view facing RIGHT, relaxed
+  3. fighting stance facing RIGHT: knees bent, front foot forward, both fists up by the chin
+  4. victory pose facing the viewer, both arms raised
+- No text, labels, titles or frames.
+- Large output, at least 2048 px wide.
+```
+
 ---
 
 ## Sheet lists (paste one per request)
@@ -216,8 +279,8 @@ The 6 walk frames form a smooth looping walk cycle: the legs must clearly change
 9. special_3: (see SPECIAL MOVE in the character details)
 ```
 
-### Sheet E: Mario and Peño only (6 poses, 3 columns × 2 rows)
-Their current sheets only have the stance and punches, and their walk frames show trousers. This sheet completes their basic set, in **shorts**.
+### Sheet E: Mario, Peño and the new characters (6 poses, 3 columns × 2 rows)
+Completes the basic set: the front view for the HUD face, block, hit, K.O., victory and the stance. Mario and Peño wear their **shorts**.
 ```
 1. face_front: standing facing the viewer (front view), relaxed, arms at the sides.
 2. block: standing, both forearms raised in front of the face (blocking).
@@ -233,7 +296,7 @@ Their current sheets only have the stance and punches, and their walk frames sho
 
 - [ ] The background is pure magenta `#FF00FF`, flat everywhere, with no checkerboard, gradient, floor or shadow.
 - [ ] Every figure faces **right**, the whole body is visible, and no figure touches another.
-- [ ] Same face, hair, outfit, colours and size as the reference. Mario and Peño wear **shorts**.
+- [ ] Same face, hair, outfit, colours and size as the reference. Mario and Peño wear **shorts**. Casado never holds a weapon.
 - [ ] The poses are in the listed order. There's no text anywhere.
 - [ ] The walk frames really change leg positions from one frame to the next.
 

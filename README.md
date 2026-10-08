@@ -84,7 +84,9 @@ Luego añadir la imagen a `sheets` en `tools/sprites.config.js` y volver a ejecu
 
 Poses que entiende el juego (si falta alguna usa la más parecida): ver la lista completa y el prompt para generarlas en [`docs/pose-prompts.md`](docs/pose-prompts.md).
 
-Mario y Peño todavía usan el cuerpo dibujado por código (sus hojas no tienen patada, bloqueo, golpe, K.O. ni victoria); sus caras del HUD ya salen del diseño.
+Mario, Peño, Alba, Álvaro, Belli, Bene y Carlottis tienen ya todas sus poses (hojas A–E en `images/sprites/`). Marcos y Oso todavía usan solo su hoja original (faltan sus hojas A–D).
+
+**Personajes nuevos (Manu, Casado y MadeverXP):** de momento solo hay fotos (`images/manu*.jpeg`, `images/casado*.jpeg`, `images/madeverXP*.jpeg`). Primero hay que crear su hoja de diseño base y luego las hojas A–E; los pasos y los prompts están en [`docs/pose-prompts.md`](docs/pose-prompts.md#new-characters-manu-casado-madeverxp). Cuando estén, se añaden al juego.
 
 ## Estructura
 - `js/core.js` — canvas, utilidades, texto pixel, input (teclado por jugador / mandos / táctil), efectos
