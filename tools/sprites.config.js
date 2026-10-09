@@ -11,12 +11,14 @@
 //    tol:    background colour tolerance (default 24; checkerboard backgrounds need ~70)
 //    grid:   force the art-pixel size of a sheet (auto-detected otherwise)
 //    match:  ['walk_back_1', 'walk_fwd_1'] scale this sheet so its first pose is as tall as an already-cut pose
-//            (for sheets drawn at a different size than the others)
+//            (for sheets drawn at a different size than the others); matchBy: 'head' compares head widths instead
 //    area:   [x, y, w, h] part of the image that holds the drawings (e.g. inside a phone screenshot)
 //    dx:     per-pose horizontal nudge of the anchor, in art pixels (to line frames up)
 //    erase:  { pose: [[x, y, w, h], ...] } art-pixel boxes to clear (e.g. sheet text touching a figure)
 //    portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' } — frames the
 //               HUD / select faces are cut from (head area is found automatically)
+//    props:  true for sheets with objects (sheet F): small objects count as figures, solid white ones aren't text
+//    '_ref': a figure only used to measure the size (with match), not stored
 //    alias:  { pose: 'otherPose' } reuse a drawing for another pose
 //    scale:  { pose: 1.1 } make one pose bigger/smaller (when the AI drew part of a sheet at another size)
 //    body:   false = only use the portraits; the in-game body stays code-drawn (not enough poses yet)
@@ -34,7 +36,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/mario/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3', 'skip'] },
       { src: 'images/sprites/mario/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/mario/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
-      { src: 'images/sprites/mario/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] }],
+      { src: 'images/sprites/mario/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/mario/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'super_3', 'super_4'] }],
     portraits: { normal: 'face_front', happy: 'victory_1' }, // their hit pose has the head thrown back
   },
   peno: {
@@ -43,7 +47,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/peño/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/peño/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/peño/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
-      { src: 'images/sprites/peño/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] }],
+      { src: 'images/sprites/peño/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/peño/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'super_3', 'super_4', 'super_5'] }],
     // his sheet A walk row is drawn ~12% smaller than the idle row
     scale: { walk_fwd_1: 1.12, walk_fwd_2: 1.12, walk_fwd_3: 1.12, walk_fwd_4: 1.12, walk_fwd_5: 1.12, walk_fwd_6: 1.12 },
     portraits: { normal: 'face_front', happy: 'victory_1' }, // their hit pose has the head thrown back
@@ -56,7 +62,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/alba/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6', 'jump_1', 'jump_2', 'skip'] },
       { src: 'images/sprites/alba/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch'] },
       { src: 'images/sprites/alba/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
-      { src: 'images/sprites/alba/sheet_D.png', match: ['victory_2', 'victory'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] }],
+      { src: 'images/sprites/alba/sheet_D.png', match: ['victory_2', 'victory'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/alba/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'super_3', 'super_4'] }],
     flip: ['ko'],
     alias: { jump_3: 'jump_2' }, // her sheet B has no jump; sheet A's extra crouch / tuck frames are the jump
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
@@ -69,7 +77,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/alvaro/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
       { src: 'images/sprites/alvaro/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/alvaro/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
-      { src: 'images/sprites/alvaro/sheet_D.png', match: ['victory_2', 'victory'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] }],
+      { src: 'images/sprites/alvaro/sheet_D.png', match: ['victory_2', 'victory'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/alvaro/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'prop_car'] }],
     flip: ['ko'],
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
   },
@@ -81,7 +91,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/belli/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
       { src: 'images/sprites/belli/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/belli/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
-      { src: 'images/sprites/belli/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] }],
+      { src: 'images/sprites/belli/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/belli/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'prop_virus'] }],
     flip: ['ko'],
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
   },
@@ -93,7 +105,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/bene/seed_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'skip', 'skip', 'skip', 'skip', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
       { src: 'images/sprites/bene/seed_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/bene/seed_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
-      { src: 'images/sprites/bene/seed_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] }],
+      { src: 'images/sprites/bene/seed_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/bene/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'prop_note'] }],
     flip: ['ko'],
     erase: { victory: [[31, 8, 14, 7]] }, // the sheet's "VICTORY" label overlaps the racket
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
@@ -106,7 +120,9 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/carlotis/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6', 'skip', 'skip', 'skip'] },
       { src: 'images/sprites/carlotis/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3', 'skip'] },
       { src: 'images/sprites/carlotis/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
-      { src: 'images/sprites/carlotis/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'skip', 'special_3'] }],
+      { src: 'images/sprites/carlotis/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'skip', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/carlotis/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'prop_syringe'] }],
     flip: ['ko'],
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
   },
@@ -114,7 +130,13 @@ const SPRITE_CONFIG = {
     sheets: [{ src: 'images/marcos.jpg', poses: ['face_front', 'skip',
         'walk_1', 'walk_2', 'walk_3', 'walk_4',
         'stance', 'punch', 'kick', 'block',
-        'victory', 'hit', 'ko'] }],
+        'victory', 'hit', 'ko'] },
+      { src: 'images/sprites/marcos/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'skip', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
+      { src: 'images/sprites/marcos/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
+      { src: 'images/sprites/marcos/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
+      { src: 'images/sprites/marcos/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/marcos/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'special_1', 'special_2', 'special_3', 'super_1', 'prop_yogurt', 'prop_yogurt_2'] }],
     flip: ['ko'],
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
   },
@@ -122,9 +144,53 @@ const SPRITE_CONFIG = {
     sheets: [{ src: 'images/oso.jpg', poses: ['face_front', 'skip',
         'walk_1', 'walk_2', 'walk_3', 'walk_4',
         'stance', 'punch', 'kick', 'block',
-        'victory', 'hit', 'ko'] }],
+        'victory', 'hit', 'ko'] },
+      // his sheet A also repeats the ground-pound frames at the end (they come from sheet D)
+      { src: 'images/sprites/oso/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6', 'skip', 'skip', 'skip'] },
+      { src: 'images/sprites/oso/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
+      { src: 'images/sprites/oso/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
+      { src: 'images/sprites/oso/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/oso/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2'] }],
     flip: ['ko'],
     portraits: { normal: 'face_front', happy: 'victory', hurt: 'hit' },
+  },
+  // New characters: no original sheet. Manu and Casado have no sheet E yet (front face, block, hit, victory),
+  // so their HUD face is cut from the stance, a standing hit shows the crouched flinch and the win shows victory_2.
+  manu: {
+    sheets: [
+      { src: 'images/sprites/manu/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'skip', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
+      { src: 'images/sprites/manu/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
+      { src: 'images/sprites/manu/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
+      // his sheet D stance is drawn more crouched, so the height comparison would blow the sheet up: compare heads
+      { src: 'images/sprites/manu/sheet_D.png', match: ['special_3', 'idle_1'], matchBy: 'head', poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/manu/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'prop_isaac', 'prop_isaac_2'] }],
+    alias: { hit: 'crouch_hit', victory_1: 'victory_2' },
+    portraits: { normal: 'idle_1', happy: 'victory_2' },
+  },
+  casado: {
+    sheets: [
+      { src: 'images/sprites/casado/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
+      { src: 'images/sprites/casado/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
+      { src: 'images/sprites/casado/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
+      { src: 'images/sprites/casado/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/casado/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'prop_tank', 'prop_tank_2', 'prop_missile'] }],
+    alias: { hit: 'crouch_hit', victory_1: 'victory_2' },
+    portraits: { normal: 'idle_1' }, // his victory has the arm over his head, which spoils the face crop
+  },
+  madeverxp: {
+    sheets: [
+      // sheet A also has an extra stance and his cat-throw frames (those come from sheet D)
+      { src: 'images/sprites/madeverXP/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'skip', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6', 'skip', 'skip', 'skip'] },
+      { src: 'images/sprites/madeverXP/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
+      { src: 'images/sprites/madeverXP/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
+      { src: 'images/sprites/madeverXP/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      { src: 'images/sprites/madeverXP/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] },
+      // super move (docs/super-prompts.md); skipped until the file exists
+      { src: 'images/sprites/madeverXP/sheet_F.png', props: true, match: ['_ref', 'idle_1'], matchBy: 'head', poses: ['_ref', 'super_1', 'super_2', 'prop_pokeball', 'prop_charizard', 'prop_charizard_2'] }],
+    portraits: { normal: 'face_front', happy: 'victory_1' }, // his hit pose has the head thrown back
   },
 };
 if (typeof module !== 'undefined') module.exports = SPRITE_CONFIG;

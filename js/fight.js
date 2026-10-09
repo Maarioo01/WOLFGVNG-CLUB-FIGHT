@@ -22,18 +22,22 @@ const SPECIALS = {
   capo: { special: { anim: 'pound', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' }, super: { name: '¡PEAJE!', dmg: 3, fin: 12 } },
 };
 */
-// special move per fighter (supers are commented out for now). pop = text shown when the special comes out
-const SUP = (name) => ({ name, dmg: 3, fin: 12 });
+// special move per fighter (pop = text shown when the special comes out; multi = re-hits every n ticks while active,
+// hitPop = text on each hit). The supers are in supers.js
 const SPECIALS = {
-  mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } /* , super: SUP('¡KO TÉCNICO!') [SUPER disabled for now] */ },
-  peno: { special: { anim: 'ballkick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' } /* , super: SUP('¡HAT-TRICK!') [SUPER disabled for now] */ },
-  alba: { special: { anim: 'flip', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 } /* , super: SUP('¡SIN PIEDAD!') [SUPER disabled for now] */ },
-  alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' } /* , super: SUP('¡A LO LOCO!') [SUPER disabled for now] */ },
-  belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 } /* , super: SUP('¡MODO BESTIA!') [SUPER disabled for now] */ },
-  bene: { special: { anim: 'throw', pop: '¡SAQUE!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'tennis' }, cd: 50, snd: 'throw' } /* , super: SUP('¡MATCH POINT!') [SUPER disabled for now] */ },
-  carlottis: { special: { anim: 'throw', pop: '¡CHANCLAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'sandal' }, cd: 45, snd: 'throw' } /* , super: SUP('¡TRENZAZO!') [SUPER disabled for now] */ },
-  marcos: { special: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } /* , super: SUP('¡A LO GRANDE!') [SUPER disabled for now] */ },
-  oso: { special: { anim: 'pound', pop: '¡TERREMOTO!', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' } /* , super: SUP('¡ABRAZO DE OSO!') [SUPER disabled for now] */ },
+  mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } },
+  peno: { special: { anim: 'ballkick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' } },
+  alba: { special: { anim: 'flip', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 } },
+  alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' } },
+  belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 } },
+  bene: { special: { anim: 'throw', pop: '¡SAQUE!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'tennis' }, cd: 50, snd: 'throw' } },
+  carlottis: { special: { anim: 'throw', pop: '¡CHANCLAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'sandal' }, cd: 45, snd: 'throw' } },
+  // marcos: { special: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } }, // [OLD SPECIAL] grab, replaced by ¡PICO!
+  marcos: { special: { anim: 'pico', pop: '¡PICO!', s: 5, a: 18, r: 14, multi: 6, hitPop: 'PICO', lunge: 1, dmg: 3.5, hs: 15, bs: 8, push: .6, box: [6, -54, 30, 14], lvl: 'mid', snd: 'hitL', stop: 3, cd: 50, meter: 3 } },
+  oso: { special: { anim: 'pound', pop: '¡TERREMOTO!', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' } },
+  manu: { special: { anim: 'charge', pop: '¡CABEZAZO!', s: 8, a: 14, r: 18, dash: 5.6, dmg: 9, hs: 26, bs: 12, push: 3.4, box: [4, -46, 30, 22], lvl: 'mid', snd: 'hitH', stop: 10, cd: 80, meter: 8 } },
+  casado: { special: { anim: 'throw', pop: '¡FIRMES!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'shout' }, cd: 70, snd: 'shout' } },
+  madeverxp: { special: { anim: 'throw', pop: '¡GATAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cat' }, cd: 60, snd: 'throw' } },
 };
 const JUMP_V = -6.3, GRAV = 0.3;
 
@@ -44,6 +48,9 @@ class Fighter {
     this.maxHp = 100; this.hp = 100; this.hpShow = 100; this.meter = 0; this.state = 'idle'; this.st = 0; this.move = null; this.mt = 0;
     this.flash = 0; this.inv = 0; this.combo = 0; this.comboShow = 0; this.comboN = 0; this.projCD = 0; this.bounced = false; this.blinkT = rndi(100, 240);
     this.moves = Object.assign({}, MOVES, SPECIALS[this.kind] || {});
+    const sup = typeof SUPERS !== 'undefined' && SUPERS[this.kind];
+    if (sup) this.moves.super = { name: sup.name };
+    this.superUsed = false; this.ov = null; // ov: drawing taken over by a super cinematic (supers.js)
     this.spd = 1.35 * (def.speed || 1); this.dmgMul = 1; this.opp = null; this.ctrl = null; this.hitDone = false; this.hitConfirmed = false; this.stun = 0;
     // body size for hurtboxes / hitboxes: from the sprite's standing height when drawn from the designs
     const set = typeof spriteSet === 'function' && spriteSet(def);
@@ -79,6 +86,8 @@ class Fighter {
   }
   jump(dir) { this.setState('jump'); this.vy = JUMP_V; this.vx = dir * 2.3 * this.facing; this.y = -1; this.move = null; this.airAtk = false; sfx('jump'); }
   canBlock() { return ['idle', 'walk', 'crouch', 'blockstun'].includes(this.state) && this.y >= 0; }
+  // super: full bar, once per match, only while the round is being fought
+  canSuper(F) { return !!this.moves.super && !this.superUsed && this.meter >= 100 && F.phase === 'fight' && !F.sup && !F.cutin && this.opp.hp > 0; }
   update(F) {
     const c = this.ctrl; this.st++;
     if (this.flash > 0) this.flash--; if (this.inv > 0) this.inv--; if (this.projCD > 0) this.projCD--; if (this.comboShow > 0) this.comboShow--;
@@ -89,7 +98,7 @@ class Fighter {
         this.face();
         if (!act || !c) { this.setState('idle'); this.vx = 0; break; }
         const down = c.down();
-        if (c.press('super') && this.meter >= 100 && this.moves.super) { F.startSuper(this); break; }
+        if (c.press('super') && this.canSuper(F)) { F.startSuper(this); break; }
         if ((c.press('special') || (c.press('punch') && c.qcf && c.qcf())) && this.moves.special && this.projCD <= 0 && (!this.moves.special.spawn || !F.projs.some(p => p.owner === this))) { this.doMove('special', F); break; }
         if (c.press('punch')) { this.doMove(down ? 'cpunch' : 'jab'); sfx('whiff'); break; }
         if (c.press('kick')) { this.doMove(down ? 'sweep' : 'kick'); sfx('whiffH'); break; }
@@ -128,7 +137,7 @@ class Fighter {
         if (this.hp > 0 && this.st > 38) { this.setState('getup'); this.inv = 30; }
         break;
       case 'getup': this.vx = 0; if (this.st >= ANIM.getup.total) { this.setState('idle'); this.inv = 8; } break;
-      case 'super': this.updateSuper(F); break;
+      case 'super': this.vx = 0; break; // moved by the SuperScene script while the fight is frozen
       case 'win': case 'lose': case 'intro': this.vx = 0; break;
     }
     this.x += this.vx;
@@ -152,6 +161,7 @@ class Fighter {
       else this.y = 0;
       if (this.mt === 23) { shake(5, 14); F.dust(this.x + this.facing * 10, 10); }
     }
+    if (m.multi && this.mt >= m.s && this.mt < m.s + m.a && (this.mt - m.s) % m.multi === 0) { this.hitDone = false; sfx('whiff'); }
     if (m.spawn && this.mt === m.spawn.at) F.spawnProj(this, m.spawn.type);
     if (m.snd && this.mt === (m.spawn ? m.spawn.at - 2 : -1)) sfx(m.snd);
     // cancels (on hit/block)
@@ -163,41 +173,9 @@ class Fighter {
         if (c.press('kick') && m.cancel.includes('sweep')) { this.doMove('sweep'); sfx('whiffH'); return; }
       }
       if (c.press('special') && this.moves.special && this.projCD <= 0 && this.moveName !== 'special') { this.doMove('special', F); return; }
-      if (c.press('super') && this.meter >= 100 && this.moves.super) { F.startSuper(this); return; }
+      if (c.press('super') && this.canSuper(F)) { F.startSuper(this); return; }
     }
     if (this.mt >= m.s + m.a + m.r) { this.move = null; this.setState(m.crouch && c && c.down() ? 'crouch' : 'idle'); }
-  }
-  // ---- super: dash -> rush of punches -> uppercut
-  updateSuper(F) {
-    const o = this.opp, sp = this.moves.super, d = Math.abs(o.x - this.x);
-    this.sst++;
-    if (this.sph === 'dash') {
-      this.vx = this.facing * 6.2; if (this.sst % 4 === 0) F.dust(this.x, 1);
-      if (d < 34 * this.s && o.hurtbox()) {
-        if (o.canBlock() && o.ctrl && o.ctrl.back()) { this.vx = 0; this.sph = 'recover'; this.sst = 0; o.setState('blockstun'); o.stun = 22; o.hp = Math.max(1, o.hp - 4); o.vx = this.facing * 3; sfx('block'); F.spark(o.x - this.facing * 6, -40, 'block'); F.hitstop = 8; }
-        else { this.sph = 'rush'; this.sst = 0; this.vx = 0; o.setState('hitstun'); o.stun = 999; o.vx = 0; o.face(); }
-      } else if (this.sst > 32) { this.sph = 'recover'; this.sst = 0; }
-    } else if (this.sph === 'rush') {
-      this.vx = 0;
-      if (this.sst % 5 === 2 && this.sst < 42) {
-        const dmg = sp.dmg * this.dmgMul;
-        o.hp = Math.max(this.sst > 36 && o.hp - dmg <= 0 ? 0 : 1, o.hp - dmg); o.flash = 3; o.x += this.facing * 1.2;
-        F.spark(o.x - this.facing * 8, -44 + rnd(-6, 6), 'hit'); sfx(this.sst % 10 === 2 ? 'hitL' : 'hitM'); shake(2, 4); F.hitstop = 3;
-        this.comboN++; this.combo = this.comboN; this.comboShow = 70;
-      }
-      if (this.sst >= 44) { this.sph = 'upper'; this.sst = 0; }
-    } else if (this.sph === 'upper') {
-      if (this.sst < 10) this.y = -this.sst * 1.8; else this.y = Math.min(0, this.y + 2);
-      if (this.sst === 5) {
-        const dmg = sp.fin * this.dmgMul;
-        o.hp = Math.max(0, o.hp - dmg); this.comboN++; this.combo = this.comboN; this.comboShow = 90;
-        o.setState('knock'); o.vy = -6.5; o.vx = this.facing * 2.6; o.y = -2; o.bounced = false; o.stun = 0;
-        F.spark(o.x - this.facing * 6, -54, 'big'); sfx('hitH'); shake(6, 16); F.hitstop = 14; flash(4, '#fff');
-        F.stage.react('hit', o.x);
-        if (o.hp <= 0) F.ko(this, o);
-      }
-      if (this.sst > 30) { this.y = 0; this.setState('idle'); }
-    } else if (this.sph === 'recover') { this.vx *= .8; if (this.sst > 24) this.setState('idle'); }
   }
   animState() {
     const s = this.state;
@@ -216,11 +194,7 @@ class Fighter {
       case 'ko': return ['knock', this.st, 'ko'];
       case 'down': return ['lie', 0, this.hp <= 0 ? 'ko' : 'hurt'];
       case 'getup': return ['getup', this.st, 'angry'];
-      case 'super':
-        if (this.sph === 'dash') return ['dash', this.sst, 'angry'];
-        if (this.sph === 'rush') return ['rush', this.sst, 'angry'];
-        if (this.sph === 'upper') return ['upper', this.sst + 4, 'angry'];
-        return ['idle', this.sst, expr];
+      case 'super': return ['idle', this.st, 'angry'];
       case 'win': return ['win', this.st, 'happy'];
       case 'intro': return [this.introAnim || 'idle', this.st, expr];
       case 'lose': return ['lie', 0, 'ko'];
@@ -228,6 +202,7 @@ class Fighter {
     return ['idle', this.st, expr];
   }
   draw(g, camX) {
+    if (this.ov) { drawFighterOv(this, g, camX); return; } // posed by a super cinematic
     const [anim, t, expr] = this.animState();
     const spr = getSprite(this.def, anim, t, expr);
     const sx = this.x - camX, sy = GROUND + this.y;
@@ -267,9 +242,8 @@ class AICtrl {
     // threats
     const oAtk = o.state === 'attack' && o.move && o.mt <= o.move.s + 1 && dist < 78;
     const proj = F.projs.find(pr => pr.owner === o && Math.abs(pr.x - me.x) < 110 && Math.sign(me.x - pr.x) === Math.sign(pr.vx || 1));
-    const oSuper = o.state === 'super' && o.sph === 'dash' && dist < 120;
-    if ((oAtk || proj || oSuper) && this.reactT < 0 && this.blockT <= 0) {
-      this.reactT = Math.max(1, P.react - (oSuper ? 4 : 0));
+    if ((oAtk || proj) && this.reactT < 0 && this.blockT <= 0) {
+      this.reactT = Math.max(1, P.react);
       this.willBlock = Math.random() < P.block * (proj ? 1.1 : 1);
       this.low = (oAtk && o.move.lvl === 'low') || (proj && proj.low);
       this.jumpOver = proj && !this.willBlock && Math.random() < P.jump * 4;
@@ -295,17 +269,20 @@ class AICtrl {
     if (o.state === 'idle' && o.st < 4 && dist < P.range + 6 && Math.random() < (P.punish || .3) * .6) { this.pr.punch = 1; this.pt = 4; return; }
     if (this.pt > 0) { this.pt--; if (this.h.up) this.h.up = 0; return; }
     const r = Math.random();
-    if (me.meter >= 100 && me.moves.super && dist < 140 && r < .08) { this.pr.super = 1; return; }
+    // super (once per match): sooner when losing
+    if (me.canSuper(F) && r < (me.hp < o.hp ? .12 : .04)) { this.pr.super = 1; return; }
     if (o.state === 'down' || o.state === 'getup') { this.h = { fwd: dist > 60 ? 1 : 0, back: 0, up: 0, down: 0 }; this.pt = 10; return; }
     if (dist > P.range) {
       if (me.moves.special && me.projCD <= 0 && r < P.special) {
         const sp = me.moves.special;
-        if ((sp.spawn && dist > 70) || (sp.dash && dist < 120 && dist > 50) || (sp.flip && dist < 120 && dist > 55) || (sp.hop && dist > 60)) { this.pr.special = 1; this.pt = 12; return; }
+        if ((sp.spawn && dist > 70) || (sp.dash && dist < 120 && dist > 50) || (sp.flip && dist < 120 && dist > 55) || (sp.hop && dist > 60) || (sp.multi && dist < 64)) { this.pr.special = 1; this.pt = 12; return; }
       }
       if (r < P.special + P.jump && dist < 140) { this.h = { fwd: 1, back: 0, up: 1, down: 0 }; this.pt = 4; return; }
       if (Math.random() < P.aggr + .25) { this.h = { fwd: 1, back: 0, up: 0, down: 0 }; this.pt = rndi(8, 26); }
       else { this.h = { fwd: 0, back: Math.random() < .5 ? 1 : 0, up: 0, down: 0 }; this.pt = rndi(10, 28); }
     } else {
+      const sp = me.moves.special; // close-range specials (Marcos's ¡PICO!)
+      if (sp && sp.multi && me.projCD <= 0 && r < P.special) { this.pr.special = 1; this.pt = 10; return; }
       if (r < P.aggr) {
         const a = Math.random();
         if (a < .42) { this.pr.punch = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; }
@@ -334,6 +311,8 @@ class Proj {
     if (type === 'tennis') { this.vx = f * 6.2; this.dmg = 6; this.hs = 14; this.w = 6; this.h = 6; this.y = -58 * s; }
     if (type === 'cap') { this.vx = f * 3.8; this.dmg = 8; this.hs = 18; this.w = 12; this.h = 8; this.y = -48 * s; }
     if (type === 'ball') { this.x = owner.x + f * 22 * s; this.vx = f * 4; this.vy = -2.2; this.g = .12; this.dmg = 9; this.hs = 20; this.w = 9; this.h = 9; this.y = -18 * s; }
+    if (type === 'shout') { this.vx = f * 3.4; this.dmg = 8; this.hs = 24; this.w = 14; this.h = 30; this.y = -50 * s; }
+    if (type === 'cat') { this.vx = f * 4.2; this.dmg = 9; this.hs = 20; this.w = 16; this.h = 10; this.y = -42 * s; }
     if (type === 'wave') { this.x = owner.x + f * 16 * s; this.vx = f * 3.6; this.y = -9; this.dmg = 10; this.hs = 22; this.w = 16; this.h = 14; this.low = true; this.kd = true; }
   }
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }
@@ -352,6 +331,31 @@ class Proj {
     if (this.type === 'sandal') { const im = SMALL.sandal[Math.floor(t / 3) % 4]; g.drawImage(im, sx - (im.width >> 1), sy - (im.height >> 1)); }
     if (this.type === 'tennis') { stamp(g, sx, sy, 6, OUTL); stamp(g, sx, sy, 4, '#d8f040'); g.fillStyle = '#f8fff0'; g.fillRect(sx - 1, sy - 1, 1, 1); g.fillStyle = 'rgba(216,240,64,.45)'; g.fillRect(sx - Math.sign(this.vx) * 10, sy, 6, 1); }
     if (this.type === 'ball') { stamp(g, sx, sy, 10, OUTL); stamp(g, sx, sy, 8, '#f4f4f4'); const a = t * .3 * Math.sign(this.vx); g.fillStyle = '#1a1a1a'; g.fillRect(Math.round(sx + Math.cos(a) * 2) - 1, Math.round(sy + Math.sin(a) * 2) - 1, 2, 2); g.fillRect(Math.round(sx - Math.cos(a) * 2.5), Math.round(sy - Math.sin(a) * 2.5), 1, 1); }
+    if (this.type === 'shout') { // sound wave: three arcs opening in the travel direction
+      const d = Math.sign(this.vx) || 1;
+      for (const pass of [0, 1]) for (let i = 0; i < 3; i++) {
+        const r = 5 + i * 5 + (t % 8) * .5, col = pass ? (i % 2 ? '#ffd040' : '#fff4a0') : OUTL;
+        for (let a = -0.9; a <= 0.91; a += 0.1) {
+          const px = Math.round(sx - 10 * d + Math.cos(a) * r * d), py = Math.round(sy + Math.sin(a) * r * 1.3);
+          g.fillStyle = col; if (pass) g.fillRect(px, py, 1, 1); else g.fillRect(px - 1, py - 1, 3, 3);
+        }
+      }
+    }
+    if (this.type === 'cat') { // black cat flying at the opponent, legs stretched, green eyes
+      const d = Math.sign(this.vx) || 1, fr = Math.floor(t / 4) % 2, y = sy + Math.round(Math.sin(t * .35) * 1.5);
+      const X = v => sx + v * d, rect = (a, yy, w, h, col) => { g.fillStyle = col; g.fillRect(d > 0 ? sx + a : sx - a - w, yy, w, h); };
+      for (const [col, k] of [[OUTL, 2], ['#24212c', 0]]) {
+        seg(g, pt(X(-6), y), pt(X(4), y), 7 + k, col);                               // body
+        stamp(g, X(7), y - 2, 7 + k, col);                                             // head
+        seg(g, pt(X(5), y - 4), pt(X(5), y - 8), 2 + k, col); seg(g, pt(X(9), y - 4), pt(X(9.5), y - 8), 2 + k, col); // ears
+        seg(g, pt(X(-6), y - 1), pt(X(-11), y - 6 + fr * 2), 2 + k, col);             // tail
+        seg(g, pt(X(3), y + 2), pt(X(9), y + 4 - fr * 2), 2 + k, col);                // front legs
+        seg(g, pt(X(-4), y + 2), pt(X(-10), y + 3 + fr * 2), 2 + k, col);             // back legs
+      }
+      rect(-4, y - 3, 6, 1, '#3c3848');                                                 // fur highlight
+      rect(6, y - 3, 1, 1, '#a8f060'); rect(9, y - 3, 1, 1, '#a8f060');                 // eyes
+      rect(8, y - 1, 1, 1, '#e88aa0');                                                  // nose
+    }
     if (this.type === 'cap') {
       const fr = Math.floor(t / 3) % 4, dir = Math.sign(this.vx), fl = fr % 2 ? -1 : 1;
       g.fillStyle = OUTL; g.fillRect(sx - 6, sy - 4, 12, 7); g.fillStyle = '#f0f0f0'; g.fillRect(sx - 5, sy - 3 * fl - (fl < 0 ? 2 : 0), 8, 3);
@@ -385,7 +389,7 @@ class Fight {
       this.e.ctrl = new AICtrl(this.e, o.ai);
       this.e.dmgMul = o.ai.dmg || 1; this.e.spd *= (o.ai.speed || 1); this.e.maxHp = this.e.hp = this.e.hpShow = o.ai.hp || 100;
     } else this.e.ctrl = new PadCtrl(this.e, Input.pl[1]);
-    this.round = 1; this.wins = [0, 0]; this.projs = []; this.parts = []; this.pops = []; this.hitstop = 0; this.slow = 0; this.cutin = null;
+    this.round = 1; this.wins = [0, 0]; this.projs = []; this.parts = []; this.pops = []; this.hitstop = 0; this.slow = 0; this.cutin = null; this.sup = null;
     this.camX = clamp(o.center - W / 2, this.arena.l, this.arena.r - W); this.tick = 0;
     FIGHT_REF = this;
     this.startRound(o.skipIntro);
@@ -399,10 +403,12 @@ class Fight {
   startRound() {
     const c = this.center;
     if (this.e.pendingMax) { this.e.maxHp = this.e.pendingMax; this.e.pendingMax = 0; }
+    this.sup = null; this.cutin = null;
     for (const [f, x, fc] of [[this.p, c - 60, 1], [this.e, c + 60, -1]]) {
-      f.x = x; f.y = 0; f.vx = f.vy = 0; f.facing = fc; f.hp = f.hpShow = f.maxHp; f.setState('idle'); f.move = null; f.combo = 0; f.comboN = 0; f.inv = 0; f.flash = 0; f.stun = 0; f.projCD = 0; f.downKO = false; f.bounced = false;
+      f.x = x; f.y = 0; f.vx = f.vy = 0; f.facing = fc; f.hp = f.hpShow = f.maxHp; f.setState('idle'); f.move = null; f.combo = 0; f.comboN = 0; f.inv = 0; f.flash = 0; f.stun = 0; f.projCD = 0; f.downKO = false; f.bounced = false; f.ov = null;
     }
-    if (this.round === 1) { this.p.meter = 0; this.e.meter = 0; }
+    // the super bar carries over between rounds; the super itself is once per match
+    if (this.round === 1) for (const f of [this.p, this.e]) { f.meter = 0; f.superUsed = false; }
     this.projs = []; this.timer = 60 * 60; this.phase = 'intro'; this.pt = 0; this.koBy = null; this.result = null;
   }
   popup(x, y, txt, col = '#fff') { if (txt) this.pops.push({ x, y, txt, col, t: 0 }); }
@@ -414,10 +420,20 @@ class Fight {
     for (let i = 0; i < n; i++) { const a = rnd(0, Math.PI * 2), v = rnd(1.5, 3.5) * (kind === 'big' ? 1.4 : 1); this.parts.push({ type: 'bit', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, t: 0, life: rndi(8, 16), col: kind === 'block' ? pick(['#9fe8ff', '#fff', '#5ab0ff']) : pick(['#fff', '#fff4a0', '#ffc040', '#ff8030']) }); }
     if (kind !== 'block' && Math.random() < .5) for (let i = 0; i < 2; i++) this.parts.push({ type: 'sweat', x, y: y - 6, vx: rnd(-1.5, 1.5), vy: rnd(-2.5, -1), t: 0, life: 22 });
   }
-  spawnProj(f, type) { this.projs.push(new Proj(f, type)); if (type === 'wave') { sfx('shock'); } else sfx('throw'); }
+  spawnProj(f, type) { this.projs.push(new Proj(f, type)); const snd = { wave: 'shock', shout: null, cat: 'meow' }; const s = type in snd ? snd[type] : 'throw'; if (s) sfx(s); }
+  // super bar: SUPER_CHARGE (supers.js) sets how fast it fills; it stops once the super has been used
+  gain(f, n) { if (!f.superUsed) f.meter = Math.min(100, f.meter + n * SUPER_CHARGE); }
+  // super: cut-in, then the fighter's cinematic (SuperScene) freezes the fight and ends in a K.O.
   startSuper(f) {
-    f.meter = 0; f.setState('super'); f.sph = 'dash'; f.sst = 0; f.move = null; f.comboN = 0; f.inv = 0;
-    this.cutin = { f, t: 0, name: f.moves.super.name }; sfx('super'); flash(3, '#fff'); announce(f.moves.super.name.replace(/[¡!]/g, ''));
+    f.meter = 0; f.superUsed = true; f.comboN = 0; this.hitstop = 0; this.slow = 0;
+    this.sup = new SuperScene(this, f);
+    this.cutin = { f, t: 0, name: f.moves.super.name }; sfx('super'); flash(3, '#fff');
+  }
+  endSuper() {
+    const S = this.sup; if (!S) return;
+    if (!S.koed) S.finish(S.d * 4, -5); // safety net: a script that stops early still knocks out
+    S.a.ov = S.v.ov = null; if (S.a.state === 'super') S.a.setState('idle');
+    this.sup = null;
   }
   // --- apply a hit (melee or projectile)
   hit(att, def, m, isProj, px) {
@@ -430,7 +446,7 @@ class Fight {
     if (canB) {
       def.setState('blockstun'); def.stun = m.bs || 12; def.crouchBlock = crouching; def.vx = facing * (m.push || 2) * .9; def.face();
       if (isProj) def.hp = Math.max(1, def.hp - 1);
-      att.meter = Math.min(100, att.meter + (m.meter || 4) * .5); def.meter = Math.min(100, def.meter + 3);
+      this.gain(att, (m.meter || 4) * .5); this.gain(def, 3);
       this.spark(hx, hy, 'block'); sfx('block'); this.hitstop = 4; att.hitConfirmed = true;
       return;
     }
@@ -439,7 +455,7 @@ class Fight {
     const scale = Math.max(.5, 1 - (att.comboN - 1) * .12);
     const dmg = m.dmg * scale * att.dmgMul;
     def.hp = Math.max(0, def.hp - dmg); def.flash = 6;
-    att.meter = Math.min(100, att.meter + (m.meter || 5)); def.meter = Math.min(100, def.meter + dmg * .7);
+    this.gain(att, m.meter || 5); this.gain(def, dmg * .7);
     att.hitConfirmed = true;
     const air = def.y < -2 || def.state === 'jump';
     if (def.hp <= 0 || m.kd || air || isProj && isProj.kd) {
@@ -454,9 +470,11 @@ class Fight {
     this.hitstop = m.stop || 6; shake(dmg >= 8 ? 4 : 2, dmg >= 8 ? 10 : 6);
     this.stage.react('hit', def.x);
     if (m.steal) { this.popup(def.x, -76, m.steal, '#ffd84a'); sfx('steal'); def.meter = Math.max(0, def.meter - 20); }
+    if (m.hitPop) this.popup(def.x + rnd(-8, 8), -64 - rnd(0, 14), m.hitPop, '#ffd84a');
     // [OLD CHARS] if (def.kind === 'fumeta' && isProj === false && Math.random() < .3) sfx('cough');
     if (isProj && isProj.type === 'smoke') sfx('cough');
     if (isProj && (isProj.type === 'chancla' || isProj.type === 'sandal')) sfx('chancla');
+    if (isProj && isProj.type === 'cat') sfx('meow');
     if (isProj && isProj.type === 'can') sfx('can');
     if (def.hp <= 0) this.ko(att, def);
   }
@@ -469,8 +487,13 @@ class Fight {
   update() {
     this.tick++;
     const P = this.p, E = this.e;
-    // super cut-in freezes the world
+    // super cut-in freezes the world, then the super's cinematic runs (frozen until its K.O.)
     if (this.cutin) { this.cutin.t++; if (this.cutin.t > 56) this.cutin = null; this.updateParts(); return; }
+    if (this.sup) {
+      this.sup.update();
+      if (this.sup.done) this.endSuper();
+      else if (this.sup.freeze) { this.updateParts(); return; }
+    }
     this.pt++;
     if (this.phase === 'intro') {
       if (this.pt === 1) { P.setState('intro'); E.setState('intro'); E.introAnim = 'idle'; }
@@ -483,6 +506,7 @@ class Fight {
     if (this.slow > 0) { this.slow--; if (this.slow % 3 !== 0) { this.updateParts(); return; } }
     P.ctrl.update(this); E.ctrl.update(this);
     P.update(this); E.update(this);
+    if (this.sup && this.sup.freeze) { this.updateParts(); return; } // a super just started
     // projectiles
     for (const pr of this.projs) pr.update(this);
     for (const a of this.projs) for (const b of this.projs) if (a !== b && a.owner !== b.owner && !a.dead && !b.dead && overlap(a.box(), b.box())) { a.dead = b.dead = true; this.spark((a.x + b.x) / 2, (a.y + b.y) / 2, 'hit'); sfx('block'); }
@@ -515,7 +539,7 @@ class Fight {
     if (this.phase === 'ko' || this.phase === 'timeup') {
       const settled = [P, E].every(f => !['knock', 'ko', 'attack', 'hitstun', 'super', 'jump'].includes(f.state) || f.state === 'down');
       if (this.phase === 'timeup' && this.pt === 1) { for (const f of [P, E]) if (f.state !== 'down') { f.setState('idle'); f.move = null; } }
-      if (this.pt > 90 && settled && !this.result) {
+      if (this.pt > 90 && settled && !this.result && !this.sup) {
         let w;
         if (this.phase === 'ko') w = this.koBy === P ? 0 : 1;
         else w = P.hp === E.hp ? -1 : P.hp > E.hp ? 0 : 1;
@@ -541,9 +565,11 @@ class Fight {
     this.pops = this.pops.filter(p => p.t < 70);
   }
   drawWorld(g) {
-    const camX = Math.round(this.camX), P = this.p, E = this.e;
-    const order = P.state === 'attack' || P.state === 'super' ? [E, P] : [P, E];
+    const camX = Math.round(this.camX), P = this.p, E = this.e, S = this.sup;
+    if (S) S.draw(g, camX, 'back');
+    const order = (S ? S.a === P : P.state === 'attack') ? [E, P] : [P, E];
     for (const f of order) f.draw(g, camX);
+    if (S) S.draw(g, camX, 'front');
     for (const pr of this.projs) pr.draw(g, camX);
     for (const p of this.parts) {
       const sx = Math.round(p.x - camX), sy = Math.round(GROUND + p.y), f = p.t / p.life;
@@ -556,6 +582,7 @@ class Fight {
       if (p.type === 'spark' || p.type === 'bspark') drawSpark(g, sx, sy, p.t, p.type === 'bspark', p.big);
     }
     for (const p of this.pops) { if (p.t % 6 < 5 || p.t < 40) text(g, p.txt, Math.round(p.x - camX), Math.round(GROUND + p.y), { align: 'center', color: p.col, outline: '#10061a' }); }
+    if (S) S.drawScreen(g);
   }
   drawHUD(g) {
     const P = this.p, E = this.e, t = this.tick;
@@ -577,14 +604,15 @@ class Fight {
         const xx = side ? x0 + BW - 1 - i : x0 + i;
         g.fillStyle = col; g.fillRect(xx, BY, 1, BH); g.fillStyle = lt(col, .35); g.fillRect(xx, BY + 1, 1, 1); g.fillStyle = dk(col, .75); g.fillRect(xx, BY + BH - 2, 1, 2);
       }
-      // super meter — [SUPER disabled for now] only drawn when the fighter has a super
+      // super meter (fills during the whole match; greyed out with USADO once the super is spent)
       if (f.moves.super) {
-        const MW = 100, MY = 21, mx0 = side ? W - XL - MW : XL, mw = Math.round(MW * f.meter / 100);
-        g.fillStyle = OUTL; g.fillRect(mx0 - 1, MY - 1, MW + 2, 6); g.fillStyle = '#10102a'; g.fillRect(mx0, MY, MW, 4);
-        const full = f.meter >= 100, mc = full ? (t % 8 < 4 ? '#8ff0ff' : '#ffffff') : '#2a6aff';
+        const MW = 100, MY = 21, mx0 = side ? W - XL - MW : XL, used = f.superUsed, mw = used ? 0 : Math.round(MW * f.meter / 100);
+        g.fillStyle = OUTL; g.fillRect(mx0 - 1, MY - 1, MW + 2, 6); g.fillStyle = used ? '#2a2834' : '#10102a'; g.fillRect(mx0, MY, MW, 4);
+        const full = !used && f.meter >= 100, mc = full ? (t % 8 < 4 ? '#8ff0ff' : '#ffffff') : '#2a6aff';
         g.fillStyle = mc; if (!side) g.fillRect(mx0, MY, mw, 4); else g.fillRect(mx0 + MW - mw, MY, mw, 4);
         g.fillStyle = lt(mc, .4); if (!side) g.fillRect(mx0, MY, mw, 1); else g.fillRect(mx0 + MW - mw, MY, mw, 1);
         if (full) text(g, 'SUPER', side ? mx0 - 4 : mx0 + MW + 4, MY - 2, { color: t % 8 < 4 ? '#8ff0ff' : '#fff', outline: OUTL, align: side ? 'right' : 'left' });
+        else if (used) { const ux = side ? mx0 - 5 - tinyW('USADO') : mx0 + MW + 5; g.fillStyle = OUTL; g.fillRect(ux - 2, MY - 1, tinyW('USADO') + 4, 7); tiny(g, 'USADO', ux, MY, '#a8a4c0'); }
       }
       // portrait
       const px = side ? W - 4 - PB : 4, py = 4;

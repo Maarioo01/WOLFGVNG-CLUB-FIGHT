@@ -3,7 +3,7 @@
 //  VERSUS — character select, stage select, 1P vs CPU / 2P fights
 // ============================================================
 // const ROSTER = ['hero', 'fumeta', 'latero', 'carterista', 'relojero', 'capo']; // [OLD CHARS]
-const ROSTER = ['mario', 'peno', 'alba', 'alvaro', 'belli', 'bene', 'carlottis', 'marcos', 'oso'];
+const ROSTER = ['mario', 'peno', 'alba', 'alvaro', 'belli', 'bene', 'carlottis', 'marcos', 'oso', 'manu', 'casado', 'madeverxp'];
 const GRID_COLS = 6; // select-screen grid: 6 per row (room for 12)
 const RANDOM_STAGE = STAGES.length; // extra slot in the stage list
 const ARENA_C = 620;

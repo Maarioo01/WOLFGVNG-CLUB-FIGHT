@@ -380,6 +380,7 @@ const UPPER = X(STANCE, { t: -8, ua2: 172, fa2: 178, ua1: 20, fa1: 120, th1: -10
 defA('upper', 0, [[X(CR, { ua2: 60, fa2: 100 }), 4], [UPPER, 6], [UPPER, 20], [STANCE, 1]]);
 const SNATCH = X(STANCE, { t: 34, hx: 4, ua2: 92, fa2: 92, h2: 'open', th1: -30, sh1: -50, th2: 55, sh2: 25 });
 defA('snatch', 0, [[STANCE, 4], [X(STANCE, { t: -6, ua2: 20, fa2: 60 }), 4], [SNATCH, 14], [SNATCH, 7], [STANCE, 9], [STANCE, 1]]);
+defA('pico', 0, [[STANCE, 3], [JAB_C, 2], [JAB_A, 6], [CROSS_A, 6], [JAB_A, 6], [STANCE, 13], [STANCE, 1]]); // Marcos's ¡PICO!: three quick strikes (own sprite frames)
 const DPUNCH = X(CROSS_A, { t: 30, hx: 5, th1: -30, sh1: -50, th2: 55, sh2: 25 });
 defA('dpunch', 0, [[STANCE, 4], [CROSS_C, 4], [DPUNCH, 14], [DPUNCH, 7], [STANCE, 9], [STANCE, 1]]);
 const CHARGE = X(DASH, { t: 40, hx: 5, ua2: 70, fa2: 150, ua1: 60, fa1: 160, hdx: 1 });
@@ -769,6 +770,19 @@ const CH = {
     hair: '#1e1612', hairStyle: 'sidePart', beard: 'chin', beardCol: '#231a14',
     top: 'suit', jacket: '#252a36', shirt: '#f4f4f0', necktie: '#c8962a', bottom: 'pants', fit: 'slim', crease: true, pants: '#252a36', shoe: 'dress', shoes: '#141416',
     b: { s: 1.28, sw: 16, hw: 13, uw: 7, fw: 6, tw: 8, shw: 7, fist: 6 } })),
+  // drawn with their sprite sheets (images/sprites/<id>); the settings below are only the code-drawn fallback
+  manu: mkChar(HDB({ id: 'manu', name: 'MANU', seed: 101, color: '#c08850', skin: '#e2b08c', smile: true,
+    hair: '#3a2a1e', hairStyle: 'messy', fringe: 1.2, beard: 'trim', beardCol: '#8a4a2a', acc: ['glasses'], glasses: 'rect', glassesCol: '#c8a050',
+    top: 'hoodie', shirt: '#34343c', bottom: 'pants', fit: 'baggy', pants: '#7a5634', shoe: 'sneaker', shoes: '#2a2a2e', sole: '#f0f0f0',
+    b: { sw: 15, hw: 12.5, uw: 6.2, fw: 5.2, tw: 7.2 } })),
+  casado: mkChar(HDB({ id: 'casado', name: 'CASADO', seed: 111, color: '#9aa050', skin: '#e8b894', smile: true,
+    hair: '#8a5a3a', hairStyle: 'cap', cap: '#6e6a3a', beard: 'light', beardCol: '#a0643a', acc: ['glasses'], glasses: 'rect', glassesCol: '#2a2a2a',
+    top: 'suit', jacket: '#6e6a3a', shirt: '#f4f4f0', necktie: '#141414', bottom: 'pants', fit: 'slim', crease: true, pants: '#6e6a3a', shoe: 'dress', shoes: '#141416',
+    b: { sw: 14.5, hw: 12, uw: 6, fw: 5, tw: 7 } })),
+  madeverxp: mkChar(HDB({ id: 'madeverxp', name: 'MADEVERXP', seed: 121, color: '#8fe06a', skin: '#e6b48e',
+    hair: '#3a2618', hairStyle: 'curlyTop', acc: ['glasses'], glasses: 'round', glassesCol: '#c8a060',
+    top: 'tee', shirt: '#f6f6f2', bottom: 'shorts', pants: '#5a7aaa', shoe: 'sandal', shoes: '#141414',
+    b: { sw: 14.5, hw: 12, uw: 6, fw: 5, tw: 7 } })),
 };
 for (const id in CH) CH[id].fighter = true;
 // random crowd / pedestrians

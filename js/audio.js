@@ -109,6 +109,8 @@ function sfx(name, p) {
     case 'chime': osc('sine', 880, t, .7, .22); osc('sine', 698, t + .45, .9, .22); break;
     case 'whoosh': nz(t, .6, .3, { type: 'bandpass', f: 200, f2: 1600, q: .7, white: true, attack: .2 }); break;
     case 'pigeon': for (let i = 0; i < 4; i++) nz(t + i * .06, .05, .25, { type: 'bandpass', f: 1800, q: 1.5, white: true }); break;
+    case 'meow': osc(0.25, 640, t, .12, .13, null, { slide: 1050 }); osc(0.25, 1050, t + .12, .22, .13, null, { slide: 520 }); break;
+    case 'shout': nz(t, .35, .3, { type: 'bandpass', f: 900, q: 2, white: true }); osc(0.5, 260, t, .08, .2, null, { slide: 330 }); osc(0.5, 330, t + .08, .3, .22, null, { slide: 250 }); break;
     case 'bark': osc(0.25, 520, t, .09, .18, null, { slide: 320 }); osc(0.25, 480, t + .15, .09, .16, null, { slide: 300 }); break;
     case 'plane': nz(t, 2.5, .4, { f: 300, f2: 1200, attack: 1, white: true }); break;
     case 'round': osc(0.5, 392, t, .12, .15); osc(0.5, 523, t + .12, .25, .15); break;

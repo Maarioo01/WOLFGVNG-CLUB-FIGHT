@@ -62,14 +62,18 @@ function components(P, m) {
         const j = yy * w + xx; if (m[j] && !lab[j]) { lab[j] = id; stack.push(j); }
       }
     }
-    boxes.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, n, ids: [id], text: white > n * .25 && white + black > n * .8 });
+    boxes.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, n, ids: [id], white, black });
   }
   boxes.lab = lab;
   return boxes;
 }
-function figures(P, boxes) {
+// props: sheets with objects (sheet F) — small but wide figures count too, and only thin white/black shapes are
+// treated as text (a white yogurt pot or syringe is solid, letters aren't)
+function figures(P, boxes, props) {
   const minH = Math.max(40, P.h * .05);
-  let f = boxes.filter(b => b.h >= minH && b.w < P.w * .75 && b.n > 200 && !b.text); // drop titles / labels (white text, black outline)
+  const isText = b => b.white > b.n * .25 && b.white + b.black > b.n * .8 && (!props || b.n < b.w * b.h * .6);
+  const big = b => props ? Math.max(b.w, b.h) >= minH * .6 : b.h >= minH;
+  let f = boxes.filter(b => big(b) && b.w < P.w * .75 && b.n > 200 && !isText(b)); // drop titles / labels (white text, black outline)
   // merge small fragments (a racket, a loose strand of hair) into the figure they touch; never two figures
   for (let changed = true; changed;) {
     changed = false;
@@ -205,6 +209,19 @@ function altColor(c) {
 // ---------- 7. anchors & portraits ----------
 // anchor: x on the waist (median of the silhouette at hip height, so punches/kicks don't shift the body),
 // y on the floor line (bottom row). Lying frames are centred.
+// head width = median silhouette width over the top band of a figure (3%–12% of its height): a size measure that
+// doesn't depend on how crouched or stretched the pose is
+const medianOf = a => { a.sort((x, y) => x - y); return a[a.length >> 1] || 1; };
+function headWidthImg(P, m, box, lab) {
+  const own = new Set(box.ids), ws = [];
+  for (let y = Math.round(box.y + box.h * .03); y < box.y + box.h * .12; y++) { let n = 0; for (let x = box.x; x < box.x + box.w; x++) { const i = y * P.w + x; if (m[i] && own.has(lab[i])) n++; } ws.push(n); }
+  return medianOf(ws);
+}
+function headWidthArt(F) {
+  const ws = [];
+  for (let y = Math.round(F.h * .03); y < F.h * .12; y++) { let n = 0; for (let x = 0; x < F.w; x++) if (F.px[(y * F.w + x) * 4 + 3]) n++; ws.push(n); }
+  return medianOf(ws);
+}
 function bodyAnchor(F) {
   if (F.w > F.h * 1.4) return { ax: F.w / 2, ay: F.h };
   const xs = [];
@@ -249,8 +266,9 @@ async function build(id) {
   const cfg = SPRITE_CONFIG[id]; if (!cfg) throw new Error('no config for ' + id);
   const frames = {}, flips = new Set(cfg.flip || []);
   for (const sh of cfg.sheets) {
-    const im = await loadImage('../' + sh.src), P = pixelsOf(im, sh.area), bg = bgColors(P), m = fgMask(P, bg, sh.tol || 24);
-    const comps = components(P, m), figs = figures(P, comps), tol = sh.tol || 24;
+    let im; try { im = await loadImage('../' + sh.src); } catch (e) { log.push(`${sh.src}: not found yet — skipped`); continue; }
+    const P = pixelsOf(im, sh.area), bg = bgColors(P), m = fgMask(P, bg, sh.tol || 24);
+    const comps = components(P, m), figs = figures(P, comps, sh.props), tol = sh.tol || 24;
     log.push(`${sh.src}: ${P.w}x${P.h}, bg ${bg.map(c => c.map(Math.round).join(',')).join(' | ')}, ${figs.length} figures, ${sh.poses.length} names`);
     if (DEBUG) debugSheet(im, figs, sh.poses, sh.area);
     const prof = figs.map(b => ({ x: edgeProfile(P, b, 'x'), y: edgeProfile(P, b, 'y') }));
@@ -263,12 +281,14 @@ async function build(id) {
     let p = det.p, how = 'detected';
     if (sh.grid) { p = sh.grid; how = 'config'; }
     else if (sh.match && frames[sh.match[1]] && figs[sh.poses.indexOf(sh.match[0])]) { // sheet drawn at another size:
-      p = figs[sh.poses.indexOf(sh.match[0])].h / frames[sh.match[1]].h; how = `${sh.match[0]} = ${sh.match[1]} height`; // match a pose already cut
+      const fig = figs[sh.poses.indexOf(sh.match[0])], ref = frames[sh.match[1]];         // match a pose already cut
+      if (sh.matchBy === 'head') { p = headWidthImg(P, m, fig, comps.lab) / headWidthArt(ref); how = `${sh.match[0]} head = ${sh.match[1]} head`; }
+      else { p = fig.h / ref.h; how = `${sh.match[0]} = ${sh.match[1]} height`; }
     }
     else if (si >= 0 && figs[si] && (det.score < 1.2 || frames.stance || frames.idle_1 || !cfg.keepGrid)) { p = figs[si].h / refH; how = 'stance height ' + refH; }
     log.push(`  art pixel = ${p.toFixed(2)} image px (${how}; grid fit ${det.score.toFixed(2)})`);
     figs.forEach((b, i) => {
-      const name = sh.poses[i]; if (!name || name === 'skip') return;
+      const name = sh.poses[i]; if (!name || name === 'skip' || name[0] === '_') return; // '_ref': only used to measure the size
       const fx = phaseFit(prof[i].x, p), fy = phaseFit(prof[i].y, p);
       const pp = p / ((cfg.scale && cfg.scale[name]) || 1); // per-pose size fix (a row drawn smaller by the AI)
       const fx2 = pp === p ? fx : phaseFit(prof[i].x, pp), fy2 = pp === p ? fy : phaseFit(prof[i].y, pp);
@@ -318,7 +338,7 @@ function debugFrames(items, alt) {
 // inspect mode: ?src=images/...png shows the detected figures of any image, numbered in reading order
 async function inspect(src, tol) {
   const im = await loadImage('../' + src), P = pixelsOf(im), bg = bgColors(P), m = fgMask(P, bg, tol);
-  const figs = figures(P, components(P, m));
+  const figs = figures(P, components(P, m), Q.get('props'));
   const c = document.createElement('canvas'); c.width = P.w; c.height = P.h; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   g.lineWidth = 3; g.font = 'bold 34px monospace';
   figs.forEach((b, i) => { g.strokeStyle = '#00ff00'; g.strokeRect(b.x, b.y, b.w, b.h); g.fillStyle = '#000'; g.fillRect(b.x, b.y, 56, 38); g.fillStyle = '#ffff00'; g.fillText(i, b.x + 4, b.y + 30); });

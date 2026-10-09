@@ -22,7 +22,7 @@ const SPRITE_FALLBACK = {
   knockdown_1: 'knockdown', knockdown_2: 'ko', knockdown: 'hit', ko: 'hit', getup_1: 'crouch', getup_2: 'getup_1',
   victory_1: 'victory', victory_2: 'victory_1', victory: 'stance',
   special_1: 'stance', special_2: 'special', special_3: 'special_2', special: 'punch_2',
-  super_1: 'special_2', super_2: 'punch_2', super_3: 'special_2', // [SUPER disabled for now]
+  // super_* / prop_* (sheet F) have no fallback here: supers.js picks a stand-in pose for each one
 };
 // game animation -> pose for each keyframe of ANIM[name] (art.js), so the timing is the move's frame data;
 // { loop, d } = looping cycle with its own speed (d ticks per frame). A trailing '+' lifts the frame one art
@@ -46,7 +46,7 @@ const SPRITE_ANIM = {
   dpunch: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   charge: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   pound: ['idle_1', 'crouch', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
-  dash: ['super_1', 'super_1'], rush: ['super_2', 'punch_2'], upper: ['crouch', 'super_3', 'super_3', 'idle_1'], // [SUPER disabled for now]
+  pico: ['idle_1', 'special_1', 'special_2', 'special_3', 'special_2', 'idle_1', 'idle_1'],
   hit: ['hit', 'hit', 'idle_1', 'idle_1'], hitC: ['crouch_hit', 'crouch', 'crouch'],
   block: ['block'], blockC: ['crouch_block'],
   knock: ['knockdown_1', 'knockdown_2'], lie: ['knockdown_2'], getup: ['knockdown_2', 'getup_1', 'getup_2', 'idle_1'], // knockdown_2 = lying (old sheets: ko)
@@ -55,7 +55,12 @@ const SPRITE_ANIM = {
 
 function loadSprites() {
   if (typeof SPRITE_DATA === 'undefined') return Promise.resolve();
-  const img = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  // a failed load is retried twice (a network hiccup would otherwise leave that fighter code-drawn)
+  const img = (src, tries = 3) => new Promise(res => {
+    const im = new Image(); im.onload = () => res(im);
+    im.onerror = () => tries > 1 ? setTimeout(() => img(src, tries - 1).then(res), 400) : res(null);
+    im.src = src;
+  });
   return Promise.all(Object.entries(SPRITE_DATA).map(([id, meta]) =>
     Promise.all([img('assets/fighters/' + id + '.png'), img('assets/fighters/' + id + '_alt.png')]).then(([main, alt]) => {
       if (main) SPRITES[id] = { meta, img: main, alt: alt || main, cache: new Map() };
@@ -65,6 +70,8 @@ function loadSprites() {
 // characters whose body is still code-drawn (only the face comes from the design)
 const portraitSet = def => (def && def.fighter && SPRITES[def.base || def.id]) || null;
 const spriteSet = def => { const s = portraitSet(def); return s && s.meta.body !== false ? s : null; };
+// does this fighter's sprite set have exactly this pose (no fallback)? Used for the super's sheet F frames
+const spriteHas = (def, name) => { const s = spriteSet(def); return !!(s && s.meta.frames[name]); };
 function spritePose(set, name) {
   for (let n = name, i = 0; n && i < 10; n = SPRITE_FALLBACK[n], i++) if (set.meta.frames[n]) return n;
   return set.meta.frames.stance ? 'stance' : set.meta.frames.idle_1 ? 'idle_1' : Object.keys(set.meta.frames)[0];
