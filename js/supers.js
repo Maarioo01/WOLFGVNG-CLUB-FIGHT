@@ -5,7 +5,8 @@
 //  starts a SuperScene: after the cut-in the fight freezes and the fighter's script (a generator)
 //  moves both fighters, spawns props and effects, and ends with the opponent K.O.
 //  Frames come from the fighter's sheet F (super_*, prop_*, see docs/super-prompts.md). Until it exists,
-//  'super_1|idle_1' falls back to idle_1 (optionally tinted) and props are drawn by code (PROP_DRAW).
+//  'super_1|idle_1' falls back to idle_1 (optionally tinted) and props are drawn by code (PROP_DRAW). Each script
+//  places things from the real frames' sizes when they exist (spriteHas / frameOf).
 // ============================================================
 const SUPER_CHARGE = .7; // bar gained per hit (given or taken) is multiplied by this: a full bar takes about two rounds
 const IDLE_LOOP = ['idle_1', 'idle_2', 'idle_3', 'idle_4'];
@@ -63,25 +64,37 @@ function drawFighterOv(f, g, camX) {
 }
 
 // ---------- props ----------
-// in-game size of each prop (units); sprites from sheet F are resized to it ('w' = width, 'h' = height)
+// in-game size of a prop drawn from sheet F: ['w' | 'h', units] = resized to that width / height, ['k', n] = n times
+// its drawn size (sheet F is cut at the character's scale, so a car or tank with the character inside fits as drawn)
 const PROP_SIZE = {
-  car: ['w', 200], tank: ['w', 230], tank_2: ['w', 230], missile: ['w', 36], yogurt: ['h', 130], yogurt_2: ['w', 210],
-  charizard: ['h', 150], charizard_2: ['h', 150], isaac: ['h', 150], isaac_2: ['h', 150], // isaac includes Manu on his head
-  pokeball: ['w', 11], note: ['h', 16], syringe: ['w', 28], virus: ['h', 120],
+  car: ['k', 1], tank: ['k', 1], tank_2: ['k', 1], isaac: ['k', 1], isaac_2: ['k', 1], yogurt: ['k', 1.35], yogurt_2: ['k', 1.35],
+  missile: ['w', 56], charizard: ['h', 150], charizard_2: ['h', 150], pokeball: ['w', 11], note: ['h', 18], syringe: ['w', 28], virus: ['h', 120],
 };
 const PROP_CENTRED = { missile: 1, pokeball: 1, note: 1, syringe: 1, virus: 1, tear: 1, ball: 1 }; // anchor = centre, not feet
+const PROP_BACK = { tank: 116, tank_2: 116 }; // placed by their rear end (p.x); the code-drawn one is 116 units behind its centre
+// vehicles drawn with the character already aboard: the part of the frame he's in ([x0, y0, x1, y1], fractions of
+// the frame, measured on these sheet F drawings), hidden until he gets in (p.driver / p.crew)
+const PROP_CREW = { car: [.40, 0, .59, .38], tank: [.23, 0, .45, .34] };
+// the sheet F frame of a pose or prop, or null (stand-in)
+const frameOf = (f, name) => spriteHas(f.def, name) ? spriteFrame(f.def, name) : null;
+const propScale = (s, kind) => { const z = PROP_SIZE[kind]; return z[0] === 'k' ? z[1] : z[1] / (z[0] === 'w' ? s.c.width : s.c.height); };
 function drawProp(g, p, camX, owner) {
   if (p.hidden) return;
-  const f = p.f;
+  const f = p.f, s = PROP_SIZE[p.kind] && frameOf(owner, 'prop_' + p.kind);
   g.save(); g.translate(Math.round(p.x - camX), Math.round(GROUND + p.y));
   if (p.alpha < 1) g.globalAlpha = Math.max(0, p.alpha);
   if (p.rot) { const px = (p.pivot || 0) * f; g.translate(px, 0); g.rotate(p.rot); g.translate(-px, 0); }
   if (p.scale !== 1) g.scale(p.scale, p.scale);
-  const size = PROP_SIZE[p.kind];
-  if (size && spriteHas(owner.def, 'prop_' + p.kind)) {
-    const s = spriteFrame(owner.def, 'prop_' + p.kind), k = size[1] / (size[0] === 'w' ? s.c.width : s.c.height);
-    g.scale(f * k, k); g.drawImage(s.c, -s.c.width / 2, PROP_CENTRED[p.kind] ? -s.c.height / 2 : -s.c.height);
+  if (s) {
+    const k = propScale(s, p.kind), w = s.c.width, h = s.c.height;
+    if (PROP_BACK[p.kind]) g.translate(f * w * k / 2, 0);
+    g.scale(f * k, k);
+    if (p.reveal != null) { g.beginPath(); g.rect(-w / 2, -h - 1, w * p.reveal, h + 2); g.clip(); } // grows out from its back
+    const hole = !(p.driver || p.crew) && PROP_CREW[p.kind];
+    if (hole) { g.beginPath(); g.rect(-w / 2, -h, w, h); g.rect(-w / 2 + hole[0] * w, -h - 1, (hole[2] - hole[0]) * w, hole[3] * h + 1); g.clip('evenodd'); }
+    g.drawImage(p.tint ? tintedOf(s, p.tint, .55) : s.c, -w / 2, PROP_CENTRED[p.kind] ? -h / 2 : -h);
   } else {
+    if (PROP_BACK[p.kind]) g.translate(f * PROP_BACK[p.kind], 0);
     const draw = PROP_DRAW[p.kind] || PROP_DRAW[p.kind.replace(/_\d+$/, '')]; // tank_2 -> tank (the drawer checks p.kind)
     if (draw) draw(g, f, p, owner);
   }
@@ -306,12 +319,14 @@ class SuperScene {
 // ============================================================
 // Mario: syringe, injection, he grows until he fills the screen, one huge punch
 function* superMario(S, a, v, d) {
-  const syr = spriteHas(a.def, 'super_1') ? null : S.prop({ kind: 'syringe', x: a.x + d * 16, y: -72, rot: -1.1 * d });
+  // the syringe is drawn by the game (sheet F asks for an empty hand): next to his face, then in his upper arm
+  const h1 = (frameOf(a, 'super_1') || { c: { height: 88 } }).c.height, h2 = (frameOf(a, 'super_2') || { c: { height: 88 } }).c.height;
+  const syr = S.prop({ kind: 'syringe', x: a.x + d * 14, y: -h1 * .8, rot: -1.1 * d });
   S.set(a, { pose: 'super_1|idle_1' }); yield* S.wait(36);
   S.set(a, { pose: 'super_2|block' }); sfx('steal');
-  if (syr) { syr.x = a.x + d * 3; syr.y = -62; syr.rot = .5 * d; }
+  syr.x = a.x + d * 3; syr.y = -h2 * .7; syr.rot = .5 * d;
   yield* S.wait(32);
-  if (syr) syr.dead = true;
+  syr.dead = true;
   const pump = { fbTint: ['#ff5030', .22] }, big = Math.max(1.6, (GROUND - 8) / (a.s * 63)); // standing height = s * 63 units
   S.set(a, { pose: 'super_3|victory_2', ...pump });
   for (let i = 1; i <= 72; i++) { a.ov.scale = 1 + (big - 1) * easeIn(i / 72); if (i % 9 === 0) { sfx('hitL'); shake(2 + i / 24, 6); } yield; }
@@ -348,8 +363,9 @@ function* superAlba(S, a, v, d) {
   S.poof(a.x); yield* S.wait(6);
   S.set(a, { pose: 'super_1|idle_1', ...gi }); yield* S.wait(34);
   const [lo, hi] = S.bounds(), x0 = a.x, x1 = clamp(v.x + d * 36, lo, hi), N = 34; sfx('jump');
-  S.set(a, { pose: 'super_2|jump_2', cy: 44, ...gi });
-  for (let i = 1; i <= N; i++) { const k = i / N; a.x = lerp(x0, x1, k); a.ov.dy = -Math.sin(Math.PI * k) * 74; a.ov.rot = -k * Math.PI * 2; yield; }
+  const curl = frameOf(a, 'super_2'), r0 = curl ? Math.PI : 0; // drawn upside down: upright at take-off and landing
+  S.set(a, { pose: 'super_2|jump_2', cy: curl ? curl.c.height / 2 : 44, ...gi });
+  for (let i = 1; i <= N; i++) { const k = i / N; a.x = lerp(x0, x1, k); a.ov.dy = -Math.sin(Math.PI * k) * 74; a.ov.rot = r0 - k * Math.PI * 2; yield; }
   a.ov.dy = 0; a.ov.rot = 0; a.facing = -d; sfx('land'); S.F.dust(a.x, 6);
   S.set(a, { pose: 'super_3|strong_2', ...gi }); yield* S.wait(8);
   const vx0 = v.x, vx1 = clamp(a.x + d * 40, lo, hi) === a.x + d * 40 ? a.x + d * 40 : v.x;
@@ -362,17 +378,19 @@ function* superAlba(S, a, v, d) {
 }
 // Álvaro: his car arrives, he jumps in and runs the opponent over
 function* superAlvaro(S, a, v, d) {
-  const car = S.prop({ kind: 'car', x: a.x - d * 320 });
+  const sc = frameOf(a, 'prop_car'), half = sc ? sc.c.width / 2 : 100, seat = sc ? -12 : -26; // driver's seat from the centre
+  const car = S.prop({ kind: 'car', x: a.x - d * (half + 260) });
   sfx('dash'); S.say(a.x, -100, '¡BRUM BRUM!');
   S.set(a, { pose: 'super_1|jump_3' });
-  while (d * (a.x - car.x) > 6) { car.x += d * 8; if (car.t % 3 === 0) S.F.dust(car.x - d * 90, 1); yield; }
-  car.x = a.x; car.driver = true; S.set(a, { hidden: true }); sfx('land');
+  const stop = a.x - d * seat;
+  while (d * (stop - car.x) > 6) { car.x += d * 8; if (car.t % 3 === 0) S.F.dust(car.x - d * (half - 30), 1); yield; }
+  car.x = stop; car.driver = true; S.set(a, { hidden: true }); sfx('land');
   yield* S.wait(14); sfx('dash');
   let hit = false;
   for (let i = 0; i < 200; i++) {
     car.x += d * Math.min(15, 3 + i * .5);
-    if (i % 2 === 0) S.emit('speed', car.x - d * (104 + 16 * (d > 0)), rnd(-40, -8), -d * 6, 0, 8);
-    if (!hit && d * (car.x + d * 92 - v.x) > 0) { hit = true; S.boom(v.x, -30, true); S.finish(d * 10, -10.5); }
+    if (i % 2 === 0) S.emit('speed', car.x - d * (half + 4) - (d > 0 ? 16 : 0), rnd(-40, -8), -d * 6, 0, 8);
+    if (!hit && d * (car.x + d * (half - 8) - v.x) > 0) { hit = true; S.boom(v.x, -30, true); S.finish(d * 10, -10.5); }
     if (hit && d * (car.x - v.x) > 300) break;
     yield;
   }
@@ -401,7 +419,7 @@ function* superBene(S, a, v, d) {
   let landed = 0;
   for (let i = 0; i < riff.length; i++) {
     sfx('blip', riff[i]); sfx('blip', riff[i] * 2);
-    const n = S.prop({ kind: 'note', x: a.x + d * 24, y: -66 + rnd(-6, 6), vx: d * 4.6, col: cols[i % 4], w0: rnd(0, 6) });
+    const n = S.prop({ kind: 'note', x: a.x + d * 26, y: -54 + rnd(-6, 6), vx: d * 4.6, col: cols[i % 4], tint: i % 4 ? cols[i % 4] : null, w0: rnd(0, 6) });
     n.base = n.y;
     n.update = q => {
       q.y = q.base + Math.sin(q.t * .3 + q.w0) * 6;
@@ -437,36 +455,53 @@ function* superCarlottis(S, a, v, d) {
   S.finish(d * 2, -3);
   yield* S.wait(30); a.ov = null;
 }
-// Marcos: a giant Greek yogurt drops between them and he tips it onto the opponent
+// Marcos: a giant Greek yogurt drops between them, he tips it over and its wave knocks the opponent out
 function* superMarcos(S, a, v, d) {
-  yield* S.spread(170);
-  const mid = a.x + d * clamp(Math.abs(v.x - a.x) * .45, 60, 140);
+  const up = frameOf(a, 'prop_yogurt'), down = frameOf(a, 'prop_yogurt_2'), K = PROP_SIZE.yogurt[1];
+  // sizes in units: upright pot, the bottom edge it tips over, the tipped pot + wave (its wave starts ~47% along)
+  const potW = up ? up.c.width * K : 96, potH = up ? up.c.height * K : 132, edge = up ? potW * .38 : 36;
+  const w2 = down ? down.c.width * K : 0, waveAt = w2 * .47;
+  const push = frameOf(a, 'super_1'), reach = push ? push.c.width - push.ax : 30; // his hands, ahead of his feet
+  yield* S.spread(down ? reach + potW / 2 + edge + waveAt + 34 : 170);                // room for the pot and the wave
+  const mid = down ? v.x - d * (edge + waveAt + 34) : a.x + d * clamp(Math.abs(v.x - a.x) * .45, 60, 140);
   const pot = S.prop({ kind: 'yogurt', x: mid, y: -280, g: .55, layer: 'back' });
   yield* S.until(() => pot.y >= 0, 90);
   pot.y = 0; pot.vy = 0; pot.g = 0; sfx('hitH'); sfx('fall'); shake(8, 18); S.F.dust(mid, 16);
-  S.say(mid, -122, '¡YOGUR GRIEGO!');
+  S.say(mid, -Math.min(122, potH + 10), '¡YOGUR GRIEGO!');
   yield* S.wait(18);
   S.set(a, { pose: 'super_1|special_2' });
-  const pushX = mid - d * 58;
-  while (d * (pushX - a.x) > 1.5) { a.x += d * 2.5; yield; }
-  pot.pivot = 36; // tips over its front bottom edge
+  const pushX = mid - d * (potW / 2 + reach - 4);
+  while (Math.abs(pushX - a.x) > 1.5) { a.x += Math.sign(pushX - a.x) * 2.5; yield; }
+  pot.pivot = edge; // tips over its front bottom edge
   for (let i = 1; i <= 20; i++) { pot.rot = d * (Math.PI / 2) * easeIn(i / 20); yield; }
-  sfx('fall'); shake(7, 16); S.F.dust(mid + d * 60, 12);
-  if (spriteHas(a.def, 'prop_yogurt_2')) { pot.kind = 'yogurt_2'; pot.rot = 0; pot.pivot = 0; pot.x = mid + d * 100; }
-  const startX = d * (mid + d * 150 - v.x) > 0 ? v.x - d * 24 : mid + d * 150;
-  const spill = S.prop({ kind: 'spill', x: startX, w: 6 });
-  while (d * (spill.x + d * spill.w - v.x) < 26) { spill.w += 5; yield; }
-  S.set(v, { pose: 'hit|idle_1', tint: ['#ffffff', .65] });
-  sfx('fizz'); yield* S.wait(16);
+  sfx('fall'); shake(7, 16); S.F.dust(mid + d * (edge + potH / 2), 12);
+  let spill = null;
+  if (down) { // the tipped pot (sheet F) pours its wave forward
+    const back = mid + d * edge;
+    pot.kind = 'yogurt_2'; pot.rot = 0; pot.pivot = 0; pot.x = back + d * w2 / 2; pot.reveal = waveAt / w2; sfx('fizz');
+    while (pot.reveal < 1) {
+      pot.reveal = Math.min(1, pot.reveal + .04);
+      if (!v.ov.tint && d * (back + d * w2 * pot.reveal - v.x) > -6) S.set(v, { pose: 'hit|idle_1', tint: ['#ffffff', .65] });
+      yield;
+    }
+    if (!v.ov.tint) S.set(v, { pose: 'hit|idle_1', tint: ['#ffffff', .65] });
+  } else { // stand-in: a code-drawn wave grows up to the opponent
+    const startX = d * (mid + d * 150 - v.x) > 0 ? v.x - d * 24 : mid + d * 150;
+    spill = S.prop({ kind: 'spill', x: startX, w: 6 });
+    while (d * (spill.x + d * spill.w - v.x) < 26) { spill.w += 5; yield; }
+    S.set(v, { pose: 'hit|idle_1', tint: ['#ffffff', .65] }); sfx('fizz');
+  }
+  yield* S.wait(16);
   S.finish(d * 3.5, -5);
-  for (let i = 1; i <= 40; i++) { pot.alpha = spill.alpha = 1 - i / 40; yield; }
-  pot.dead = spill.dead = true; a.ov = null;
+  for (let i = 1; i <= 40; i++) { pot.alpha = 1 - i / 40; if (spill) spill.alpha = pot.alpha; yield; }
+  pot.dead = true; if (spill) spill.dead = true; a.ov = null;
 }
 // Oso: a giant judge's gavel, one blow
 function* superOso(S, a, v, d) {
   const gav = spriteHas(a.def, 'super_1') ? null : S.prop({ kind: 'gavel', x: a.x + d * 4, y: -86, rot: -.12 * d });
   S.set(a, { pose: 'super_1|victory' }); S.say(a.x, -118, '¡ORDEN EN LA SALA!'); yield* S.wait(38);
-  const target = v.x - d * 64;
+  const slam = frameOf(a, 'super_2'), reach = slam ? slam.c.width - slam.ax - 14 : 64; // gavel head ahead of his feet
+  const target = v.x - d * reach;
   while (d * (target - a.x) > 1.5) { a.x += d * 4; if (gav) gav.x = a.x + d * 4; yield; }
   S.set(a, { pose: 'super_2|special_2' });
   if (gav) for (let i = 1; i <= 6; i++) { const k = i / 6; gav.rot = d * lerp(-.12, 1.72, k); gav.y = lerp(-86, -34, k); gav.x = a.x + d * lerp(4, 16, k); yield; }
@@ -477,31 +512,37 @@ function* superOso(S, a, v, d) {
   S.finish(d * 2, -3);
   yield* S.wait(26); if (gav) gav.dead = true; a.ov = null;
 }
-// Casado: a tank rolls in, he climbs aboard and fires a missile
+// Casado: a tank rolls in behind him, he climbs into the hatch and fires a missile
 function* superCasado(S, a, v, d) {
-  const tank = S.prop({ kind: 'tank', x: a.x - d * 360 });
+  const t1 = frameOf(a, 'prop_tank'), t2 = frameOf(a, 'prop_tank_2');
+  const len = t1 ? t1.c.width : 232, hatch = t1 ? 77 : 110, high = t1 ? t1.c.height : 102; // hatch: from the rear end
+  yield* S.spread(200);
+  const tank = S.prop({ kind: 'tank', x: a.x - d * (len + 330), layer: 'back' }); // x = rear end
   sfx('shock'); S.say(a.x, -100, '¡A SUS ÓRDENES!');
-  const stop = a.x - d * 30;
-  while (d * (stop - tank.x) > 2) { tank.x += d * Math.min(5, d * (stop - tank.x)); if (tank.t % 5 === 0) { shake(2, 4); S.F.dust(tank.x - d * 100, 2); } yield; }
+  const stop = a.x - d * (20 + hatch); // parks with the hatch just behind him
+  while (d * (stop - tank.x) > 2) { tank.x += d * Math.min(5, d * (stop - tank.x)); if (tank.t % 5 === 0) { shake(2, 4); S.F.dust(tank.x + d * 24, 2); } yield; }
   sfx('land'); shake(4, 8);
   S.set(a, { pose: 'super_1|jump_3' });
-  for (let i = 1; i <= 16; i++) { a.ov.dy = -Math.sin(Math.PI * i / 16) * 60; a.ov.dx = -d * 30 * i / 16; yield; }
+  for (let i = 1; i <= 16; i++) { a.ov.dy = -Math.sin(Math.PI * i / 16) * high * .55; a.ov.dx = -d * 20 * i / 16; yield; }
   S.set(a, { hidden: true }); tank.crew = true; yield* S.wait(22);
-  S.say(tank.x, -128, '¡FUEGO!', '#ff5a5a');
+  S.say(tank.x + d * (hatch + 56), -118, '¡FUEGO!', '#ff5a5a');
   tank.kind = 'tank_2'; sfx('ko'); shake(9, 16); flash(2, '#fff4c0');
-  const muzzle = tank.x + d * (spriteHas(a.def, 'prop_tank_2') ? 112 : 132);
-  for (let i = 0; i < 10; i++) S.emit('smoke', muzzle, -66 + rnd(-6, 6), d * rnd(.5, 2), rnd(-.6, .2), 30);
+  const muzzle = tank.x + d * (t2 ? t2.c.width : 238), my = t2 ? -Math.round(t2.c.height * .556) : -66;
+  for (let i = 0; i < 10; i++) S.emit('smoke', muzzle, my + rnd(-6, 6), d * rnd(.5, 2), rnd(-.6, .2), 30);
   let hit = false;
-  const m = S.prop({ kind: 'missile', x: muzzle, y: -66, vx: d * 4 });
-  m.update = q => { q.vx += d * .45; if (q.t % 2 === 0) S.emit('smoke', q.x - d * 20, q.y + rnd(-2, 2), 0, -.2, 26); if (d * (q.x - v.x) > -8) { q.dead = true; hit = true; } };
+  const m = S.prop({ kind: 'missile', x: muzzle, y: my, vx: d * 4 });
+  m.update = q => {
+    q.vx += d * .45; q.vy = (S.chest(v) - q.y) * .08; // dips toward the opponent's chest
+    if (q.t % 2 === 0) S.emit('smoke', q.x - d * 28, q.y + rnd(-2, 2), 0, -.2, 26);
+    if (d * (q.x - v.x) > -8) { q.dead = true; hit = true; }
+  };
   yield* S.until(() => hit, 120);
   flash(6, '#fff4c0'); shake(14, 30); sfx('shock'); sfx('hitH');
   for (let i = 0; i < 40; i++) S.emit('fire', v.x + rnd(-10, 10), S.chest(v) + rnd(-20, 20), rnd(-3, 3), rnd(-3.5, 1), rndi(20, 40));
   S.finish(d * 7, -9.5);
   yield* S.wait(36);
-  tank.kind = 'tank'; tank.crew = false; S.poof(a.x); a.ov = null;
-  for (let i = 1; i <= 30; i++) { tank.alpha = 1 - i / 30; tank.x -= d * 3; yield; }
-  tank.dead = true;
+  for (let i = 1; i <= 24; i++) { tank.alpha = 1 - i / 24; tank.x -= d * 3; yield; } // the tank backs out, then he's back
+  tank.dead = true; S.poof(a.x); a.ov = null;
 }
 // MadeverXP (Alberto): Poké Ball, Charizard comes out and breathes fire
 function* superMadeverxp(S, a, v, d) {
@@ -531,21 +572,23 @@ function* superMadeverxp(S, a, v, d) {
   for (let i = 1; i <= 16; i++) { zard.scale = 1 - i / 16; yield; }
   zard.dead = true; a.ov = null;
 }
-// Manu: Isaac appears, Manu climbs on top and Isaac cries tears at the opponent
+// Manu: Isaac appears, Manu climbs on top of his head and Isaac cries tears at the opponent
 function* superManu(S, a, v, d) {
+  const im = frameOf(a, 'prop_isaac'), ih = im ? im.c.height : 107;
+  const top = im ? ih * .56 : 104, eyeY = im ? -ih * .376 : -70, eyes = im ? [-13, 12] : [-12, 12]; // head top, eyes
   const ix = a.x - d * 30;
-  S.poof(ix, -60);
-  const isaac = S.prop({ kind: 'isaac', x: ix, layer: 'back', alpha: 0 });
-  for (let i = 1; i <= 16; i++) { isaac.alpha = i / 16; yield; }
-  S.say(ix, -122, '¡ISAAC!', '#7ab8f0');
+  // he jumps up and Isaac appears under him in a puff of smoke (the sheet F drawing already has Manu on his head)
   S.set(a, { pose: 'super_1|jump_3' });
-  for (let i = 1; i <= 18; i++) { a.ov.dx = -d * 30 * i / 18; a.ov.dy = -104 * Math.sin(Math.PI / 2 * i / 18); yield; }
-  S.set(a, { hidden: true }); isaac.rider = true; yield* S.wait(12);
+  for (let i = 1; i <= 18; i++) { a.ov.dx = -d * 30 * i / 18; a.ov.dy = -top * Math.sin(Math.PI / 2 * i / 18); yield; }
+  S.poof(ix, -top * .5); sfx('item');
+  const isaac = S.prop({ kind: 'isaac', x: ix, layer: 'back', rider: true });
+  S.set(a, { hidden: true });
+  S.say(ix, -122, '¡ISAAC!', '#7ab8f0'); yield* S.wait(30);
   isaac.kind = 'isaac_2';
   let hits = 0;
   const N = 16, T = 28, g = .12;
   for (let i = 0; i < N; i++) {
-    const x0 = ix + d * rnd(4, 16), y0 = -70, tx = v.x + rnd(-6, 6), ty = S.chest(v) + rnd(-14, 14); // from Isaac's eyes
+    const x0 = ix + d * eyes[i % 2] + rnd(-2, 2), y0 = eyeY, tx = v.x + rnd(-6, 6), ty = S.chest(v) + rnd(-14, 14); // from Isaac's eyes
     const tear = S.prop({ kind: 'tear', x: x0, y: y0, vx: (tx - x0) / T, vy: (ty - y0 - g * T * (T + 1) / 2) / T, g });
     tear.update = q => {
       if (q.t < T) return;

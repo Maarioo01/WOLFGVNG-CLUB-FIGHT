@@ -66,7 +66,7 @@ Diseños de referencia en `images/`. Los especiales están en `SPECIALS` en `js/
 
 **Súper:** la barra azul (debajo de la vida) se llena pegando y recibiendo golpes, y se conserva entre rondas. Con la barra llena, el súper (T / O · Num 0 / RB · RT) lanza la escena del personaje, que deja K.O. al rival al instante y gana esa ronda. Solo se puede usar **una vez por combate**; después la barra pone USADO. La velocidad de carga se ajusta con `SUPER_CHARGE` en `js/supers.js`.
 
-Mientras un personaje no tenga su hoja F (`images/sprites/<carpeta>/sheet_F.png`), su súper usa poses parecidas y objetos dibujados por código. Los prompts para crear las hojas F están en [`docs/super-prompts.md`](docs/super-prompts.md).
+Los súpers de Alba, Álvaro, Bene, Casado, Manu, Marcos, Oso y Peño ya usan sus dibujos (hoja F, `images/sprites/<carpeta>/sheet_F.png`). Mario, Belli, Carlottis y MadeverXP aún no la tienen: de momento usan poses parecidas y objetos dibujados por código. Los prompts, el estado de cada uno y qué hacer si ChatGPT rechaza una imagen están en [`docs/super-prompts.md`](docs/super-prompts.md).
 
 **Dificultad de la CPU:** Fácil / Medio / Difícil, en el menú principal y en el menú de pausa.
 
