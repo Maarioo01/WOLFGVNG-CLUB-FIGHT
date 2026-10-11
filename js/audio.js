@@ -36,10 +36,41 @@ function unlockAudio() {
     if (AU.ambWant) ambient(AU.ambWant);
   }
   if (AU.ac.state === 'suspended') AU.ac.resume();
+  bgmUpdate();
 }
 function toggleMute() {
   AU.muted = !AU.muted;
   if (AU.master) AU.master.gain.setTargetAtTime(AU.muted ? 0 : 0.75, AU.ac.currentTime, 0.02);
+  bgmUpdate();
+}
+
+// ============================================================
+//  SONGS — the background music: MP3s in music/, picked with MÚSICA in the main and pause menus (remembered
+//  by the browser). One song plays all the time, menus and fights; M mutes it with the rest of the sound.
+// ============================================================
+const SONGS = [
+  { name: 'ÉPICA', src: 'music/epica.mp3' },       // "Canción épica que usa TheGrefg (Victory)" - TheFake647
+  { name: 'PATRICIO', src: 'music/patricio.mp3' }, // "Patricio Estrella en un caballito" - Donovan Vega
+];
+const BGM = { el: null, src: null, sel: 0, vol: .45 }; // sel: index in SONGS, SONGS.length = no music
+try { const v = localStorage.getItem('wolfgvng.music'); if (v !== null && +v >= 0 && +v <= SONGS.length) BGM.sel = +v; } catch (e) { }
+const songName = () => SONGS[BGM.sel] ? SONGS[BGM.sel].name : 'NO';
+// start / switch / stop the song to match the menu choice. Browsers only allow sound after the first key press
+// or click, so it starts from unlockAudio()
+function bgmUpdate() {
+  const s = SONGS[BGM.sel];
+  if (!s) { if (BGM.el) BGM.el.pause(); return; }
+  if (BGM.src !== s.src) {
+    if (BGM.el) BGM.el.pause();
+    BGM.el = new Audio(s.src); BGM.src = s.src; BGM.el.loop = true; BGM.el.volume = BGM.vol;
+  }
+  BGM.el.muted = AU.muted;
+  if (AU.ac && BGM.el.paused) BGM.el.play().catch(() => { });
+}
+function setSong(i) {
+  const n = SONGS.length + 1; BGM.sel = ((i % n) + n) % n; sfx('select');
+  try { localStorage.setItem('wolfgvng.music', BGM.sel); } catch (e) { }
+  bgmUpdate();
 }
 
 function osc(type, freq, t0, dur, vol, dest, o = {}) {
@@ -249,7 +280,9 @@ const TRACKS = {};
 })();
 
 const Music = { cur: null, want: null, step: 0, next: 0, timer: null, gain: null };
+const CHIPTUNE = false; // [CHIPTUNE MUSIC off] the songs in music/ replaced it (SONGS); true brings it back
 function playMusic(name) {
+  if (!CHIPTUNE) { bgmUpdate(); return; }
   Music.want = name;
   if (!AU.ac) return;
   if (Music.cur === name) return;

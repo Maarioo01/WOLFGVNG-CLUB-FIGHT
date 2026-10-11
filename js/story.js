@@ -33,15 +33,24 @@ function aiFor(st, d = GAME.diff) {
     dmg: a.dmg * k.dmg, hp: Math.round(a.hp * k.hp), punish: (a.punish || .3) * k.punish, speed: a.speed * k.speed, react: a.react + k.react
   });
 }
-// draws "< DIFICULTAD: MEDIO >" centred
-function drawDiffOption(g, y, sel, prefix = 'DIFICULTAD') {
-  const lbl = prefix + ': ', val = DIFFS[GAME.diff], full = (sel ? '◀ ' : '') + lbl + val + (sel ? ' ▶' : '');
+// draws "< LABEL: VALUE >" centred (a setting changed with left / right)
+function drawOption(g, y, sel, label, val, col) {
+  const lbl = label + ': ', full = (sel ? '◀ ' : '') + lbl + val + (sel ? ' ▶' : '');
   const w = full.length * 8, x0 = W / 2 - w / 2;
   let x = x0;
   if (sel) { text(g, '◀ ', x, y, { color: '#ffd84a', outline: OUTL }); x += 16; }
   text(g, lbl, x, y, { color: sel ? '#ffd84a' : '#c8c0e0', outline: OUTL }); x += lbl.length * 8;
-  text(g, val, x, y, { color: DIFF_COL[GAME.diff], outline: OUTL }); x += val.length * 8;
+  text(g, val, x, y, { color: col, outline: OUTL }); x += val.length * 8;
   if (sel) text(g, ' ▶', x, y, { color: '#ffd84a', outline: OUTL });
+}
+const drawDiffOption = (g, y, sel, prefix = 'DIFICULTAD') => drawOption(g, y, sel, prefix, DIFFS[GAME.diff], DIFF_COL[GAME.diff]);
+const drawMusicOption = (g, y, sel) => drawOption(g, y, sel, 'MÚSICA', songName(), BGM.sel < SONGS.length ? '#8ff0ff' : '#8a80b0');
+// left / right on a setting row: true if it was handled
+function optionInput(item) {
+  let ch = 0; if (Input.hit('left')) ch = -1; if (Input.hit('right') || Input.ok()) ch = 1;
+  if (item === 'DIFICULTAD') { if (ch) setDiff(GAME.diff + ch); return ch; }
+  if (item === 'MÚSICA') { if (ch) setSong(BGM.sel + ch); return true; }
+  return false;
 }
 // [STORY] const C = () => GAME.country;
 
@@ -231,7 +240,7 @@ class BootScene {
 class TitleScene {
   init() {
     // this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES']; // [STORY]
-    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'CONTROLES'];
+    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'CONTROLES'];
     this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 }));
     this.hero = new Actor(CH.mario, 0, 1, { anim: 'idle' }); this.capo = new Actor(CH.peno, 0, -1, { anim: 'idle' });
     playMusic('rumba'); ambient('street'); this.started = false;
@@ -242,18 +251,15 @@ class TitleScene {
     const n = this.items.length;
     if (Input.hit('up')) { this.sel = (this.sel + n - 1) % n; sfx('select'); }
     if (Input.hit('down')) { this.sel = (this.sel + 1) % n; sfx('select'); }
-    if (this.sel === 2) {
-      if (Input.hit('left')) setDiff(GAME.diff - 1);
-      if (Input.hit('right') || Input.ok()) setDiff(GAME.diff + 1);
-      return;
-    }
+    const it = this.items[this.sel];
+    if (it === 'DIFICULTAD' || it === 'MÚSICA') { optionInput(it); return; }
     if (Input.ok()) {
       sfx('confirm');
       // if (this.sel === 0) goFade(() => new CountryScene()); // [STORY]
       // if (this.sel === 1) goFade(() => new QuickScene());   // [STORY]
-      if (this.sel === 0) goFade(() => new SelectScene('cpu'));
-      if (this.sel === 1) goFade(() => new SelectScene('2p'));
-      if (this.sel === 3) goFade(() => new ControlsScene());
+      if (it === '1 JUGADOR VS CPU') goFade(() => new SelectScene('cpu'));
+      if (it === '2 JUGADORES') goFade(() => new SelectScene('2p'));
+      if (it === 'CONTROLES') goFade(() => new ControlsScene());
     }
   }
   draw(g) {
@@ -273,6 +279,7 @@ class TitleScene {
       const y = 116 + i * 14, s = i === this.sel;
       if (s) { g.fillStyle = 'rgba(255,216,74,.18)'; g.fillRect(W / 2 - 100, y - 3, 200, 13); }
       if (it === 'DIFICULTAD') { drawDiffOption(g, y, s); return; }
+      if (it === 'MÚSICA') { drawMusicOption(g, y, s); return; }
       if (s) text(g, '▶', W / 2 - 84, y, { color: '#ffd84a' });
       text(g, it, W / 2, y, { align: 'center', color: s ? '#ffd84a' : '#c8c0e0', outline: OUTL });
     });

@@ -8,7 +8,7 @@
 //  'super_1|idle_1' falls back to idle_1 (optionally tinted) and props are drawn by code (PROP_DRAW). Each script
 //  places things from the real frames' sizes when they exist (spriteHas / frameOf).
 // ============================================================
-const SUPER_CHARGE = .7; // bar gained per hit (given or taken) is multiplied by this: a full bar takes about two rounds
+const SUPER_CHARGE = 1; // bar gained per hit (given or taken) is multiplied by this: a full bar takes most of a round
 const IDLE_LOOP = ['idle_1', 'idle_2', 'idle_3', 'idle_4'];
 const WALK_BACK = ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6'];
 
@@ -68,7 +68,7 @@ function drawFighterOv(f, g, camX) {
 // its drawn size (sheet F is cut at the character's scale, so a car or tank with the character inside fits as drawn)
 const PROP_SIZE = {
   car: ['k', 1], tank: ['k', 1], tank_2: ['k', 1], isaac: ['k', 1], isaac_2: ['k', 1], yogurt: ['k', 1.35], yogurt_2: ['k', 1.35],
-  missile: ['w', 56], charizard: ['h', 150], charizard_2: ['h', 150], pokeball: ['w', 11], note: ['h', 18], syringe: ['w', 28], virus: ['h', 120],
+  missile: ['w', 56], charizard: ['k', 1], charizard_2: ['k', 1.08], pokeball: ['w', 11], note: ['h', 18], syringe: ['w', 28], virus: ['h', 120],
 };
 const PROP_CENTRED = { missile: 1, pokeball: 1, note: 1, syringe: 1, virus: 1, tear: 1, ball: 1 }; // anchor = centre, not feet
 const PROP_BACK = { tank: 116, tank_2: 116 }; // placed by their rear end (p.x); the code-drawn one is 116 units behind its centre
@@ -546,7 +546,8 @@ function* superCasado(S, a, v, d) {
 }
 // MadeverXP (Alberto): Poké Ball, Charizard comes out and breathes fire
 function* superMadeverxp(S, a, v, d) {
-  yield* S.spread(200);
+  const roar = frameOf(a, 'prop_charizard_2'); // the Charizard sheet: mouth near the top right of the roar frame
+  yield* S.spread(roar ? 230 : 200);
   S.set(a, { pose: 'super_1|special_1' }); yield* S.wait(16);
   S.set(a, { pose: 'super_2|special_2' }); sfx('throw');
   const spot = a.x + d * 76; // Charizard comes out between them
@@ -559,7 +560,8 @@ function* superMadeverxp(S, a, v, d) {
   for (let i = 1; i <= 16; i++) { zard.scale = i / 16; yield; }
   sfx('shock'); shake(6, 20); S.say(spot, -122, '¡CHARIZARD!', '#ff8a30'); yield* S.wait(30);
   zard.kind = 'charizard_2';
-  const mx = spot + d * 64, my = -106, tFly = Math.max(6, Math.abs(v.x - mx) / 7); // Charizard's mouth
+  const k = roar ? propScale(roar, 'charizard_2') : 1, mx = spot + d * (roar ? roar.c.width * .4 * k : 64), my = roar ? -roar.c.height * .7 * k : -106;
+  const tFly = Math.max(6, Math.abs(v.x - mx) / 7); // fire from Charizard's mouth
   for (let i = 0; i < 64; i++) {
     for (let j = 0; j < 2; j++) S.emit('fire', mx, my + rnd(-3, 3), d * rnd(6, 8), (S.chest(v) - my) / tFly + rnd(-.6, .6), rndi(22, 34));
     if (i % 6 === 0) sfx('smoke');

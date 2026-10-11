@@ -4,17 +4,16 @@ Each fighter has one **super**: a short cinematic that knocks the opponent out i
 
 This guide makes one extra sheet per character, **sheet F**, with the frames and objects of their super. Marcos's sheet F also has the frames of his special, the "pico" strikes.
 
-**What the game draws itself (don't put it in the drawings):** fire, explosions, smoke, flashes, speed lines, tears, the football, the musical notes' movement and the screen glitch. It also draws Mario's syringe, Belli's virus screen, and MadeverXP's Poké Ball and Charizard (see [When ChatGPT refuses](#when-chatgpt-refuses)). The sheets only need the character poses and the objects listed.
+**What the game draws itself (don't put it in the drawings):** fire, explosions, smoke, flashes, speed lines, tears, the football, the musical notes' movement and the screen glitch. It also draws Mario's syringe, Belli's virus screen and MadeverXP's Poké Ball (see [When ChatGPT refuses](#when-chatgpt-refuses)). Charizard comes from the Charizard sheet in MadeverXP's folder. The sheets only need the character poses and the objects listed.
 
 ## Status
 
 | Character | Sheet F |
 |---|---|
-| Alba, Álvaro, Bene, Casado, Manu, Marcos, Oso, Peño | ✅ In the game |
-| Carlottis | ⏳ To do: use the block below |
+| Alba, Álvaro, Bene, Carlottis, Casado, Manu, Marcos, Oso, Peño | ✅ In the game |
+| MadeverXP | ⏳ Charizard ✅ in the game (from `images/sprites/madeverXP/charizard.jpg`). His own throwing poses are still to do: use the new block below |
 | Mario | 🔁 Refused. Try the new block below: the game now draws the syringe |
 | Belli | 🔁 Refused. Try the new block below: the game draws the virus screen |
-| MadeverXP | 🔁 Refused. Try the new block below: only his throwing poses |
 
 ## How to make each sheet
 
@@ -136,7 +135,7 @@ Then paste the character block right below it.
 3. prop_note: one big musical note (♪), bright yellow with a dark outline (the game copies and colours it).
 ```
 
-### Carlottis: ¡VACUNA!
+### Carlottis: ¡VACUNA! ✅
 *In the game:* she changes into a nurse uniform and throws a volley of syringes (drawn by the game), and the opponent collapses.
 ```
 1. super_1: Carlottis in a nurse uniform (white dress, white nurse cap with a red cross, white shoes), keeping her braid and earrings, in a fighting stance with her fists up.
@@ -175,7 +174,7 @@ Then paste the character block right below it.
 ```
 
 ### MadeverXP (Alberto): ¡LANZALLAMAS!
-*In the game:* he throws a Poké Ball, Charizard comes out and burns the opponent with a stream of fire. The game draws the ball, Charizard and the fire.
+*In the game:* he throws a Poké Ball, Charizard comes out and burns the opponent with a stream of fire. Charizard comes from the Charizard sheet (`charizard.jpg`, its 3/4 stance and its roar); the game draws the ball and the fire.
 
 *Why it changed:* ChatGPT blocks any image that looks like a Pokémon, even when it's described without the name. The sheet now only has MadeverXP:
 ```

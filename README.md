@@ -9,7 +9,7 @@ python serve.py
 ```
 Abre http://localhost:8765 (también funciona abriendo `index.html` directamente o desde GitHub Pages).
 
-**Modos:** `1 JUGADOR VS CPU` o `2 JUGADORES` → elegir luchadores → elegir escenario (o aleatorio) → combate al mejor de 3 rondas → revancha / cambiar personajes / menú.
+**Modos:** `1 JUGADOR VS CPU` o `2 JUGADORES` → elegir luchadores → elegir escenario (o aleatorio) → gana el combate quien gane 3 rondas (de 3 a 5 rondas) → revancha / cambiar personajes / menú. Todos los luchadores tienen la misma vida (también la CPU).
 
 ### Teclado (dos jugadores en el mismo teclado)
 
@@ -28,7 +28,7 @@ En modo **vs CPU** el jugador 1 puede usar cualquiera de los dos lados del tecla
 | Enter / Espacio | Confirmar · pausa en combate |
 | Esc / P | Pausa · volver |
 | Retroceso | Volver |
-| M | Sonido on/off |
+| M | Sonido on/off (música incluida) |
 
 ### Mandos (Xbox / PS5, mapeo estándar en Chrome/Edge para Windows)
 
@@ -64,11 +64,13 @@ Diseños de referencia en `images/`. Los especiales están en `SPECIALS` en `js/
 | Casado | ¡Firmes! (saludo militar y grito que lanza una onda) | ¡Artillería! (llega un tanque, se sube y dispara un misil) |
 | MadeverXP (Alberto) | ¡Gatazo! (lanza a su gato) | ¡Lanzallamas! (lanza una Poké Ball, sale Charizard y escupe fuego) |
 
-**Súper:** la barra azul (debajo de la vida) se llena pegando y recibiendo golpes, y se conserva entre rondas. Con la barra llena, el súper (T / O · Num 0 / RB · RT) lanza la escena del personaje, que deja K.O. al rival al instante y gana esa ronda. Solo se puede usar **una vez por combate**; después la barra pone USADO. La velocidad de carga se ajusta con `SUPER_CHARGE` en `js/supers.js`.
+**Súper:** la barra azul (debajo de la vida) se llena pegando y recibiendo golpes, y se conserva entre rondas. Se llena en algo menos de una ronda. Con la barra llena, el súper (T / O · Num 0 / RB · RT) lanza la escena del personaje, que deja K.O. al rival al instante y gana esa ronda. Solo se puede usar **una vez por combate**; después la barra pone USADO. La velocidad de carga se ajusta con `SUPER_CHARGE` en `js/supers.js`.
 
-Los súpers de Alba, Álvaro, Bene, Casado, Manu, Marcos, Oso y Peño ya usan sus dibujos (hoja F, `images/sprites/<carpeta>/sheet_F.png`). Mario, Belli, Carlottis y MadeverXP aún no la tienen: de momento usan poses parecidas y objetos dibujados por código. Los prompts, el estado de cada uno y qué hacer si ChatGPT rechaza una imagen están en [`docs/super-prompts.md`](docs/super-prompts.md).
+Los súpers de Alba, Álvaro, Bene, Carlottis, Casado, Manu, Marcos, Oso y Peño ya usan sus dibujos (hoja F, `images/sprites/<carpeta>/sheet_F.png`); el Charizard de MadeverXP sale de `images/sprites/madeverXP/charizard.jpg`. Mario, Belli y MadeverXP aún no tienen hoja F: de momento usan poses parecidas y objetos dibujados por código. Los prompts, el estado de cada uno y qué hacer si ChatGPT rechaza una imagen están en [`docs/super-prompts.md`](docs/super-prompts.md).
 
-**Dificultad de la CPU:** Fácil / Medio / Difícil, en el menú principal y en el menú de pausa.
+**Dificultad de la CPU:** Fácil / Medio / Difícil, en el menú principal y en el menú de pausa. Cambia cómo juega y cuánto pega la CPU, no su vida.
+
+**Música:** dos canciones en `music/` (`epica.mp3` y `patricio.mp3`). Se elige con **MÚSICA** en el menú principal o en el de pausa (← →): ÉPICA, PATRICIO o NO (sin música). La elección se guarda en el navegador y la canción suena siempre, en los menús y en los combates. Para añadir otra canción: copiarla a `music/` y añadirla a `SONGS` en `js/audio.js`. La música chiptune original sigue en el código, apagada (`CHIPTUNE` en `js/audio.js`).
 
 ## Sprites de los personajes
 
@@ -91,13 +93,13 @@ Luego añadir la imagen a `sheets` en `tools/sprites.config.js` y volver a ejecu
 
 Poses que entiende el juego (si falta alguna usa la más parecida): ver la lista completa y el prompt para generarlas en [`docs/pose-prompts.md`](docs/pose-prompts.md).
 
-Los 12 luchadores tienen ya todas sus poses (hojas A–E en `images/sprites/`, más la hoja original de los primeros personajes). A Manu y Casado les falta la hoja E (cara de frente para el HUD, bloqueo, golpe de pie y victoria); mientras tanto usan la pose más parecida.
+Los 12 luchadores usan solo las hojas generadas (A–E en `images/sprites/`); los primeros diseños (`images/*.jpg`, de otro estilo) ya no se usan. Mario, Peño y MadeverXP tienen además la hoja E (bloqueo, golpe de pie y segunda pose de victoria). Los demás usan la guardia para bloquear, el gesto de dolor agachado al recibir golpes y su pose de victoria con un saltito. Las caras del HUD, la selección y el súper se recortan de la pose de combate de cada uno, todas con el mismo encuadre y a más resolución que los sprites.
 
 **Personajes nuevos:** los pasos y los prompts para crear un personaje desde fotos (hoja base y hojas A–E) están en [`docs/pose-prompts.md`](docs/pose-prompts.md#new-characters-manu-casado-madeverxp).
 
 ## Estructura
 - `js/core.js` — canvas, utilidades, texto pixel, input (teclado por jugador / mandos / táctil), efectos
-- `js/audio.js` — sintetizador chiptune (pulso/triángulo/ruido), SFX y secuenciador de música
+- `js/audio.js` — canciones de fondo (`music/`), SFX sintetizados (pulso/triángulo/ruido) y la música chiptune original (apagada)
 - `js/art.js` — esqueleto + poses con keyframes, y la definición de cada personaje (`CH`)
 - `js/art_hd.js` — luchadores dibujados por código (para los que aún no tienen sprites)
 - `js/sprites.js` — luchadores con los sprites de los diseños: carga, animaciones y caras del HUD

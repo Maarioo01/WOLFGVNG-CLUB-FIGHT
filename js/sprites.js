@@ -16,17 +16,18 @@ const SPRITE_FALLBACK = {
   walk_back_1: 'walk_fwd_6', walk_back_2: 'walk_fwd_5', walk_back_3: 'walk_fwd_4', walk_back_4: 'walk_fwd_3', walk_back_5: 'walk_fwd_2', walk_back_6: 'walk_fwd_1',
   walk_1: 'stance', walk_2: 'walk_1', walk_3: 'walk_1', walk_4: 'walk_2',
   punch_1: 'stance', punch_2: 'punch', punch: 'stance', strong_1: 'punch_1', strong_2: 'punch_2',
-  kick_1: 'stance', kick_2: 'kick', kick: 'stance', block: 'stance', hit: 'stance',
-  crouch: 'stance', crouch_block: 'crouch', crouch_punch: 'punch_2', crouch_hit: 'hit', sweep_1: 'crouch', sweep_2: 'kick_2',
+  kick_1: 'stance', kick_2: 'kick', kick: 'stance', block: 'idle_1', hit: 'crouch_hit', // no sheet E: guard stance / flinch
+  crouch: 'stance', crouch_block: 'crouch', crouch_punch: 'punch_2', crouch_hit: 'stance', sweep_1: 'crouch', sweep_2: 'kick_2',
   jump_1: 'crouch', jump_2: 'stance', jump_3: 'jump_2', jump_kick: 'kick_2', jump_punch: 'punch_2',
   knockdown_1: 'knockdown', knockdown_2: 'ko', knockdown: 'hit', ko: 'hit', getup_1: 'crouch', getup_2: 'getup_1',
-  victory_1: 'victory', victory_2: 'victory_1', victory: 'stance',
+  victory_1: 'victory_2', victory_2: 'victory', victory: 'stance',
   special_1: 'stance', special_2: 'special', special_3: 'special_2', special: 'punch_2',
   // super_* / prop_* (sheet F) have no fallback here: supers.js picks a stand-in pose for each one
 };
 // game animation -> pose for each keyframe of ANIM[name] (art.js), so the timing is the move's frame data;
-// { loop, d } = looping cycle with its own speed (d ticks per frame). A trailing '+' lifts the frame one art
-// pixel when the pose is only a stand-in (so a single stance still breathes).
+// { loop, d } = looping cycle with its own speed (d ticks per frame); hop: n = when every frame of the loop is the
+// same drawing, every other one is lifted n art pixels (a single victory pose bounces). A trailing '+' lifts the
+// frame one art pixel when the pose is only a stand-in (so a single stance still breathes); '^' lifts it 3.
 const SPRITE_ANIM = {
   idle: { loop: ['idle_1', 'idle_2+', 'idle_3+', 'idle_4'], d: 11 }, stand: { loop: ['idle_1', 'idle_2+'], d: 22 }, intro: { loop: ['idle_1', 'idle_2+'], d: 22 },
   walkF: { loop: ['walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'], d: 5 },
@@ -50,7 +51,7 @@ const SPRITE_ANIM = {
   hit: ['hit', 'hit', 'idle_1', 'idle_1'], hitC: ['crouch_hit', 'crouch', 'crouch'],
   block: ['block'], blockC: ['crouch_block'],
   knock: ['knockdown_1', 'knockdown_2'], lie: ['knockdown_2'], getup: ['knockdown_2', 'getup_1', 'getup_2', 'idle_1'], // knockdown_2 = lying (old sheets: ko)
-  win: { loop: ['victory_1', 'victory_2+'], d: 12 }, laugh: { loop: ['victory_1', 'victory_2+'], d: 12 },
+  win: { loop: ['victory_1', 'victory_2'], d: 12, hop: 1 }, laugh: { loop: ['victory_1', 'victory_2'], d: 12, hop: 1 },
 };
 
 function loadSprites() {
@@ -78,8 +79,9 @@ function spritePose(set, name) {
 }
 // cut one frame out of the atlas (cached); returned in the shape drawSpr() expects
 function spriteFrame(def, name) {
-  const set = spriteSet(def), plus = name.endsWith('+'), want = plus ? name.slice(0, -1) : name, pose = spritePose(set, want), alt = !!def.base;
-  const bob = plus && pose !== want ? 1 : 0; // only lift stand-in frames
+  const set = spriteSet(def), suf = name.slice(-1), plus = suf === '+', hop = suf === '^', want = plus || hop ? name.slice(0, -1) : name;
+  const pose = spritePose(set, want), alt = !!def.base;
+  const bob = hop ? 3 : plus && pose !== want ? 1 : 0; // '+' only lifts stand-in frames
   const key = pose + '|' + (alt ? 1 : 0) + '|' + bob;
   let s = set.cache.get(key); if (s) return s;
   const f = set.meta.frames[pose], [c, g] = mk(f.w, f.h), sc = ART_PX / 2;
@@ -90,7 +92,11 @@ function spriteFrame(def, name) {
 // the sprite for animation `anim` at tick t (same keyframe timing as the code-drawn poses)
 function spriteForAnim(def, anim, t) {
   const seq = SPRITE_ANIM[anim] || SPRITE_ANIM.idle, A = ANIM[anim];
-  if (seq.loop) return spriteFrame(def, seq.loop[Math.floor(Math.max(0, t) / seq.d) % seq.loop.length]);
+  if (seq.loop) {
+    const i = Math.floor(Math.max(0, t) / seq.d) % seq.loop.length, set = spriteSet(def);
+    const one = seq.hop && seq.loop.every(n => spritePose(set, n) === spritePose(set, seq.loop[0])); // a single drawing: bounce
+    return spriteFrame(def, seq.loop[i] + (one && i % 2 ? '^' : ''));
+  }
   if (!A) return spriteFrame(def, seq[0]);
   const tt = A.loop ? ((Math.floor(t) % A.total) + A.total) % A.total : clamp(Math.floor(t), 0, A.total);
   let acc = 0, i = 0;

@@ -40,6 +40,7 @@ const SPECIALS = {
   madeverxp: { special: { anim: 'throw', pop: '¡GATAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cat' }, cd: 60, snd: 'throw' } },
 };
 const JUMP_V = -6.3, GRAV = 0.3;
+const WINS_TO_WIN = 3; // round wins that take the match (so a match lasts 3 to 5 rounds)
 
 class Fighter {
   constructor(def, x, facing, side) {
@@ -387,7 +388,7 @@ class Fight {
     this.p.ctrl = new PadCtrl(this.p, this.cpu ? Input : Input.pl[0]);
     if (this.cpu) {
       this.e.ctrl = new AICtrl(this.e, o.ai);
-      this.e.dmgMul = o.ai.dmg || 1; this.e.spd *= (o.ai.speed || 1); this.e.maxHp = this.e.hp = this.e.hpShow = o.ai.hp || 100;
+      this.e.dmgMul = o.ai.dmg || 1; this.e.spd *= (o.ai.speed || 1); // everyone has 100 HP: the difficulty only changes how the CPU plays
     } else this.e.ctrl = new PadCtrl(this.e, Input.pl[1]);
     this.round = 1; this.wins = [0, 0]; this.projs = []; this.parts = []; this.pops = []; this.hitstop = 0; this.slow = 0; this.cutin = null; this.sup = null;
     this.camX = clamp(o.center - W / 2, this.arena.l, this.arena.r - W); this.tick = 0;
@@ -398,11 +399,9 @@ class Fight {
     if (!this.cpu) return;
     const e = this.e; this.o.ai = ai; e.ctrl.p = ai; e.dmgMul = ai.dmg || 1;
     e.spd = 1.35 * (e.def.speed || 1) * (ai.speed || 1);
-    const newMax = ai.hp || 100; e.pendingMax = newMax;
   }
   startRound() {
     const c = this.center;
-    if (this.e.pendingMax) { this.e.maxHp = this.e.pendingMax; this.e.pendingMax = 0; }
     this.sup = null; this.cutin = null;
     for (const [f, x, fc] of [[this.p, c - 60, 1], [this.e, c + 60, -1]]) {
       f.x = x; f.y = 0; f.vx = f.vy = 0; f.facing = fc; f.hp = f.hpShow = f.maxHp; f.setState('idle'); f.move = null; f.combo = 0; f.comboN = 0; f.inv = 0; f.flash = 0; f.stun = 0; f.projCD = 0; f.downKO = false; f.bounced = false; f.ov = null;
@@ -552,7 +551,7 @@ class Fight {
       if (this.result) {
         this.pt2++;
         if (this.pt2 === 170) {
-          if (this.wins[0] >= 2 || this.wins[1] >= 2) { this.phase = 'over'; this.o.onEnd(this.wins[0] >= 2 ? 0 : 1); }
+          if (this.wins[0] >= WINS_TO_WIN || this.wins[1] >= WINS_TO_WIN) { this.phase = 'over'; this.o.onEnd(this.wins[0] >= WINS_TO_WIN ? 0 : 1); }
           else { this.round++; this.startRound(); playMusic(this.o.music); }
         }
       }
@@ -627,7 +626,7 @@ class Fight {
       // name, player tag & wins
       text(g, f.def.name, side ? W - XL : XL, 28, { color: '#fff', outline: OUTL, align: side ? 'right' : 'left' });
       const tag = this.tags[side]; tiny(g, tag, side ? W - 4 - tinyW(tag) : 4, 40, side ? '#ff8a8a' : '#8fe0ff');
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < WINS_TO_WIN; i++) {
         const wx = side ? W - XL - BW + 2 + i * 9 : XL + BW - 8 - i * 9, wy = 29;
         g.fillStyle = OUTL; g.fillRect(wx - 1, wy - 1, 8, 8);
         g.fillStyle = this.wins[side] > i ? '#ffd84a' : '#3a3450'; g.fillRect(wx, wy, 6, 6);

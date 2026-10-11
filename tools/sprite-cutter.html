@@ -155,13 +155,13 @@ function sampleFigure(P, m, box, g, lab, bg, tol) {
   }
   return trim({ w: cols, h: rows, px });
 }
-function trim(F) {
+function trim(F) { // ox / oy: columns / rows cut off on the left / top
   let x0 = F.w, y0 = F.h, x1 = -1, y1 = -1;
   for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) if (F.px[(y * F.w + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-  if (x1 < 0) return { w: 1, h: 1, px: new Uint8ClampedArray(4) };
+  if (x1 < 0) return { w: 1, h: 1, px: new Uint8ClampedArray(4), ox: 0, oy: 0 };
   const w = x1 - x0 + 1, h = y1 - y0 + 1, px = new Uint8ClampedArray(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let k = 0; k < 4; k++) px[(y * w + x) * 4 + k] = F.px[((y + y0) * F.w + x + x0) * 4 + k];
-  return { w, h, px };
+  return { w, h, px, ox: x0, oy: y0 };
 }
 // drop specks: opaque islands smaller than 4 art pixels
 function despeckle(F) {
@@ -246,12 +246,33 @@ function bodyAnchor(F) {
 }
 // square crop around the head. The head column is found at face/neck height (below raised arms or a
 // racket), then the crop starts at the top of the hair in that column.
-function headCrop(F) {
-  const S = Math.round(F.h * .27), xs = [], op = (x, y) => F.px[(y * F.w + x) * 4 + 3];
+function headCrop(F, size) {
+  const S = size || Math.round(F.h * .27), xs = [], op = (x, y) => F.px[(y * F.w + x) * 4 + 3];
   for (let y = Math.floor(F.h * .16); y < Math.ceil(F.h * .27); y++) for (let x = 0; x < F.w; x++) if (op(x, y)) xs.push(x);
   xs.sort((a, b) => a - b); const cx = xs.length ? xs[xs.length >> 1] : F.w / 2;
   let top = 0; search: for (let y = 0; y < F.h; y++) for (let x = Math.round(cx - S / 5); x <= Math.round(cx + S / 5); x++) if (x >= 0 && x < F.w && op(x, y)) { top = y; break search; }
   return { x: Math.round(cx - S / 2), y: top - 1, w: S, h: S };
+}
+// portrait: the head crop r (art px) sampled again from the source image at out x out px, finer than the art
+// pixels, so the face keeps the drawing's detail (F.src maps frame pixels back to the sheet)
+function hiresCrop(F, r, out) {
+  const S = F.src, q = out / r.w, step = Math.max(1, S.p / q), px = new Uint8ClampedArray(out * out * 4), D = S.P.d, PW = S.P.w;
+  const magBg = S.bg.some(c => c[0] > 150 && c[2] > 150 && c[1] < 90);
+  for (let v = 0; v < out; v++) for (let u = 0; u < out; u++) {
+    let ax = r.x + u / q; const ay = r.y + v / q; if (S.flip) ax = F.w - ax - 1 / q;
+    const x0 = S.x0 + ax * S.p, y0 = S.y0 + ay * S.p;
+    let R = 0, G = 0, B = 0, n = 0, tot = 0;
+    for (let y = Math.floor(y0); y < Math.ceil(y0 + step); y++) for (let x = Math.floor(x0); x < Math.ceil(x0 + step); x++) {
+      if (x < 0 || y < 0 || x >= PW || y >= S.P.h) continue; tot++;
+      const i = y * PW + x; if (!S.m[i] || !S.ids.has(S.lab[i])) continue;
+      const rr = D[i * 4], gg = D[i * 4 + 1], bb = D[i * 4 + 2];
+      if (magBg && rr > 110 && bb > 110 && gg < Math.min(rr, bb) * .62) continue; // magenta fringe
+      R += rr; G += gg; B += bb; n++;
+    }
+    const o = (v * out + u) * 4;
+    if (tot && n >= tot * .5) { px[o] = R / n; px[o + 1] = G / n; px[o + 2] = B / n; px[o + 3] = 255; }
+  }
+  return { w: out, h: out, px };
 }
 function crop(F, r) {
   const px = new Uint8ClampedArray(r.w * r.h * 4);
@@ -277,6 +298,7 @@ function atlasCanvas(items, size, recolor) {
 function frameCanvas(F, z = 1) { const c = document.createElement('canvas'); c.width = F.w; c.height = F.h; const id = c.getContext('2d').createImageData(F.w, F.h); id.data.set(F.px); c.getContext('2d').putImageData(id, 0, 0); if (z === 1) return c; const d = document.createElement('canvas'); d.width = F.w * z; d.height = F.h * z; const g = d.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, d.width, d.height); return d; }
 
 // ---------- main ----------
+const PORTRAIT = 64; // portrait size in px (shown at 1 px per screen pixel in the HUD)
 async function build(id) {
   const cfg = SPRITE_CONFIG[id]; if (!cfg) throw new Error('no config for ' + id);
   const frames = {}, flips = new Set(cfg.flip || []), group = new Map(), groupColors = { '': cfg.colors || 40 };
@@ -308,10 +330,15 @@ async function build(id) {
       const fx = phaseFit(prof[i].x, p), fy = phaseFit(prof[i].y, p);
       const pp = p / ((cfg.scale && cfg.scale[name]) || 1); // per-pose size fix (a row drawn smaller by the AI)
       const fx2 = pp === p ? fx : phaseFit(prof[i].x, pp), fy2 = pp === p ? fy : phaseFit(prof[i].y, pp);
-      let F = despeckle(sampleFigure(P, m, b, { p: pp, phx: fx2.ph, phy: fy2.ph, shadow: sh.shadow }, comps.lab, bg, tol));
+      const gr = { p: pp, phx: fx2.ph, phy: fy2.ph, shadow: sh.shadow };
+      let F = sampleFigure(P, m, b, gr, comps.lab, bg, tol), ox = F.ox, oy = F.oy;
+      F = despeckle(F); ox += F.ox; oy += F.oy;
       for (const [x, y, w, h] of (cfg.erase && cfg.erase[name]) || []) for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) if (xx >= 0 && yy >= 0 && xx < F.w && yy < F.h) F.px[(yy * F.w + xx) * 4 + 3] = 0;
-      if (cfg.erase && cfg.erase[name]) F = trim(F);
-      if (flips.has(name)) F = flipH(F);
+      if (cfg.erase && cfg.erase[name]) { F = trim(F); ox += F.ox; oy += F.oy; }
+      // frame pixel (x, y) covers the sheet's pixels from (x0 + x * p, y0 + y * p): used for hi-res portraits
+      const src = { P, m, lab: comps.lab, ids: new Set(b.ids), bg, p: pp, x0: b.x + gr.phx + .5 + (ox - 1) * pp, y0: b.y + gr.phy + .5 + (oy - 1) * pp, flip: false };
+      if (flips.has(name)) { F = flipH(F); src.flip = true; }
+      F.src = src;
       frames[name] = F; group.set(F, sh.palette || '');
       if (sh.palette) groupColors[sh.palette] = sh.colors || 48;
       log.push(`  ${name}: ${F.w}x${F.h} (fit x ${fx.score.toFixed(2)} / y ${fy.score.toFixed(2)})`);
@@ -330,7 +357,14 @@ async function build(id) {
   // atlas items: frames + portraits
   const items = [], meta = { frames: {}, portraits: {} };
   for (const [name, F] of Object.entries(frames)) { const a = bodyAnchor(F); a.ax += (cfg.dx && cfg.dx[name]) || 0; items.push({ kind: 'f', name, F, a }); }
-  for (const [expr, src] of Object.entries(cfg.portraits || {})) { const F = frames[src]; if (!F) continue; const r = (cfg.faceRect && cfg.faceRect[src]) || headCrop(F); items.push({ kind: 'p', name: expr, F: crop(F, r) }); }
+  // portraits: head + shoulders, the same size for all of a character's faces (from the stance height), re-sampled
+  // from the drawing at PORTRAIT px so the HUD / select / cut-in faces are sharp and framed alike
+  const faceS = Math.round(((frames.idle_1 || frames.stance || {}).h || 88) * (cfg.faceSize || .3));
+  for (const [expr, src] of Object.entries(cfg.portraits || {})) {
+    const F = frames[src]; if (!F) continue;
+    const r = (cfg.faceRect && cfg.faceRect[src]) || headCrop(F, faceS);
+    items.push({ kind: 'p', name: expr, F: F.src ? hiresCrop(F, r, PORTRAIT) : crop(F, r) });
+  }
   const size = pack(items);
   for (const it of items) {
     if (it.kind === 'f') meta.frames[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h, ax: +it.a.ax.toFixed(1), ay: it.a.ay };
