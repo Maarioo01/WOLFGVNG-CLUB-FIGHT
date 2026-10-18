@@ -98,6 +98,9 @@ Los 12 luchadores usan solo las hojas generadas (A–E en `images/sprites/`); lo
 **Personajes nuevos:** los pasos y los prompts para crear un personaje desde fotos (hoja base y hojas A–E) están en [`docs/pose-prompts.md`](docs/pose-prompts.md#new-characters-manu-casado-madeverxp).
 
 ## Estructura
+
+Guía para hacer cambios a mano (dónde están los sprites, golpes, rondas, música, controles, escenarios…): [`docs/GUIDE.md`](docs/GUIDE.md).
+
 - `js/core.js` — canvas, utilidades, texto pixel, input (teclado por jugador / mandos / táctil), efectos
 - `js/audio.js` — canciones de fondo (`music/`), SFX sintetizados (pulso/triángulo/ruido) y la música chiptune original (apagada)
 - `js/art.js` — esqueleto + poses con keyframes, y la definición de cada personaje (`CH`)
