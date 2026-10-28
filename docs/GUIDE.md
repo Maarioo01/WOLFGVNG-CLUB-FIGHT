@@ -51,6 +51,7 @@ A practical map for anyone who wants to change **WOLFGVNG CLUB FIGHT** by hand: 
 3. Run `python3 tools/build_sprites.py alba` (or with no name, to rebuild everyone). It needs Google Chrome.
    - It writes `assets/fighters/alba.png`, `alba_alt.png` (the recoloured copy for mirror matches), `alba.json` and `sprites-data.js`.
    - The log shows how many figures it found and the size of each pose. If the counts don't match, the names are shifted.
+   - It also evens out the size: every pose of sheets A–E is re-cut so its head is as big as in `idle_1` (the AI often draws a row, or a whole sheet, smaller or bigger than the stance). The log shows this per row under `size fit`: `walk_fwd_1 0.80` means that head was at 80% of `idle_1`'s, and `-> x1.27` is the size change applied to the row. Poses marked `?` can't be measured (frontal or tilted heads) and take their row's size.
 4. Reload the game. To see what the cutter detected, open http://localhost:8765/tools/sprite-cutter.html?char=alba&debug=1 while `serve.py` is running.
 
 **Pose names** the game understands:
@@ -200,8 +201,11 @@ KeyK: [1, 'punch'],   // player 2 (1) punches with K
 - Actions: `up down left right punch kick special super start pause back mute`.
 - Key names are the browser's `KeyboardEvent.code` (e.g. `KeyF`, `ArrowUp`, `Numpad1`, `Semicolon`).
 
-**Gamepads (Xbox / PS5):** `Input.poll` in `js/core.js`, in the `st` object. It uses the standard button numbers listed in the comment above it; for example `punch: b(2)` means X / Square.
+**Gamepads (PS5 / Xbox):** `Input.poll` in `js/core.js`, in the `st` object. It uses the standard button numbers listed in the comment above it; for example `punch: b(2)` means Square / X.
+- Layout: Square punch, Cross kick, Triangle special, Circle super (L1 / R1 repeat special / super), L2 jump, R2 crouch, d-pad or left stick to move, Options pause. In menus Cross confirms and Circle goes back.
 - The first pad connected is player 1, the second player 2.
+- If the browser doesn't recognise a PlayStation pad (no "standard" mapping), `padButtons` puts its buttons back in the standard order.
+- The CONTROLES screen is also a button test: it shows each connected pad's name, and a row lights up while its button is held. `(SIN MAPEO)` after the name means the browser gives an unknown layout.
 
 **Touch buttons (phone):** the `<div class="tb" data-a="...">` elements in `index.html`.
 

@@ -18,6 +18,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - A match goes to 3 round wins.
   - Everyone has 100 HP, including the CPU.
   - Each fighter's super is once per match and an instant K.O.
+  - Pad layout (PlayStation names): □ punch, ✕ kick, △ special, ○ super, L2 jump, R2 crouch. In menus ✕ confirms and ○ goes back.
 
 ## Code map (script order in `index.html` = load order, all globals)
 
@@ -46,7 +47,8 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - `matchBy: 'head'` compares head widths;
   - `matchBy: 'headTop'` + `headWin: [from, to]` measures from the head top inside a column window, for arms or objects beside the head;
   - `grid: p` forces the scale; `height:` pins the stance height.
-- After every build, check the result visually against `idle_1`, at the same scale (screenshot page). The AI often draws a sheet at another size, or ignores layout instructions (e.g. it dropped the "ref" figure from every sheet F).
+  - For sheets A–E those only give the starting size. The **size fit** (`fitSizes` in the cutter) then re-cuts every figure so its head is as big as `idle_1`'s: it template-matches `idle_1`'s head on the source image, figures with a low match cost set their row's size and the whole row follows. The build log prints it per row (`size fit`). `scale:` is a manual fix on top of it; `fit: false` turns it off. Sheet F is never fitted, so the supers' frames don't move.
+- After every build, check the result visually against `idle_1`, at the same scale (screenshot page). The AI often draws a sheet at another size, or ignores layout instructions (e.g. it dropped the "ref" figure from every sheet F). Height alone misleads: walk frames stand more upright than the stance and victory poses raise the arms, so compare heads, torsos and shoes.
 - `palette: 'F'` gives sheet F (super frames, props) its own colours, so the fight poses don't change.
 - `shadow: true` keys out dark-magenta floor shadows.
 - **Portraits:**
@@ -80,7 +82,9 @@ My harness lived in the session scratchpad (gone now), so rebuild it if needed:
 - a copy of `index.html` with a scenario script, served by a threaded Python server with `request_queue_size = 128` (the default 5 drops script loads);
 - headless Chrome loads `page.html#scenario`, calls `tick()` synchronously, then `render()`;
 - results and `canvas.toDataURL()` are POSTed back to the server;
-- contact sheets of frames, taken every N ticks, are the way to check supers and animations.
+- contact sheets of frames, taken every N ticks, are the way to check supers and animations;
+- set `window.requestAnimationFrame = () => 0` before `main.js`, so only the scenario ticks;
+- gamepads: replace `navigator.getGamepads` with fake pads (standard; raw PlayStation with the hat on axis 9 as in Chrome, or the d-pad as 4 trailing buttons as in Firefox) and check `Input.pl[p].held` after `Input.poll()`.
 
 - Syntax check without node: `/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc -e "checkSyntax('js/x.js')"`.
 - macOS has no `timeout`: use `perl -e 'alarm 40; exec @ARGV' …`. No PIL either: `sips` for crops/scaling (its `--cropOffset` behaves oddly).

@@ -290,7 +290,8 @@ class TitleScene {
 let TITLE_STAGE = null;
 class ControlsScene {
   init() { this.t = 0; }
-  update() { this.t++; if (this.t > 10 && (Input.ok() || Input.backHit())) { sfx('back'); goFade(() => new TitleScene()); } }
+  // the pad's face buttons light up their row here (button test), so only start / pause leave the screen
+  update() { this.t++; if (this.t > 10 && (Input.hit('start') || Input.hit('pause'))) { sfx('back'); goFade(() => new TitleScene()); } }
   draw(g) {
     g.fillStyle = '#0e0a1c'; g.fillRect(0, 0, W, H);
     for (let y = 0; y < H; y += 4) { g.fillStyle = '#130e24'; g.fillRect(0, y, W, 2); }
@@ -307,12 +308,22 @@ class ControlsScene {
     tip('ATRAS: BLOQUEAR   ↓ + ATRAS: BLOQUEO BAJO   ↓↘→ + PUÑO: ESPECIAL', 107, '#c8c0e0');
     tip('SUPER: BARRA AZUL LLENA  ·  UNA VEZ POR COMBATE  ·  K.O. DIRECTO', 115, '#8ff0ff');
     tip('VS CPU: EL J1 PUEDE USAR CUALQUIERA DE LOS DOS LADOS DEL TECLADO', 123, '#8a80b0');
-    // gamepads
-    text(g, 'MANDOS  XBOX / PS5', cA, 136, { color: '#9fe8ff' });
-    tip('MANDO 1: J1   ·   MANDO 2: J2   (PULSA UN BOTON PARA ACTIVARLO)', 148, '#8a80b0');
-    const pad = [['CRUCETA / STICK', 'MOVERSE'], ['X  /  CUADRADO', 'PUÑETAZO'], ['A  /  EQUIS', 'PATADA'], ['Y  /  TRIANGULO  ·  LB / L1', 'ESPECIAL'], ['RB / R1  ·  RT / R2', 'SUPER'], ['MENU / OPTIONS', 'PAUSA  ·  CONFIRMAR'], ['B / CIRCULO', 'VOLVER (MENUS)']];
-    pad.forEach(([k, v], i) => { const y = 157 + i * 8; tiny(g, k, 196 - tinyW(k), y, '#ffd84a'); tiny(g, v, 206, y, '#e8e0ff'); });
-    tip('ENTER: CONFIRMAR   ESC: PAUSA / VOLVER   M: SONIDO', 214, '#8a80b0');
+    // gamepads (PlayStation name / Xbox name); a row lights up while a connected pad holds its button
+    text(g, 'MANDOS  PS5 / XBOX', cA, 134, { color: '#9fe8ff' });
+    const padName = P => P.id.replace(/\(.*?\)/g, '').replace(/^[0-9a-f]{1,4}-[0-9a-f]{1,4}-/i, '').trim().toUpperCase().slice(0, P.std ? 30 : 18) + (P.std ? '' : ' (SIN MAPEO)');
+    const on = Input.pads.filter(Boolean);
+    tip(on.length ? Input.pads.map((P, i) => 'MANDO ' + (i + 1) + ': ' + (P ? padName(P) : '-')).join('   ·   ') : 'MANDO 1: J1   ·   MANDO 2: J2   (PULSA UN BOTON PARA ACTIVARLO)', 146, '#8a80b0');
+    const pad = [
+      [['CRUCETA / STICK', 'MOVERSE', ['left', 'right']], ['L2 / LT', 'SALTAR', ['up']], ['R2 / RT', 'AGACHARSE', ['down']], ['OPTIONS / MENU', 'PAUSA', ['start', 'pause']]],
+      [['CUADRADO / X', 'PUÑETAZO', ['punch']], ['EQUIS / A', 'PATADA', ['kick']], ['TRIANGULO / Y', 'ESPECIAL', ['special']], ['CIRCULO / B', 'SUPER', ['super']]]];
+    pad.forEach((col, c) => col.forEach(([k, v, acts], i) => {
+      const y = 156 + i * 9, x = c ? 296 : 116, held = on.some(P => acts.some(a => P.st[a]));
+      if (held) { g.fillStyle = 'rgba(255,216,74,.28)'; g.fillRect(x - tinyW(k) - 9, y - 2, tinyW(k) + tinyW(v) + 18, 9); }
+      tiny(g, k, x - tinyW(k) - 4, y, held ? '#fff' : '#ffd84a'); tiny(g, v, x + 4, y, held ? '#fff' : '#e8e0ff');
+    }));
+    tip('L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 194, '#c8c0e0');
+    tip('PULSA LOS BOTONES DEL MANDO PARA PROBARLOS', 203, '#8a80b0');
+    tip('ENTER / ESC / OPTIONS: VOLVER   M: SONIDO', 214, '#8a80b0');
   }
 }
 

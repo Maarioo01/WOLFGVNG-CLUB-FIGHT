@@ -87,14 +87,14 @@ function figures(P, boxes, props) {
       }
     }
   }
-  // reading order: rows (by vertical overlap), then left to right
+  // reading order: rows (by vertical overlap), then left to right; b.row = row number (the size fit works per row)
   f.sort((a, b) => a.y - b.y);
   const rows = [];
   for (const b of f) {
     const r = rows.find(r => Math.min(r.y1, b.y + b.h) - Math.max(r.y0, b.y) > Math.min(b.h, r.y1 - r.y0) * .3);
     if (r) { r.items.push(b); r.y0 = Math.min(r.y0, b.y); r.y1 = Math.max(r.y1, b.y + b.h); } else rows.push({ y0: b.y, y1: b.y + b.h, items: [b] });
   }
-  return rows.flatMap(r => r.items.sort((a, b) => a.x - b.x));
+  return rows.flatMap((r, k) => r.items.sort((a, b) => a.x - b.x).map(b => Object.assign(b, { row: k })));
 }
 
 // ---------- 3. pixel-grid detection (AI sheets use a fractional art-pixel size, ~3 image px) ----------
@@ -280,6 +280,107 @@ function crop(F, r) {
   return { w: r.w, h: r.h, px };
 }
 
+// ---------- 7b. size fit: every fight pose with a head as big as idle_1's ----------
+// The AI draws some rows or whole sheets bigger or smaller than the stance (MadeverXP's walk row is 20% smaller),
+// and `match` only compares one pose per sheet. So every figure of the fight sheets (A–E) is measured: idle_1's
+// head is template-matched over scale and position in the source image (colour + silhouette on a 12x12, then
+// 24x24 grid). A low cost means the head is seen as in the stance (3/4 view, upright): those figures give their
+// row its size and the whole row follows, so a frontal victory pose or a flinch, which can't be measured, gets the
+// size it was drawn at with its row. A clear outlier with a confident match gets its own size.
+const FIT_HEAD = .22;  // head square side, as a fraction of idle_1's height (from the top of the hair)
+const FIT_COST = .25;  // match cost up to which a head counts as measured (walks ~.12, frontal or tilted heads .3+)
+const FIT_OWN = .06;   // a measured figure this far from its row's size (with cost <= .2) keeps its own
+const FIT_MIN = .02;   // changes smaller than this are left alone
+const FIT_NEVER = /^(knockdown|ko$|hit$|crouch_hit$|getup_1$)/; // lying / thrown-back heads: never measured
+// summed-area tables of one figure's colour and coverage (its own pixels only) around its box
+function figureSums(s, box, pad) {
+  const { P, m, lab, ids } = s, X0 = Math.max(0, Math.floor(box.x - pad)), Y0 = Math.max(0, Math.floor(box.y - pad));
+  const w = Math.min(P.w, Math.ceil(box.x + box.w + pad)) - X0, h = Math.min(P.h, Math.ceil(box.y + box.h + pad)) - Y0, W1 = w + 1;
+  const S = [0, 1, 2, 3].map(() => new Float64Array(W1 * (h + 1)));
+  const magBg = s.bg.some(c => c[0] > 150 && c[2] > 150 && c[1] < 90);
+  for (let y = 0; y < h; y++) {
+    let r = 0, g = 0, b = 0, a = 0;
+    for (let x = 0; x < w; x++) {
+      const i = (Y0 + y) * P.w + X0 + x, R = P.d[i * 4], G = P.d[i * 4 + 1], B = P.d[i * 4 + 2];
+      if (m[i] && ids.has(lab[i]) && !(magBg && R > 110 && B > 110 && G < Math.min(R, B) * .62)) { r += R; g += G; b += B; a++; }
+      const o = (y + 1) * W1 + x + 1, u = o - W1;
+      S[0][o] = S[0][u] + r; S[1][o] = S[1][u] + g; S[2][o] = S[2][u] + b; S[3][o] = S[3][u] + a;
+    }
+  }
+  return { X0, Y0, w, h, W1, S };
+}
+// n x n grid over the image square (x, y, side L): one cell's [r, g, b, coverage] = U's sums over it.
+// With a template t it returns the cost (0 = identical, stops early above `stop`); without, the grid itself.
+function headGrid(U, x, y, L, n, t, stop = Infinity, flip = false) {
+  const c = L / n, W1 = U.W1, [SR, SG, SB, SA] = U.S, lim = stop * n * n, cl = (v, hi) => v < 0 ? 0 : v > hi ? hi : v;
+  const out = t ? null : new Float64Array(n * n * 4); let s = 0;
+  for (let j = 0; j < n; j++) {
+    const yb0 = Math.round(y + j * c - U.Y0), yb1 = Math.round(y + (j + 1) * c - U.Y0), b0 = cl(yb0, U.h), b1 = cl(yb1, U.h);
+    for (let i = 0; i < n; i++) {
+      const ii = flip ? n - 1 - i : i, xa0 = Math.round(x + ii * c - U.X0), xa1 = Math.round(x + (ii + 1) * c - U.X0), a0 = cl(xa0, U.w), a1 = cl(xa1, U.w);
+      const A = b0 * W1 + a0, B = b0 * W1 + a1, C = b1 * W1 + a0, D = b1 * W1 + a1, k = (j * n + i) * 4;
+      const na = SA[D] - SA[B] - SA[C] + SA[A], ua = na / Math.max(1, (xa1 - xa0) * (yb1 - yb0));
+      const ur = na ? (SR[D] - SR[B] - SR[C] + SR[A]) / na : 0, ug = na ? (SG[D] - SG[B] - SG[C] + SG[A]) / na : 0, ub = na ? (SB[D] - SB[B] - SB[C] + SB[A]) / na : 0;
+      if (out) { out[k] = ur; out[k + 1] = ug; out[k + 2] = ub; out[k + 3] = ua; continue; }
+      const ta = t[k + 3]; s += Math.abs(ta - ua);
+      if (ta > .5 && ua > .5) s += Math.min(1, Math.hypot(t[k] - ur, t[k + 1] - ug, t[k + 2] - ub) / 150);
+    }
+    if (s > lim) return Infinity;
+  }
+  return out || s / (n * n);
+}
+// the reference head: a square from the top of idle_1's hair, centred on the head column of its top rows
+function headTemplate(R) {
+  const F = R.F, s = F.src, xs = [];
+  for (let y = 0; y < Math.ceil(F.h * .12); y++) for (let x = 0; x < F.w; x++) if (F.px[(y * F.w + x) * 4 + 3]) xs.push(x);
+  const La = F.h * FIT_HEAD, ax = medianOf(xs) + .5 - La / 2, L = La * s.p;
+  const x = s.x0 + (s.flip ? F.w - ax - La : ax) * s.p, y = s.y0 - .5 * s.p, U = figureSums(s, R.box, L);
+  const g = (n, f) => headGrid(U, x, y, L, n, null, Infinity, f !== s.flip); // facing right as in the game, or mirrored
+  return { L, pp: R.pp, t: { 12: g(12, false), 24: g(24, false) }, tf: { 12: g(12, true), 24: g(24, true) } };
+}
+// size of a figure's head in the atlas relative to the reference (1 = same size), and the match cost
+function headMatch(ref, r) {
+  const L = ref.L * r.pp / ref.pp, box = r.box, U = figureSums(r.src, box, L * 1.5), t = r.src.flip ? ref.tf : ref.t, top = [];
+  for (let k = .72; k <= 1.4; k *= 1.025) { // coarse: keep the 12 best placements
+    const Lk = L * k, st = Math.max(2, Lk / 12);
+    for (let y = box.y - Lk * .25; y <= box.y + box.h * .55; y += st) for (let x = box.x - Lk * .25; x <= box.x + box.w - Lk * .75; x += st) {
+      const c = headGrid(U, x, y, Lk, 12, t[12], top.length === 12 ? top[11].c : Infinity);
+      if (c === Infinity) continue;
+      top.push({ c, x, y, k }); top.sort((a, b) => a.c - b.c); if (top.length > 12) top.pop();
+    }
+  }
+  let best = null;
+  for (const c0 of top) { // fine: 24x24 grid, local search
+    let cur = { c: headGrid(U, c0.x, c0.y, L * c0.k, 24, t[24]), x: c0.x, y: c0.y, k: c0.k };
+    for (let it = 1; it <= 3; it++) {
+      const st = Math.max(1, L * cur.k / 24 / it), from = cur;
+      for (const dk of [.99, 1, 1.01]) for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const k = from.k * dk, x = from.x + dx * st, y = from.y + dy * st, c = headGrid(U, x, y, L * k, 24, t[24], cur.c);
+        if (c < cur.c) cur = { c, x, y, k };
+      }
+    }
+    if (!best || cur.c < best.c) best = cur;
+  }
+  return best ? { rel: best.k, cost: best.c } : { rel: 1, cost: Infinity };
+}
+// recs: the figures of the fitted sheets ({ name, sheet, row, box, src, pp, F }); sets r.k (1 = keep the size)
+function fitSizes(recs, log) {
+  const R = recs.find(r => r.name === 'idle_1'); if (!R) return;
+  const ref = headTemplate(R), todo = recs.filter(r => r !== R);
+  const med = a => { const s = [...a].sort((x, y) => x - y), n = s.length; return n % 2 ? s[n >> 1] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+  for (const r of todo) { Object.assign(r, headMatch(ref, r)); r.ok = r.cost <= FIT_COST && !FIT_NEVER.test(r.name); }
+  for (const r of todo) {
+    const mine = q => q.ok && q.sheet === r.sheet, row = todo.filter(q => mine(q) && q.row === r.row), sheet = todo.filter(mine);
+    r.k = row.length ? med(row.map(q => q.rel)) : sheet.length ? med(sheet.map(q => q.rel)) : 1;
+    r.own = r.ok && r.cost <= .2 && Math.abs(r.rel - r.k) > FIT_OWN; if (r.own) r.k = r.rel;
+    if (Math.abs(r.k - 1) <= FIT_MIN) r.k = 1;
+  }
+  // log: one line per row, measured heads first (name size), then the factor applied to the row
+  const rows = new Map(); for (const r of todo) { const key = r.sheet.split('/').pop() + ' row ' + (r.row + 1); if (!rows.has(key)) rows.set(key, []); rows.get(key).push(r); }
+  log.push(`  size fit (head vs idle_1; ? = not measurable, ! = own size):`);
+  for (const [key, rs] of rows) log.push(`    ${key}: ` + rs.map(r => `${r.name} ${r.ok ? r.rel.toFixed(2) : '?'}${r.own ? '!' : ''}`).join(' ') + ' -> ' + [...new Set(rs.map(r => r.k === 1 ? 'kept' : 'x' + (1 / r.k).toFixed(2)))].join(' / '));
+}
+
 // ---------- 8. atlas ----------
 function pack(items) { // shelf packing, 1px gap
   const W = 512; let x = 0, y = 0, rowH = 0;
@@ -302,6 +403,7 @@ const PORTRAIT = 64; // portrait size in px (shown at 1 px per screen pixel in t
 async function build(id) {
   const cfg = SPRITE_CONFIG[id]; if (!cfg) throw new Error('no config for ' + id);
   const frames = {}, flips = new Set(cfg.flip || []), group = new Map(), groupColors = { '': cfg.colors || 40 };
+  const recs = []; // figures of the fight sheets, for the size fit
   for (const sh of cfg.sheets) {
     let im; try { im = await loadImage('../' + sh.src); } catch (e) { log.push(`${sh.src}: not found yet — skipped`); continue; }
     const P = pixelsOf(im, sh.area), bg = bgColors(P), m = fgMask(P, bg, sh.tol || 24);
@@ -325,12 +427,10 @@ async function build(id) {
     }
     else if (si >= 0 && figs[si] && (det.score < 1.2 || frames.stance || frames.idle_1 || !cfg.keepGrid)) { p = figs[si].h / refH; how = 'stance height ' + refH; }
     log.push(`  art pixel = ${p.toFixed(2)} image px (${how}; grid fit ${det.score.toFixed(2)})`);
-    figs.forEach((b, i) => {
-      const name = sh.poses[i]; if (!name || name === 'skip' || name[0] === '_') return; // '_ref': only used to measure the size
-      const fx = phaseFit(prof[i].x, p), fy = phaseFit(prof[i].y, p);
-      const pp = p / ((cfg.scale && cfg.scale[name]) || 1); // per-pose size fix (a row drawn smaller by the AI)
-      const fx2 = pp === p ? fx : phaseFit(prof[i].x, pp), fy2 = pp === p ? fy : phaseFit(prof[i].y, pp);
-      const gr = { p: pp, phx: fx2.ph, phy: fy2.ph, shadow: sh.shadow };
+    // figure i cut at pp image px per art pixel
+    const cut = (i, pp, name) => {
+      const b = figs[i], fx = phaseFit(prof[i].x, pp), fy = phaseFit(prof[i].y, pp);
+      const gr = { p: pp, phx: fx.ph, phy: fy.ph, shadow: sh.shadow };
       let F = sampleFigure(P, m, b, gr, comps.lab, bg, tol), ox = F.ox, oy = F.oy;
       F = despeckle(F); ox += F.ox; oy += F.oy;
       for (const [x, y, w, h] of (cfg.erase && cfg.erase[name]) || []) for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) if (xx >= 0 && yy >= 0 && xx < F.w && yy < F.h) F.px[(yy * F.w + xx) * 4 + 3] = 0;
@@ -338,11 +438,29 @@ async function build(id) {
       // frame pixel (x, y) covers the sheet's pixels from (x0 + x * p, y0 + y * p): used for hi-res portraits
       const src = { P, m, lab: comps.lab, ids: new Set(b.ids), bg, p: pp, x0: b.x + gr.phx + .5 + (ox - 1) * pp, y0: b.y + gr.phy + .5 + (oy - 1) * pp, flip: false };
       if (flips.has(name)) { F = flipH(F); src.flip = true; }
-      F.src = src;
+      F.src = src; F.score = [fx.score, fy.score];
+      return F;
+    };
+    // fight sheets (A–E) get the size fit below; sheet F (super frames, props) keeps the sheet's size
+    const fitted = !sh.props && !sh.palette && sh.fit !== false && cfg.fit !== false;
+    figs.forEach((b, i) => {
+      const name = sh.poses[i]; if (!name || name === 'skip' || name[0] === '_') return; // '_ref': only used to measure the size
+      const pp = fitted ? p : p / ((cfg.scale && cfg.scale[name]) || 1); // per-pose size fix by hand (fitted sheets: after the fit)
+      const F = cut(i, pp, name);
       frames[name] = F; group.set(F, sh.palette || '');
       if (sh.palette) groupColors[sh.palette] = sh.colors || 48;
-      log.push(`  ${name}: ${F.w}x${F.h} (fit x ${fx.score.toFixed(2)} / y ${fy.score.toFixed(2)})`);
+      if (fitted) recs.push({ name, sheet: sh.src, row: b.row, box: b, src: F.src, pp, F, cut: q => cut(i, q, name) });
+      log.push(`  ${name}: ${F.w}x${F.h} (fit x ${F.score[0].toFixed(2)} / y ${F.score[1].toFixed(2)})`);
     });
+  }
+  // size fit: each fight pose re-cut so its head is as big as idle_1's (`scale` is a manual fix on top of it)
+  if (recs.length) {
+    fitSizes(recs, log);
+    for (const r of recs) {
+      const k = r.k || 1, sc = (cfg.scale && cfg.scale[r.name]) || 1;
+      if ((k === 1 && sc === 1) || frames[r.name] !== r.F) continue;
+      const F = r.cut(r.pp * k / sc); group.set(F, group.get(r.F)); frames[r.name] = F;
+    }
   }
   // aliases: one drawing used for two poses (e.g. Alba's flip-kick crouch is also her jump take-off)
   for (const [to, from] of Object.entries(cfg.alias || {})) if (frames[from] && !frames[to]) frames[to] = frames[from];
@@ -370,7 +488,7 @@ async function build(id) {
     if (it.kind === 'f') meta.frames[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h, ax: +it.a.ax.toFixed(1), ay: it.a.ay };
     else meta.portraits[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h };
   }
-  const st = frames.stance || frames.idle_1 || Object.values(frames)[0];
+  const st = frames.idle_1 || frames.stance || Object.values(frames)[0]; // fight.js sizes the hit boxes from it
   meta.height = st.h; meta.size = size; meta.body = cfg.body !== false;
   const main = atlasCanvas(items, size), alt = atlasCanvas(items, size, altColor);
   if (DEBUG) debugFrames(items, alt);

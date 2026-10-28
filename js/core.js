@@ -225,22 +225,42 @@ Input.hitP = (p, a) => !!Input.pl[p].pressed[a];
 Input.okP = p => { const q = Input.pl[p].pressed; return !!(q.start || q.confirm || q.punch); };
 Input.backP = p => { const q = Input.pl[p].pressed; return !!(q.back || (q.kick && !q.confirm)); };
 Input.endFrame = () => { Input.pressed = {}; Input.pl[0].pressed = {}; Input.pl[1].pressed = {}; };
-// Standard gamepad mapping (Xbox and PS4/PS5 in Chrome/Edge on Windows):
+// Standard gamepad mapping (Xbox and PS4/PS5 in Chrome/Edge/Safari):
 //   0 A/Cross  1 B/Circle  2 X/Square  3 Y/Triangle  4 LB/L1  5 RB/R1  6 LT/L2  7 RT/R2  8 View/Create  9 Menu/Options  12-15 d-pad
+// The four face buttons attack (Square punch, Cross kick, Triangle special, Circle super), L2 jumps and R2 crouches;
+// L1 / R1 repeat special / super. In menus Cross confirms and Circle goes back.
+// A PlayStation pad the browser doesn't map (mapping '') sends its buttons in HID order: PS_RAW puts them back in
+// standard order, and its d-pad is a hat on axis 9 (Chrome) or 4 extra buttons at the end (Firefox: up, down, left, right).
+const PS_RAW = [2, 0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17]; // HID button -> standard index (16 PS, 17 touchpad)
+function padButtons(gp) {
+  if (gp.mapping === 'standard' || !/054c|dualsense|dualshock/i.test(gp.id)) return gp.buttons;
+  const raw = gp.buttons, B = [], on = v => ({ pressed: v, value: v ? 1 : 0 }), hat = gp.axes[9];
+  PS_RAW.forEach((s, r) => { if (raw[r]) B[s] = raw[r]; });
+  if (hat !== undefined && Math.abs(hat) <= 1.01) { // 8 directions from -1 (up) clockwise; out of range = centred
+    const d = Math.round((hat + 1) * 3.5) % 8;
+    B[12] = on(d === 7 || d <= 1); B[15] = on(d >= 1 && d <= 3); B[13] = on(d >= 3 && d <= 5); B[14] = on(d >= 5 && d <= 7);
+  } else if (raw.length >= 18) [12, 13, 14, 15].forEach((s, k) => { B[s] = raw[raw.length - 4 + k]; });
+  return B;
+}
+// Input.pads[p]: the pad of player p ({ id, std, st }), for the CONTROLES screen's button test
+Input.pads = [null, null];
 Input.poll = () => {
   const all = navigator.getGamepads ? [...navigator.getGamepads()] : [];
   const pads = all.filter(p => p && p.connected);
   const seen = {};
+  Input.pads = [null, null];
   pads.slice(0, 2).forEach((gp, p) => {
-    const b = i => !!(gp.buttons[i] && gp.buttons[i].pressed), ax = i => gp.axes[i] || 0;
+    const B = padButtons(gp), b = i => !!(B[i] && B[i].pressed), ax = i => gp.axes[i] || 0;
+    const trig = i => !!B[i] && (B[i].value > .4 || (B[i].pressed && !B[i].value)); // analog L2 / R2: a light touch isn't a press
     const st = {
-      left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5, down: b(13) || ax(1) > 0.5,
-      punch: b(2), kick: b(0), special: b(3) || b(4), super: b(5) || b(7) || b(6),
+      left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5 || trig(6), down: b(13) || ax(1) > 0.5 || trig(7),
+      punch: b(2), kick: b(0), special: b(3) || b(4), super: b(1) || b(5),
       confirm: b(0), back: b(1), start: b(9), pause: b(8)
     };
     const id = 'pad' + gp.index; seen[id] = true;
     for (const k in st) setSrc(id, p, k, st[k]);
     Input._pad[id] = p;
+    Input.pads[p] = { id: gp.id, std: B !== gp.buttons || gp.mapping === 'standard', st };
   });
   // release everything from pads that disappeared or changed slot
   for (const id in Input._pad) if (!seen[id]) { for (const k of [...Input._on]) if (k.startsWith(id + '|')) { const [, p, a] = k.split('|'); setSrc(id, +p, a, false); } delete Input._pad[id]; }

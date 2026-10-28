@@ -30,20 +30,21 @@ En modo **vs CPU** el jugador 1 puede usar cualquiera de los dos lados del tecla
 | Retroceso | Volver |
 | M | Sonido on/off (música incluida) |
 
-### Mandos (Xbox / PS5, mapeo estándar en Chrome/Edge para Windows)
+### Mandos (PS5 / Xbox)
 
-El primer mando conectado es el J1 y el segundo el J2 (pulsa un botón para que el navegador lo detecte).
+El primer mando conectado es el J1 y el segundo el J2 (pulsa un botón para que el navegador lo detecte). En **CONTROLES** (menú principal) se ve el nombre de cada mando y, al pulsar un botón, se ilumina lo que hace.
 
-| Botón | Acción |
+| Botón (PS5 / Xbox) | Acción |
 |---|---|
-| Cruceta / stick izquierdo | Moverse |
-| X / □ | Puñetazo |
-| A / ✕ | Patada · confirmar en menús |
-| Y / △ · LB / L1 | Especial |
-| RB / R1 · RT / R2 | Súper |
-| B / ○ | Volver (menús) |
-| Menu / Options | Pausa · confirmar |
-| View / Create | Pausa |
+| Cruceta / stick izquierdo | Moverse (atrás = bloquear) |
+| L2 / LT | Saltar (también ↑) |
+| R2 / RT | Agacharse (también ↓) |
+| □ / X | Puñetazo |
+| ✕ / A | Patada · confirmar en menús |
+| △ / Y · L1 / LB | Especial |
+| ○ / B · R1 / RB | Súper · volver en menús |
+| Options / Menu | Pausa · confirmar |
+| Create / View | Pausa |
 
 ## Personajes
 
@@ -64,7 +65,7 @@ Diseños de referencia en `images/`. Los especiales están en `SPECIALS` en `js/
 | Casado | ¡Firmes! (saludo militar y grito que lanza una onda) | ¡Artillería! (llega un tanque, se sube y dispara un misil) |
 | MadeverXP (Alberto) | ¡Gatazo! (lanza a su gato) | ¡Lanzallamas! (lanza una Poké Ball, sale Charizard y escupe fuego) |
 
-**Súper:** la barra azul (debajo de la vida) se llena pegando y recibiendo golpes, y se conserva entre rondas. Se llena en algo menos de una ronda. Con la barra llena, el súper (T / O · Num 0 / RB · RT) lanza la escena del personaje, que deja K.O. al rival al instante y gana esa ronda. Solo se puede usar **una vez por combate**; después la barra pone USADO. La velocidad de carga se ajusta con `SUPER_CHARGE` en `js/supers.js`.
+**Súper:** la barra azul (debajo de la vida) se llena pegando y recibiendo golpes, y se conserva entre rondas. Se llena en algo menos de una ronda. Con la barra llena, el súper (T / O · Num 0 / ○ · R1 en el mando) lanza la escena del personaje, que deja K.O. al rival al instante y gana esa ronda. Solo se puede usar **una vez por combate**; después la barra pone USADO. La velocidad de carga se ajusta con `SUPER_CHARGE` en `js/supers.js`.
 
 Los súpers de Alba, Álvaro, Bene, Carlottis, Casado, Manu, Marcos, Oso y Peño ya usan sus dibujos (hoja F, `images/sprites/<carpeta>/sheet_F.png`); el Charizard de MadeverXP sale de `images/sprites/madeverXP/charizard.jpg`. Mario, Belli y MadeverXP aún no tienen hoja F: de momento usan poses parecidas y objetos dibujados por código. Los prompts, el estado de cada uno y qué hacer si ChatGPT rechaza una imagen están en [`docs/super-prompts.md`](docs/super-prompts.md).
 
@@ -74,7 +75,7 @@ Los súpers de Alba, Álvaro, Bene, Carlottis, Casado, Manu, Marcos, Oso y Peño
 
 ## Sprites de los personajes
 
-Los luchadores se dibujan con los fotogramas de los diseños (`images/`). Una herramienta los recorta, limpia el fondo, los ajusta a la rejilla de píxeles y genera `assets/fighters/`:
+Los luchadores se dibujan con los fotogramas de los diseños (`images/`). Una herramienta los recorta, limpia el fondo, los ajusta a la rejilla de píxeles, iguala su tamaño (cada pose con la cabeza igual de grande que en la guardia, para que nadie encoja al andar o al celebrar) y genera `assets/fighters/`:
 
 ```
 python3 tools/build_sprites.py          # todos los personajes
