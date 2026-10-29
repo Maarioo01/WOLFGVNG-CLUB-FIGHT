@@ -233,7 +233,7 @@ The stages are four real places: Marcos's attic, Bene's pool, Bene's garden at d
 |---|---|
 | `name`, `sub` | name on the stage select and in the round banner; the line under it on the stage select |
 | `art` | the background strip (see below) |
-| `floor` | `style`: `planks`, `tiles`, `lawn` or `field`; `cols`: `[main, second, seams / detail]`; `edge`: a stone edge along the floor line (the pool); `decals`: rugs or tarps, `{ x: [from, to], d: [from, to], col, rim }` (x in world units around the arena centre 620; d is the depth: 1 under the fighters, 1.65 at the crowd, 1.82 at the floor line) |
+| `floor` | `style`: `planks`, `tiles`, `lawn` or `field`; `cols`: `[main, second, seams / detail]`; `size`: the tile size for `tiles` (22 units by default); `edge`: a stone edge along the floor line (the pool); `decals`: rugs or tarps, `{ x: [from, to], d: [from, to], col, rim }` (x in world units around the arena centre 620; d is the depth: 1 under the fighters, 1.65 at the crowd, 1.82 at the floor line) |
 | `haze` | the colour the floor fades into near the floor line |
 | `host` | a fighter who is always in the crowd when he isn't fighting (Marcos at his house, Bene at his parcela) |
 | `crowd`, `slots` | how many spectators (6) and where they stand (world x around the centre; the left half supports J1, the right half J2) |

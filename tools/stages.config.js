@@ -19,9 +19,9 @@
 //    bright:   -1..1 added light (default 0);  contrast, sat: multipliers (default 1)
 // ============================================================
 const STAGE_CONFIG = {
-  casa_marcos: { art: 'images/fondos/arte/casa_marcos.png', photo: { src: 'images/fondos/casa_marcos.jpeg', x: [0, 739], horizon: 1000, dither: .3 } },
-  parcela_bene_1: { art: 'images/fondos/arte/parcela_bene_1.png', photo: { src: 'images/fondos/parcela_bene_1.jpeg', x: [0, 736], horizon: 388, dither: .3 } },
-  parcela_bene_2: { art: 'images/fondos/arte/parcela_bene_2.png', photo: { src: 'images/fondos/parcela_bene_2.jpeg', x: [0, 731], horizon: 232, dither: .3 } },
-  puente: { art: 'images/fondos/arte/puente.png', photo: { src: 'images/fondos/puente.jpg', x: [0, 900], horizon: 1000, dither: .3 } },
+  casa_marcos: { art: { src: 'images/fondos/arte/casa_marcos.png', horizon: 554 }, photo: { src: 'images/fondos/casa_marcos.jpeg', x: [0, 739], horizon: 1000, dither: .3 } },
+  parcela_bene_1: { art: { src: 'images/fondos/arte/parcela_bene_1.png', horizon: 791 }, photo: { src: 'images/fondos/parcela_bene_1.jpeg', x: [0, 736], horizon: 388, dither: .3 } },
+  parcela_bene_2: { art: { src: 'images/fondos/arte/parcela_bene_2.png', horizon: 650 }, photo: { src: 'images/fondos/parcela_bene_2.jpeg', x: [0, 731], horizon: 232, dither: .3 } },
+  puente: { art: { src: 'images/fondos/arte/puente.png', horizon: 762 }, photo: { src: 'images/fondos/puente.jpg', x: [0, 900], horizon: 1000, dither: .3 } },
 };
 if (typeof module !== 'undefined') module.exports = STAGE_CONFIG;

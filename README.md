@@ -75,14 +75,14 @@ Los súpers de Alba, Álvaro, Bene, Carlottis, Casado, Manu, Marcos, Oso y Peño
 
 ## Escenarios
 
-Cuatro sitios reales, a partir de las fotos de `images/fondos/`:
+Cuatro sitios reales. Cada fondo es un dibujo en pixel art hecho con ChatGPT a partir de una foto de `images/fondos/`:
 
-| Escenario | Foto |
-|---|---|
-| Casa de Marcos · El ático | `casa_marcos.jpeg` |
-| Parcela de Bene · La piscina | `parcela_bene_1.jpeg` |
-| Parcela de Bene · Al anochecer | `parcela_bene_2.jpeg` |
-| Puente de Castilla-La Mancha · Río Tajo | `puente.jpg` |
+| Escenario | Foto | Dibujo (`images/fondos/arte/`) |
+|---|---|---|
+| Casa de Marcos · El ático | `casa_marcos.jpeg` | `casa_marcos.png` |
+| Parcela de Bene · La piscina | `parcela_bene_1.jpeg` | `parcela_bene_1.png` |
+| Parcela de Bene · Al anochecer | `parcela_bene_2.jpeg` | `parcela_bene_2.png` |
+| Puente de Castilla-La Mancha · Río Tajo | `puente.jpg` | `puente.png` |
 
 **El público son los propios luchadores.** Los que no están peleando (hasta 6; Marcos en su casa y Bene en su parcela siempre que no peleen) miran el combate desde el fondo y reaccionan:
 - celebran los golpes de su luchador;

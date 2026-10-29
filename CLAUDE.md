@@ -64,7 +64,8 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 - **Places:** four real places from the photos in `images/fondos/`: Marcos's attic, Bene's pool, Bene's garden at dusk, the bridge.
 - **Backgrounds:** the user makes them with ChatGPT from `docs/stage-prompts.md` (its status table tracks which exist) and saves them in `images/fondos/arte/<art>.png`.
   - `python3 tools/build_stages.py` cuts each into a 560×162 strip in `assets/stages/`. Settings are in `tools/stages.config.js`.
-  - Until an art file exists, the tool uses the photo as a stand-in.
+  - Until an art file exists, the tool uses the photo as a stand-in. All 4 art files exist (2026-10-30).
+  - ChatGPT drew the floor lines at different heights, so every `art` entry sets its own `horizon` (the source row where the code-drawn floor starts). Find it on the debug page.
 - **Geometry:**
   - The strip's bottom row is the floor line (y = 150). It moves at parallax 0.55 (= `floorF(150)`), centred on `ARENA_C`, so the seam with the floor never slides.
   - The floor is code-drawn (`buildGround` styles `planks` / `tiles` / `lawn` / `field`).

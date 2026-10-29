@@ -33,13 +33,17 @@ function stripOf(st) {
 
 // ---------- perspective floor ----------
 // texture rows at depth 1/floorF(y), texture x = world x + 400 (as buildFloor in world.js), 12 extra rows below the screen.
-// st.floor: { style: 'planks' | 'tiles' | 'lawn' | 'field', cols: [main, second, seam / detail], edge, decals: [{ x: [wx0, wx1], d: [d0, d1], col, rim }] }
+// st.floor: { style: 'planks' | 'tiles' | 'lawn' | 'field', cols: [main, second, seam / detail], size (tiles), edge, decals: [{ x: [wx0, wx1], d: [d0, d1], col, rim }] }
 // (depth d: 1.82 at the floor line, 1.65 at the crowd, 1 at the fighters' feet)
 function buildGround(st) {
   const F = st.floor, TW = WORLD_W + 800, TH = H - HORIZON + 12, [c] = mk(TW, TH);
   const C = F.cols.map(rgb), HZ = rgb(st.haze), ED = F.edge && rgb(F.edge), seed = st.seed || 7;
   const hash = (a, b) => { let h = (a * 374761393 + b * 668265263 + seed * 1013904223) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   const shade = (col, v) => [col[0] + v, col[1] + v, col[2] + v];
+  const smooth = (x, z) => { // value noise: hashed lattice values, eased between the corners
+    const x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0, ex = fx * fx * (3 - 2 * fx), ez = fz * fz * (3 - 2 * fz);
+    return lerp(lerp(hash(x0, z0), hash(x0 + 1, z0), ex), lerp(hash(x0, z0 + 1), hash(x0 + 1, z0 + 1), ex), ez);
+  };
   pixels(c, (p, w, h) => {
     for (let r = 0; r < h; r++) {
       const y = HORIZON + r, f = floorF(y + .5), depth = 1 / f, line = 1 / f; // a seam stays ~1 screen px wide at every depth
@@ -52,19 +56,20 @@ function buildGround(st) {
           col = shade(hash(board, row) < .5 ? C[0] : C[1], (hash(board, row * 3) - .5) * 14);
           if (hash(Math.floor(wx / 3), row * 7 + Math.floor(depth * 90)) < .2) col = shade(col, -10);
           if (seam || m < line) col = C[2];
-        } else if (F.style === 'tiles') { // square terracotta tiles with light grout
-          const row = Math.floor(depth / .12), seam = Math.floor(1 / floorF(y - .5) / .12) !== row;
-          const m = ((wx % 22) + 22) % 22, tile = Math.floor(wx / 22);
+        } else if (F.style === 'tiles') { // square terracotta tiles (F.size units, default 22) with light grout
+          const ts = F.size || 22, dz = .12 * ts / 22, row = Math.floor(depth / dz), seam = Math.floor(1 / floorF(y - .5) / dz) !== row;
+          const m = ((wx % ts) + ts) % ts, tile = Math.floor(wx / ts);
           col = shade(hash(tile, row) < .5 ? C[0] : C[1], (hash(tile, row * 5) - .5) * 12);
           if (hash(u, r * 7) < .05) col = shade(col, -12);
           if (seam || m < line) col = C[2];
         } else if (F.style === 'lawn') { // mowing stripes (they converge in perspective) and blades
           col = Math.floor(wx / 48) % 2 ? C[0] : C[1];
           const n = hash(u, r * 7); if (n < .16) col = C[2]; else if (n > .95) col = shade(col, 16);
-        } else { // 'field': grass with dry patches and weeds
-          const patch = hash(Math.floor(wx / 26), Math.floor(depth / .09));
-          col = patch < .55 ? C[0] : patch < .8 ? C[1] : C[2];
-          const n = hash(u, r * 7); if (n < .12) col = shade(col, -16); else if (n > .93) col = shade(col, 14);
+        } else { // 'field': grass in soft blobs of two greens, small dry tufts (C[2]) and blades
+          col = smooth(wx / 40, depth / .12) < .42 ? C[1] : C[0];
+          const tx = wx / 6, tz = depth / .025, cx = Math.floor(tx), cz = Math.floor(tz);
+          if (hash(cx, cz) < .16) { const dx = tx - cx - .5, dz = tz - cz - .5; if (dx * dx + dz * dz < .17) col = shade(C[2], (hash(cx, cz * 3) - .5) * 16); }
+          const n = hash(u, r * 7); if (n < .12) col = shade(col, -14); else if (n > .94) col = shade(col, 12);
         }
         for (const d of F.decals || []) if (wx >= d.x[0] && wx < d.x[1] && depth >= d.d[0] && depth < d.d[1]) {
           const rim = d.rim && (wx - d.x[0] < 3 * line || d.x[1] - wx < 3 * line || depth - d.d[0] < .012 || d.d[1] - depth < .012);

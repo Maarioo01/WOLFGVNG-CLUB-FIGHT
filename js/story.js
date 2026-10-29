@@ -63,15 +63,19 @@ function optionInput(item) {
 //   night: darker edges, crowdTint: [colour, amount] for the crowd, glow: lamps on the strip [{ x, y, r, col }]
 //   ambient: background sound (audio.js); music: chiptune track (only with CHIPTUNE on)
 const STAGES = [
-  { name: 'CASA DE MARCOS', sub: 'EL ÁTICO', art: 'casa_marcos', seed: 11, host: 'marcos', haze: '#867d78', ambient: null, music: 'fight',
-    floor: { style: 'planks', cols: ['#8a5a3c', '#7a4e34', '#4e3022'], decals: [{ x: [490, 750], d: [1.08, 1.42], col: '#7a3a34', rim: '#a85a3c' }] } },
-  { name: 'PARCELA DE BENE', sub: 'LA PISCINA', art: 'parcela_bene_1', seed: 22, host: 'bene', haze: '#ae8b7a', ambient: null, music: 'fight',
-    floor: { style: 'tiles', cols: ['#b8583c', '#a44e36', '#d8c4a8'], edge: '#ece6da' } },
-  { name: 'PARCELA DE BENE', sub: 'AL ANOCHECER', art: 'parcela_bene_2', seed: 33, host: 'bene', haze: '#423524', ambient: 'crickets', music: 'fight',
-    night: true, crowdTint: ['#1c1a3c', .4], glow: [{ x: 473, y: 51 }],
-    floor: { style: 'lawn', cols: ['#2c4426', '#253c20', '#1c2e18'], decals: [{ x: [520, 660], d: [1.22, 1.45], col: '#2a4a8a', rim: '#3a5aa0' }] } },
-  { name: 'PUENTE DE CASTILLA-LA MANCHA', sub: 'RÍO TAJO', art: 'puente', seed: 44, haze: '#4b3e2a', ambient: 'wind', music: 'fight',
-    floor: { style: 'field', cols: ['#5e6a3a', '#525e34', '#7a6e4e'] } },
+  { name: 'CASA DE MARCOS', sub: 'EL ÁTICO', art: 'casa_marcos', seed: 11, host: 'marcos', haze: '#3d261c', ambient: null, music: 'fight',
+    floor: { style: 'planks', cols: ['#563221', '#4c2d20', '#2e1b13'] } },
+    // [PHOTO STAND-IN] the rug from the photo: decals: [{ x: [490, 750], d: [1.08, 1.42], col: '#7a3a34', rim: '#a85a3c' }]
+  { name: 'PARCELA DE BENE', sub: 'LA PISCINA', art: 'parcela_bene_1', seed: 22, host: 'bene', haze: '#b85a44', ambient: null, music: 'fight',
+    floor: { style: 'tiles', size: 32, cols: ['#c95641', '#b84d3a', '#d98a6a'] } }, // the pool's white edge is in the background art
+  { name: 'PARCELA DE BENE', sub: 'AL ANOCHECER', art: 'parcela_bene_2', seed: 33, host: 'bene', haze: '#3c3b34', ambient: 'crickets', music: 'fight',
+    night: true, crowdTint: ['#1c1a3c', .4],
+    glow: [{ x: 470, y: 56 }, { x: 27, y: 101, r: 9, col: '#ffb050' }, { x: 115, y: 102, r: 9, col: '#ffb050' }, { x: 166, y: 105, r: 8, col: '#ffb050' }], // lamp post, porch lights
+    floor: { style: 'lawn', cols: ['#223a22', '#1d341e', '#2c4424'] } },
+    // [PHOTO STAND-IN] the blue tarp from the photo: decals: [{ x: [520, 660], d: [1.22, 1.45], col: '#2a4a8a', rim: '#3a5aa0' }]
+  { name: 'PUENTE DE CASTILLA-LA MANCHA', sub: 'RÍO TAJO', art: 'puente', seed: 44, haze: '#615234', ambient: 'wind', music: 'fight',
+    slots: [-310, -215, -120, -25, 235, 320], // nobody stands in front of the tiled sign (about +26 to +215 from the centre)
+    floor: { style: 'field', cols: ['#5a5c30', '#4e5230', '#7a6e3c'] } },
 ];
 /* [OLD STAGES] the Raval street stages, drawn by buildStage (world.js); stageWorld (versus.js) still builds them if uncommented
 const STAGES = [

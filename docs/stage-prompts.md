@@ -11,10 +11,12 @@ The game's stages are four real places: Marcos's attic, Bene's pool, Bene's gard
 
 | Place | File to make | Status |
 |---|---|---|
-| Marcos's attic | `images/fondos/arte/casa_marcos.png` | ⏳ To do |
-| Bene's pool | `images/fondos/arte/parcela_bene_1.png` | ⏳ To do |
-| Bene's garden at dusk | `images/fondos/arte/parcela_bene_2.png` | ⏳ To do |
-| The bridge | `images/fondos/arte/puente.png` | ⏳ To do |
+| Marcos's attic | `images/fondos/arte/casa_marcos.png` | ✅ In the game |
+| Bene's pool | `images/fondos/arte/parcela_bene_1.png` | ✅ In the game |
+| Bene's garden at dusk | `images/fondos/arte/parcela_bene_2.png` | ✅ In the game |
+| The bridge | `images/fondos/arte/puente.png` | ✅ In the game |
+
+ChatGPT didn't put every floor line at 75% (the attic's is at 54%), so each picture's floor line is set by hand: `horizon` in `tools/stages.config.js`. In the pool picture the trees, the sky and the gazebo's roof are above the strip the game shows, so they're cut.
 
 ## How to make each background
 
