@@ -1,4 +1,4 @@
-# CLAUDE.md — WOLFGVNG CLUB FIGHT
+# CLAUDE.md — WOLFGVNG FIGHT CLUB
 
 2D pixel-art 1v1 fighting game about the user's group of friends. Fork of freddysae0/raval-fighter. Plain HTML5 canvas + WebAudio: no build step, no dependencies, no frameworks. Played on GitHub Pages (Windows PC, Xbox/PS5 pads) and locally with `python3 serve.py` → http://localhost:8765.
 

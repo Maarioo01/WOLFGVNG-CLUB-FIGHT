@@ -1,4 +1,4 @@
-# WOLFGVNG CLUB FIGHT
+# WOLFGVNG FIGHT CLUB
 
 Juego de lucha arcade 2D en pixel art, 1 contra 1. HTML5 Canvas + WebAudio, sin dependencias: todo el arte y el sonido se generan por código.
 

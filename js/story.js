@@ -3,7 +3,7 @@
 //  SCENES — boot, title, controls, stage data (+ the original story mode, commented out)
 //  The versus flow (character select, stage select, fights) lives in js/versus.js
 // ============================================================
-/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — countries of origin =====
+/* ===== STORY MODE (disabled for WOLFGVNG FIGHT CLUB) — countries of origin =====
 const COUNTRIES = [
   { id: 'co', name: 'COLOMBIA', airport: 'AEROPUERTO EL DORADO · BOGOTÁ', slang: 'parce', son: 'mijo' },
   { id: 've', name: 'VENEZUELA', airport: 'AEROPUERTO DE MAIQUETÍA · CARACAS', slang: 'pana', son: 'mijo' },
@@ -118,7 +118,7 @@ let SCN = null;
 function go(s) { SCN = s; if (s.init) s.init(); }
 function goFade(mk, sp = 0.045) { fadeTo(() => go(mk()), sp); }
 
-/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — dialogue speakers & dialogue box =====
+/* ===== STORY MODE (disabled for WOLFGVNG FIGHT CLUB) — dialogue speakers & dialogue box =====
 // ---------- speakers ----------
 function SP(k) {
   if (k === 'mega') return { name: 'MEGAFONÍA', voice: 700, color: '#9fe8ff' };
@@ -204,7 +204,7 @@ function drawSuitcase(g, sx, gy, facing, spr, behind) {
 }
 function drawSuitcaseAt(g, x, gy) { const im = SMALL.suitcase; g.drawImage(im, Math.round(x - im.width / 2), gy - im.height + 1); g.fillStyle = '#6a6e76'; g.fillRect(Math.round(x) - 1, gy - im.height - 5, 1, 6); g.fillRect(Math.round(x) + 2, gy - im.height - 5, 1, 6); g.fillRect(Math.round(x) - 1, gy - im.height - 5, 4, 1); }
 
-/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — cutscene helpers, captions, item-get screen =====
+/* ===== STORY MODE (disabled for WOLFGVNG FIGHT CLUB) — cutscene helpers, captions, item-get screen =====
 // ---------- generator helpers ----------
 function* wait(n) { for (let i = 0; i < n; i++) yield; }
 function* until(fn) { while (!fn()) yield; }
@@ -299,10 +299,12 @@ class TitleScene {
     drawFade(g, .35, '#05020a');
     // logo
     const bob = Math.round(Math.sin(this.t * .05) * 2);
-    textGrad(g, 'WOLFGVNG', W / 2, 28 + bob, 32, ['#fff8d0', '#ffd860', '#ffa030', '#ff6020', '#d02818']);
-    textGrad(g, 'CLUB FIGHT', W / 2, 64 + bob, 24, ['#ffffff', '#ffb0b8', '#ff4a5a', '#b01830']);
-    text(g, '1 VS 1  ·  CPU O 2 JUGADORES', W / 2, 94, { align: 'center', color: '#c8c0e0', outline: OUTL });
-    drawFlag(g, 'es', W / 2 - 86, 12, 12, 8, this.t, 1); drawFlag(g, 'cat', W / 2 + 74, 12, 12, 8, this.t, 1);
+    // textGrad(g, 'WOLFGVNG', W / 2, 28 + bob, 32, ['#fff8d0', '#ffd860', '#ffa030', '#ff6020', '#d02818']);   // [OLD NAME] WOLFGVNG CLUB FIGHT
+    // textGrad(g, 'CLUB FIGHT', W / 2, 64 + bob, 24, ['#ffffff', '#ffb0b8', '#ff4a5a', '#b01830']);
+    textGrad(g, 'WOLFGVNG', W / 2, 18 + bob, 16, ['#fff8d0', '#ffd860', '#ffa030', '#ff6020', '#d02818']);
+    textGrad(g, 'FIGHT CLUB', W / 2, 40 + bob, 32, ['#ffffff', '#ffb0b8', '#ff4a5a', '#b01830']);
+    text(g, '1 VS 1  ·  CPU O 2 JUGADORES', W / 2, 90, { align: 'center', color: '#c8c0e0', outline: OUTL });
+    drawFlag(g, 'es', W / 2 - 86, 22 + bob, 12, 8, this.t, 1); drawFlag(g, 'cat', W / 2 + 74, 22 + bob, 12, 8, this.t, 1);
     if (!this.started) { if ((this.t >> 5) % 2 === 0) text(g, 'PULSA ENTER', W / 2, 128, { align: 'center', color: '#fff', outline: OUTL, thick: 1 }); }
     else this.items.forEach((it, i) => {
       const y = 116 + i * 14, s = i === this.sel;
@@ -312,7 +314,7 @@ class TitleScene {
       if (s) text(g, '▶', W / 2 - 84, y, { color: '#ffd84a' });
       text(g, it, W / 2, y, { align: 'center', color: s ? '#ffd84a' : '#c8c0e0', outline: OUTL });
     });
-    const foot = '© 2026 WOLFGVNG CLUB FIGHT  ·  M: SONIDO';
+    const foot = '© 2026 WOLFGVNG FIGHT CLUB  ·  M: SONIDO';
     tiny(g, foot, Math.round(W / 2 - tinyW(foot) / 2), 216, 'rgba(255,255,255,.5)');
   }
 }
@@ -356,7 +358,7 @@ class ControlsScene {
   }
 }
 
-/* ===== STORY MODE (disabled for WOLFGVNG CLUB FIGHT) — country select, airport, flight, route phone, story stages, tutorial, continue, old quick fight, ending, credits =====
+/* ===== STORY MODE (disabled for WOLFGVNG FIGHT CLUB) — country select, airport, flight, route phone, story stages, tutorial, continue, old quick fight, ending, credits =====
 // ============================================================
 //  COUNTRY SELECT
 // ============================================================

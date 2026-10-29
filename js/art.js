@@ -713,7 +713,7 @@ function mkChar(o) {
   return d;
 }
 const FEM = { s: 1.16, sw: 12, hw: 12, torso: 18, tw: 6, shw: 5, uw: 5, fw: 4, fist: 4 };
-// [OLD CHARS] original Raval Fighter cast, disabled for WOLFGVNG CLUB FIGHT
+// [OLD CHARS] original Raval Fighter cast, disabled for WOLFGVNG FIGHT CLUB
 /*
 const CH = {
   hero: mkChar({ id: 'hero', name: 'MATEO', skin: '#b77a48', hair: '#1b1411', hairStyle: 'curly', shirt: '#1f6e69', pants: '#2c55a8', shoes: '#ecebe6', voice: 330, seed: 11, color: '#4fb3ff' }),
@@ -729,7 +729,7 @@ const CH = {
   host: mkChar({ id: 'host', name: 'JORDI', skin: '#e2b894', hair: '#6b4a2a', hairStyle: 'short', beard: 'stubble', shirt: '#e8e2d0', pants: '#6a7a4a', voice: 380, seed: 111 }),
 };
 */
-// WOLFGVNG CLUB FIGHT cast — all drawn by the HD renderer (js/art_hd.js); options are documented there.
+// WOLFGVNG FIGHT CLUB cast — all drawn by the HD renderer (js/art_hd.js); options are documented there.
 // Faces follow the photos in images/, outfits follow the design sheets.
 const HDB = (o) => Object.assign({ hd: true, voice: 300 }, o);
 const CH = {

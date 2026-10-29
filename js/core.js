@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================
-//  WOLFGVNG CLUB FIGHT — core: canvas, utils, color, text, input, fx
+//  WOLFGVNG FIGHT CLUB — core: canvas, utils, color, text, input, fx
 // ============================================================
 const W = 400, H = 225;
 const cv = document.getElementById('game');

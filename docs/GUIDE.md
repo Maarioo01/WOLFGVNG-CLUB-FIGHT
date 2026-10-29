@@ -1,6 +1,6 @@
 # How the game is built, and where to change things
 
-A practical map for anyone who wants to change **WOLFGVNG CLUB FIGHT** by hand: where each thing lives and what to edit. You don't need to know the whole code; find the section for what you want to change.
+A practical map for anyone who wants to change **WOLFGVNG FIGHT CLUB** by hand: where each thing lives and what to edit. You don't need to know the whole code; find the section for what you want to change.
 
 **Basics**
 - Everything is plain JavaScript in `js/`. There's no build step: edit a file, save, reload the browser.

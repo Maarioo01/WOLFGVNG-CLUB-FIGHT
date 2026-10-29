@@ -10,5 +10,5 @@ class Server(http.server.ThreadingHTTPServer):
     request_queue_size = 128
     daemon_threads = True
 port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
-print(f'WOLFGVNG Club Fight -> http://localhost:{port}')
+print(f'WOLFGVNG Fight Club -> http://localhost:{port}')
 Server(('', port), H).serve_forever()
