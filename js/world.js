@@ -431,6 +431,7 @@ const StageProto = {
   },
   splash(x, y) { (this.splashes = this.splashes || []).push({ x, y, t: 0 }); },
   react(kind, wx) {
+    if (kind !== 'hit' && kind !== 'ko') return; // the other events (super, round, match, start) are for the new stages (stages.js)
     for (const c of this.crowd) if (Math.random() < (kind === 'ko' ? 1 : .35)) c.cheer = kind === 'ko' ? 200 : 60;
     this.balc = Math.max(this.balc || 0, kind === 'ko' ? 220 : 50);
     for (const pg of this.pigeons) if (pg.st === 'peck' && (kind === 'ko' || Math.abs(pg.wx - wx) < 140)) { pg.st = 'fly'; pg.vx = rnd(-1.5, 1.5) + (pg.wx > wx ? 1 : -1); pg.vy = rnd(-2.5, -1.5); pg.t = 0; if (Math.random() < .3) sfx('pigeon'); }

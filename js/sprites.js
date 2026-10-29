@@ -22,6 +22,8 @@ const SPRITE_FALLBACK = {
   knockdown_1: 'knockdown', knockdown_2: 'ko', knockdown: 'hit', ko: 'hit', getup_1: 'crouch', getup_2: 'getup_1',
   victory_1: 'victory_2', victory_2: 'victory', victory: 'stance',
   special_1: 'stance', special_2: 'special', special_3: 'special_2', special: 'punch_2',
+  // the crowd (stages.js): a spectator sheet could add these drawings; until then, the fight poses
+  crowd_idle_1: 'idle_1', crowd_idle_2: 'idle_2', crowd_cheer_1: 'victory_1', crowd_cheer_2: 'victory_2', crowd_shock: 'hit', crowd_sad: 'crouch_hit',
   // super_* / prop_* (sheet F) have no fallback here: supers.js picks a stand-in pose for each one
 };
 // game animation -> pose for each keyframe of ANIM[name] (art.js), so the timing is the move's frame data;
@@ -52,6 +54,9 @@ const SPRITE_ANIM = {
   block: ['block'], blockC: ['crouch_block'],
   knock: ['knockdown_1', 'knockdown_2'], lie: ['knockdown_2'], getup: ['knockdown_2', 'getup_1', 'getup_2', 'idle_1'], // knockdown_2 = lying (old sheets: ko)
   win: { loop: ['victory_1', 'victory_2'], d: 12, hop: 1 }, laugh: { loop: ['victory_1', 'victory_2'], d: 12, hop: 1 },
+  // the crowd (stages.js): watching, cheering, shocked (a super, their fighter hit hard), sad (their fighter lost)
+  crowdIdle: { loop: ['crowd_idle_1', 'crowd_idle_2'], d: 24 }, crowdCheer: { loop: ['crowd_cheer_1', 'crowd_cheer_2'], d: 10, hop: 1 },
+  crowdShock: { loop: ['crowd_shock'], d: 60 }, crowdSad: { loop: ['crowd_sad'], d: 60 },
 };
 
 function loadSprites() {

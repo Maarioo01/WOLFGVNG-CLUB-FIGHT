@@ -56,10 +56,11 @@ def config_ids():
     return re.findall(r'^  (\w+): \{', src, re.M)
 
 
-def run_cutter(chrome, port, char):
-    """Run the cutter page and return its JSON result (Chrome is stopped once the DOM is dumped)."""
-    url = f'http://127.0.0.1:{port}/tools/sprite-cutter.html?char={char}'
-    profile = tempfile.mkdtemp(prefix='sprites-chrome-')
+def run_page(chrome, port, page, label):
+    """Run a tool page (path + query, from the repo root) and return its JSON result.
+    Chrome is stopped once the DOM is dumped. Also used by build_stages.py."""
+    url = f'http://127.0.0.1:{port}/{page}'
+    profile = tempfile.mkdtemp(prefix='tools-chrome-')
     cmd = [chrome, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
            f'--user-data-dir={profile}', '--virtual-time-budget=60000', '--dump-dom', url]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -79,11 +80,16 @@ def run_cutter(chrome, port, char):
         shutil.rmtree(profile, ignore_errors=True)
     m = re.search(r'<pre id="out">(.*?)</pre>', buf.decode('utf-8', 'replace'), re.S)
     if not m:
-        raise RuntimeError(f'{char}: the cutter produced no output')
+        raise RuntimeError(f'{label}: the page produced no output')
     data = json.loads(html.unescape(m.group(1)))
     if 'error' in data:
-        raise RuntimeError(f"{char}: {data['error']}\n" + '\n'.join(data.get('log', [])))
+        raise RuntimeError(f"{label}: {data['error']}\n" + '\n'.join(data.get('log', [])))
     return data
+
+
+def run_cutter(chrome, port, char):
+    """Run the sprite cutter for one character."""
+    return run_page(chrome, port, f'tools/sprite-cutter.html?char={char}', char)
 
 
 def write_png(path, data_url):

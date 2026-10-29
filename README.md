@@ -73,6 +73,34 @@ Los súpers de Alba, Álvaro, Bene, Carlottis, Casado, Manu, Marcos, Oso y Peño
 
 **Música:** dos canciones en `music/` (`epica.mp3` y `patricio.mp3`). Se elige con **MÚSICA** en el menú principal o en el de pausa (← →): ÉPICA, PATRICIO o NO (sin música). La elección se guarda en el navegador y la canción suena siempre, en los menús y en los combates. Para añadir otra canción: copiarla a `music/` y añadirla a `SONGS` en `js/audio.js`. La música chiptune original sigue en el código, apagada (`CHIPTUNE` en `js/audio.js`).
 
+## Escenarios
+
+Cuatro sitios reales, a partir de las fotos de `images/fondos/`:
+
+| Escenario | Foto |
+|---|---|
+| Casa de Marcos · El ático | `casa_marcos.jpeg` |
+| Parcela de Bene · La piscina | `parcela_bene_1.jpeg` |
+| Parcela de Bene · Al anochecer | `parcela_bene_2.jpeg` |
+| Puente de Castilla-La Mancha · Río Tajo | `puente.jpg` |
+
+**El público son los propios luchadores.** Los que no están peleando (hasta 6; Marcos en su casa y Bene en su parcela siempre que no peleen) miran el combate desde el fondo y reaccionan:
+- celebran los golpes de su luchador;
+- se asustan con los súpers;
+- en el K.O. y al final de la ronda, los de un lado lo celebran y los del otro se lamentan.
+
+**Cómo se hace cada fondo:**
+1. ChatGPT redibuja cada foto en pixel art con los prompts de [`docs/stage-prompts.md`](docs/stage-prompts.md). El dibujo se guarda en `images/fondos/arte/<nombre>.png`.
+2. Una herramienta recorta la franja que se ve detrás del combate y genera `assets/stages/`. Mientras falta un dibujo, usa la foto.
+3. El suelo se dibuja por código.
+
+```
+python3 tools/build_stages.py           # todos los escenarios
+python3 tools/build_stages.py puente    # solo uno
+```
+
+Los escenarios del Raval siguen en el código, desactivados (`[OLD STAGES]` en `js/story.js`).
+
 ## Sprites de los personajes
 
 Los luchadores se dibujan con los fotogramas de los diseños (`images/`). Una herramienta los recorta, limpia el fondo, los ajusta a la rejilla de píxeles, iguala su tamaño (cada pose con la cabeza igual de grande que en la guardia, para que nadie encoja al andar o al celebrar) y genera `assets/fighters/`:
@@ -107,10 +135,11 @@ Guía para hacer cambios a mano (dónde están los sprites, golpes, rondas, mús
 - `js/art.js` — esqueleto + poses con keyframes, y la definición de cada personaje (`CH`)
 - `js/art_hd.js` — luchadores dibujados por código (para los que aún no tienen sprites)
 - `js/sprites.js` — luchadores con los sprites de los diseños: carga, animaciones y caras del HUD
-- `tools/` — herramienta que convierte los diseños en sprites (`build_sprites.py`, `sprite-cutter.html`, `sprites.config.js`)
-- `js/world.js` — escenarios procedurales con parallax, suelo en perspectiva, público, palomas, lluvia
+- `tools/` — herramientas que convierten los diseños en sprites (`build_sprites.py`, `sprite-cutter.html`, `sprites.config.js`) y en fondos de escenario (`build_stages.py`, `stage-cutter.html`, `stages.config.js`)
+- `js/world.js` — los escenarios antiguos del Raval (desactivados) y el suelo en perspectiva
+- `js/stages.js` — los escenarios: fondo, suelo y el público (los luchadores que no pelean) reaccionando al combate
 - `js/fight.js` — luchadores, frame data, IA, proyectiles, HUD
 - `js/supers.js` — los súpers: escena de cada personaje (guion, objetos y efectos)
 - `js/story.js` — título, controles, datos de escenarios (el modo historia está comentado)
 - `js/versus.js` — selección de personaje y escenario, combate 1P vs CPU / 2P, pausa y revancha
-- `js/main.js` — bucle principal (60 Hz fijo). Atajos dev: `#cpu`, `#2p`, `#fight=0..4`, `#fight2p=0..4`
+- `js/main.js` — bucle principal (60 Hz fijo). Atajos dev: `#cpu`, `#2p`, `#fight=0..3`, `#fight2p=0..3`

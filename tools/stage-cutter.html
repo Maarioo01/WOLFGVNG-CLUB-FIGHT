@@ -1,0 +1,145 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Stage cutter</title></head>
+<body style="background:#2a2a30;color:#ddd;font:12px monospace;margin:8px">
+<!--
+  Turns a stage background (the ChatGPT pixel art, or the photo as a stand-in) into the strip the game draws
+  behind the fight. Run it through tools/build_stages.py, or open
+  http://localhost:8765/tools/stage-cutter.html?stage=puente&debug=1  to see the crop on the source, the strip,
+  and a mock-up of the fight screen with two fighters and the crowd for scale.
+-->
+<pre id="out"></pre>
+<div id="dbg"></div>
+<script src="stages.config.js"></script>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search), ID = Q.get('stage'), DEBUG = !!Q.get('debug');
+const OUT = document.getElementById('out'), DBG = document.getElementById('dbg'), log = [];
+const STRIP_H = 162; // art px: the 150 rows above the floor line on screen + 12 rows for screen shakes
+const loadImage = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('cannot load ' + src)); im.src = src; });
+const c255 = v => Math.max(0, Math.min(255, Math.round(v)));
+const hex = c => '#' + c.map(v => c255(v).toString(16).padStart(2, '0')).join('');
+const luma = c => c[0] * .299 + c[1] * .587 + c[2] * .114;
+const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+
+// ---------- 1. the source: the art if its file exists, else the photo ----------
+async function source(cfg) {
+  const art = typeof cfg.art === 'string' ? { src: cfg.art } : cfg.art;
+  for (const [kind, o] of [['art', art], ['photo', cfg.photo]]) {
+    if (!o) continue;
+    try { return { kind, o, im: await loadImage('../' + o.src) }; }
+    catch (e) { log.push(`${o.src}: not found${kind === 'art' ? ' yet, using the photo' : ''}`); }
+  }
+  throw new Error('no image for ' + ID);
+}
+function pixelsOf(im) {
+  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const g = c.getContext('2d'); g.drawImage(im, 0, 0); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data };
+}
+
+// ---------- 2. area-average the band (x0..x1, y0..floor line) down to w x STRIP_H ----------
+// rows above the image (a band taller than the source) repeat its top row
+function shrink(P, x0, x1, y0, w) {
+  const s = (x1 - x0) / w, out = new Float32Array(w * STRIP_H * 3);
+  for (let v = 0; v < STRIP_H; v++) {
+    const sy0 = y0 + v * s, sy1 = sy0 + s;
+    for (let u = 0; u < w; u++) {
+      const sx0 = x0 + u * s, sx1 = sx0 + s; let r = 0, g = 0, b = 0, n = 0;
+      for (let y = Math.floor(sy0); y < Math.ceil(sy1); y++) {
+        const wy = Math.min(sy1, y + 1) - Math.max(sy0, y), yy = Math.max(0, Math.min(P.h - 1, y));
+        for (let x = Math.floor(sx0); x < Math.ceil(sx1); x++) {
+          const wt = wy * (Math.min(sx1, x + 1) - Math.max(sx0, x)), i = (yy * P.w + Math.max(0, Math.min(P.w - 1, x))) * 4;
+          r += P.d[i] * wt; g += P.d[i + 1] * wt; b += P.d[i + 2] * wt; n += wt;
+        }
+      }
+      const o = (v * w + u) * 3; out[o] = r / n; out[o + 1] = g / n; out[o + 2] = b / n;
+    }
+  }
+  return out;
+}
+
+// ---------- 3. colour adjustments: saturation, contrast around mid-grey, added light ----------
+function adjust(px, o) {
+  const br = (o.bright || 0) * 255, ct = o.contrast || 1, sat = o.sat == null ? 1 : o.sat;
+  for (let i = 0; i < px.length; i += 3) {
+    const l = px[i] * .299 + px[i + 1] * .587 + px[i + 2] * .114;
+    for (let k = 0; k < 3; k++) px[i + k] = ((l + (px[i + k] - l) * sat) - 128) * ct + 128 + br;
+  }
+}
+
+// ---------- 4. palette (median cut, as in sprite-cutter.html) + optional ordered dithering ----------
+function medianCut(colors, n) {
+  let boxes = [colors];
+  while (boxes.length < n) {
+    let bi = -1, br = -1, bc = 0;
+    boxes.forEach((b, i) => { if (b.length < 2) return; for (let c = 0; c < 3; c++) { let lo = 255, hi = 0; for (const p of b) { if (p[c] < lo) lo = p[c]; if (p[c] > hi) hi = p[c]; } const r = (hi - lo) * Math.sqrt(b.length); if (r > br) { br = r; bi = i; bc = c; } } });
+    if (bi < 0) break;
+    const b = boxes[bi].sort((p, q) => p[bc] - q[bc]), mid = b.length >> 1;
+    boxes.splice(bi, 1, b.slice(0, mid), b.slice(mid));
+  }
+  return boxes.map(b => { const s = [0, 0, 0]; for (const p of b) { s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; } return s.map(v => Math.round(v / b.length)); });
+}
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+function quantize(px, w, h, n, dither) {
+  const cols = []; for (let i = 0; i < px.length; i += 3) cols.push([c255(px[i]), c255(px[i + 1]), c255(px[i + 2])]);
+  const pal = medianCut(cols, n), img = new Uint8ClampedArray(w * h * 4), spread = 56 * dither;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 3, k = spread ? (BAYER4[(y & 3) * 4 + (x & 3)] / 16 - .5) * spread : 0, c = [px[i] + k, px[i + 1] + k, px[i + 2] + k];
+    let best = pal[0], bd = Infinity; for (const p of pal) { const d = dist2(c, p); if (d < bd) { bd = d; best = p; } }
+    const o = (y * w + x) * 4; img[o] = best[0]; img[o + 1] = best[1]; img[o + 2] = best[2]; img[o + 3] = 255;
+  }
+  return { img, pal };
+}
+
+// ---------- 5. colour suggestions for the stage in js/story.js ----------
+// haze: the strip's bottom rows (the floor fades into it at the horizon); floor: the source just below the floor line
+function suggestions(P, img, w, x0, x1, horizon) {
+  const bottom = [0, 0, 0]; let n = 0;
+  for (let y = STRIP_H - 6; y < STRIP_H; y++) for (let x = 0; x < w; x++) { const o = (y * w + x) * 4; bottom[0] += img[o]; bottom[1] += img[o + 1]; bottom[2] += img[o + 2]; n++; }
+  const below = [], step = Math.max(1, Math.round((x1 - x0) / 200));
+  for (let y = horizon + 2; y < Math.min(P.h, horizon + (x1 - x0) * .08); y += step) for (let x = x0; x < x1; x += step) { const i = (y * P.w + x) * 4; below.push([P.d[i], P.d[i + 1], P.d[i + 2]]); }
+  const floor = below.length > 20 ? medianCut(below, 3).sort((a, b) => luma(a) - luma(b)).map(hex) : [];
+  return { haze: hex(bottom.map(v => v / n)), floor };
+}
+
+// ---------- debug view ----------
+function debugView(im, strip, b, sug) {
+  const sc = Math.min(1, 900 / im.naturalWidth), c = document.createElement('canvas'); c.width = im.naturalWidth * sc; c.height = im.naturalHeight * sc;
+  const g = c.getContext('2d'); g.drawImage(im, 0, 0, c.width, c.height);
+  g.lineWidth = 2; g.strokeStyle = '#ffd84a'; g.strokeRect(b.x0 * sc, b.y0 * sc, (b.x1 - b.x0) * sc, (b.horizon - b.y0) * sc);
+  g.strokeStyle = '#ff3030'; g.beginPath(); g.moveTo(0, b.horizon * sc); g.lineTo(c.width, b.horizon * sc); g.stroke();
+  // the fight screen (400 x 225, camera centred): strip on top of the floor line at y 150, floor below
+  const m = document.createElement('canvas'); m.width = 800; m.height = 450; const mg = m.getContext('2d'); mg.imageSmoothingEnabled = false; mg.scale(2, 2);
+  mg.fillStyle = sug.floor[1] || sug.haze; mg.fillRect(0, 150, 400, 75);
+  mg.fillStyle = sug.floor[0] || '#000'; for (let y = 156; y < 225; y += 7 + (y - 150) / 6) mg.fillRect(0, Math.round(y), 400, 1);
+  mg.drawImage(strip, Math.round(200 - strip.width / 2), 150 - STRIP_H);
+  const person = (x, foot, h, col) => { mg.fillStyle = col; mg.fillRect(x - h * .12, foot - h * .78, h * .24, h * .78); mg.beginPath(); mg.arc(x, foot - h * .88, h * .11, 0, 7); mg.fill(); };
+  for (const x of [20, 92, 164, 236, 308, 380]) person(x, 155, 44, 'rgba(60,200,255,.85)'); // the crowd (half-size fighters)
+  person(140, 200, 88, 'rgba(255,80,80,.9)'); person(260, 200, 88, 'rgba(255,80,80,.9)'); // the fighters
+  mg.fillStyle = 'rgba(0,0,0,.5)'; mg.fillRect(0, 0, 400, 30); // HUD band
+  const z = document.createElement('canvas'); z.width = strip.width * 2; z.height = STRIP_H * 2; const zg = z.getContext('2d'); zg.imageSmoothingEnabled = false; zg.drawImage(strip, 0, 0, z.width, z.height);
+  for (const [title, el] of [['source: crop (yellow), floor line (red)', c], ['strip at 2x', z], ['fight screen mock-up: fighters (red), crowd (blue), HUD (dark band)', m]]) {
+    const d = document.createElement('div'); d.style = 'margin:10px 0'; d.textContent = title; d.appendChild(document.createElement('br')); d.appendChild(el); DBG.appendChild(d);
+  }
+}
+
+// ---------- main ----------
+async function build(id) {
+  const cfg = STAGE_CONFIG[id]; if (!cfg) throw new Error('no config for ' + id);
+  const { kind, o, im } = await source(cfg), P = pixelsOf(im);
+  const w = o.width || 560, [x0, x1] = o.x || [0, P.w], horizon = o.horizon != null ? o.horizon : Math.round(P.h * .75);
+  const s = (x1 - x0) / w, y0 = horizon - STRIP_H * s;
+  log.push(`${o.src} (${kind}): ${P.w}x${P.h}, columns ${x0}-${x1}, rows ${Math.round(y0)}-${horizon} -> ${w}x${STRIP_H} (${s.toFixed(2)} image px per art px)`);
+  if (y0 < 0) log.push(`  warning: the strip starts ${Math.round(-y0)} px above the image; its top rows repeat the first row`);
+  const px = shrink(P, x0, x1, y0, w); adjust(px, o);
+  const { img, pal } = quantize(px, w, STRIP_H, o.colors || 48, o.dither || 0);
+  const c = document.createElement('canvas'); c.width = w; c.height = STRIP_H;
+  const data = c.getContext('2d').createImageData(w, STRIP_H); data.data.set(img); c.getContext('2d').putImageData(data, 0, 0);
+  const sug = suggestions(P, img, w, x0, x1, horizon);
+  log.push(`  ${pal.length} colours; haze ${sug.haze}; floor ${sug.floor.length ? sug.floor.join(' ') : '(nothing below the floor line)'}`);
+  if (DEBUG) debugView(im, c, { x0, x1, y0, horizon }, sug);
+  return { id, used: kind, png: c.toDataURL('image/png'), haze: sug.haze, floor: sug.floor, log };
+}
+build(ID).then(r => { OUT.textContent = DEBUG ? r.log.join('\n') : JSON.stringify(r); document.title = 'DONE'; })
+  .catch(e => { OUT.textContent = JSON.stringify({ error: String(e.stack || e), log }); document.title = 'ERROR'; });
+</script>
+</body></html>

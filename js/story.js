@@ -54,6 +54,26 @@ function optionInput(item) {
 }
 // [STORY] const C = () => GAME.country;
 
+// The stages: real places from the photos in images/fondos/ (drawn by stages.js). Each one:
+//   name: shown on the stage select and in the round banner; sub: the line under it on the stage select
+//   art: background strip assets/stages/<art>.png (tools/stages.config.js); seed: floor details
+//   floor: { style: 'planks' | 'tiles' | 'lawn' | 'field', cols: [main, second, seams / detail], edge, decals } (stages.js)
+//   haze: the colour the floor fades into at the floor line (tools/build_stages.py suggests it)
+//   host: fighter always in the crowd when not fighting; crowd: number of spectators (6); slots: their x around the centre
+//   night: darker edges, crowdTint: [colour, amount] for the crowd, glow: lamps on the strip [{ x, y, r, col }]
+//   ambient: background sound (audio.js); music: chiptune track (only with CHIPTUNE on)
+const STAGES = [
+  { name: 'CASA DE MARCOS', sub: 'EL ÁTICO', art: 'casa_marcos', seed: 11, host: 'marcos', haze: '#867d78', ambient: null, music: 'fight',
+    floor: { style: 'planks', cols: ['#8a5a3c', '#7a4e34', '#4e3022'], decals: [{ x: [490, 750], d: [1.08, 1.42], col: '#7a3a34', rim: '#a85a3c' }] } },
+  { name: 'PARCELA DE BENE', sub: 'LA PISCINA', art: 'parcela_bene_1', seed: 22, host: 'bene', haze: '#ae8b7a', ambient: null, music: 'fight',
+    floor: { style: 'tiles', cols: ['#b8583c', '#a44e36', '#d8c4a8'], edge: '#ece6da' } },
+  { name: 'PARCELA DE BENE', sub: 'AL ANOCHECER', art: 'parcela_bene_2', seed: 33, host: 'bene', haze: '#423524', ambient: 'crickets', music: 'fight',
+    night: true, crowdTint: ['#1c1a3c', .4], glow: [{ x: 473, y: 51 }],
+    floor: { style: 'lawn', cols: ['#2c4426', '#253c20', '#1c2e18'], decals: [{ x: [520, 660], d: [1.22, 1.45], col: '#2a4a8a', rim: '#3a5aa0' }] } },
+  { name: 'PUENTE DE CASTILLA-LA MANCHA', sub: 'RÍO TAJO', art: 'puente', seed: 44, haze: '#4b3e2a', ambient: 'wind', music: 'fight',
+    floor: { style: 'field', cols: ['#5e6a3a', '#525e34', '#7a6e4e'] } },
+];
+/* [OLD STAGES] the Raval street stages, drawn by buildStage (world.js); stageWorld (versus.js) still builds them if uncommented
 const STAGES = [
   {
     name: "CARRER DE L'HOSPITAL", theme: 'hospital', tod: 'afternoon', enemy: 'fumeta', seed: 1101, dist: '850 m', introAnim: 'smoke', music: 'fight',
@@ -86,6 +106,7 @@ const STAGES = [
     // [STORY] outro: () => [['capo', 'Respeto, ' + C().slang + '. Tienes calle. Bienvenido al barrio.']]
   },
 ];
+*/
 // [STORY] const WIN_QUOTES = ['¡Doce horas de vuelo y aún me sobra energía!', 'Mi abuela pega más fuerte que tú.', 'En mi barrio esto es un saludo.', '¡Déjame pasar, que llego tarde al check-in!', 'La chancla nunca falla.'];
 
 // ---------- scene manager ----------
@@ -232,7 +253,7 @@ class BootScene {
   init() {
     this.t = 0; this.ready = false; const done = () => { _tc.clear(); this.ready = true; };
     let fonts; try { fonts = Promise.race([document.fonts.load("8px 'Press Start 2P'"), new Promise(r => setTimeout(r, 2500))]); } catch (e) { fonts = Promise.resolve(); }
-    Promise.all([fonts, loadSprites()]).then(done, done); // web font + fighter sprites
+    Promise.all([fonts, loadSprites(), loadStages()]).then(done, done); // web font + fighter sprites + stage backgrounds
   }
   update() { this.t++; if (this.ready && this.t > 10) go(new TitleScene()); }
   draw(g) { g.fillStyle = '#07060b'; g.fillRect(0, 0, W, H); g.fillStyle = '#ffd84a'; for (let i = 0; i < 3; i++) if ((this.t >> 3) % 3 >= i) g.fillRect(W / 2 - 10 + i * 8, H / 2, 4, 4); }
@@ -241,9 +262,12 @@ class TitleScene {
   init() {
     // this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES']; // [STORY]
     this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'CONTROLES'];
-    this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 }));
+    // this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 })); // [OLD STAGES]
+    // its own copy of Bene's garden at dusk, with Mario and Peño in front and the others watching
+    this.stage = TITLE_STAGE || (TITLE_STAGE = buildPhotoStage(STAGES.find(s => s.art === 'parcela_bene_2') || STAGES[0], { center: 620 }));
+    this.stage.cast(['mario', 'peno'], true);
     this.hero = new Actor(CH.mario, 0, 1, { anim: 'idle' }); this.capo = new Actor(CH.peno, 0, -1, { anim: 'idle' });
-    playMusic('rumba'); ambient('street'); this.started = false;
+    playMusic('rumba'); ambient(this.stage.st.ambient); this.started = false;
   }
   update() {
     this.t++; this.stage.update(); this.hero.update(); this.capo.update();
@@ -263,7 +287,8 @@ class TitleScene {
     }
   }
   draw(g) {
-    const camX = 400 + Math.sin(this.t * .004) * 180;
+    // const camX = 400 + Math.sin(this.t * .004) * 180; // [OLD STAGES] the street stages were wider
+    const camX = 420 + Math.sin(this.t * .004) * 110;
     this.stage.drawBack(g, camX); this.stage.drawCrowd(g, camX);
     this.hero.draw(g, 0 - 110); this.capo.draw(g, 0 - 290);
     this.stage.drawFront(g, camX);

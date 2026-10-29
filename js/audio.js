@@ -168,6 +168,13 @@ function ambient(name) {
   if (name === 'airport') { src(AU.white, 'bandpass', 480, 1.4, .07); src(AU.white, 'bandpass', 900, 2, .04); }
   if (name === 'street') { src(AU.white, 'bandpass', 700, 1.2, .045); }
   if (name === 'rain') { src(AU.white, 'highpass', 2500, .5, .12); src(AU.white, 'lowpass', 400, .5, .12); }
+  const lfo = (type, f, depth, param) => { const o = ac.createOscillator(); o.type = type; o.frequency.value = f; const d = ac.createGain(); d.gain.value = depth; o.connect(d); d.connect(param); o.start(); nodes.push(o); };
+  if (name === 'wind') { const fl = src(AU.white, 'lowpass', 380, .8, .09); lfo('sine', .11, 220, fl.frequency); } // slow gusts
+  if (name === 'crickets') { // a narrow high band of noise, pulsed 28 times a second, in chirps
+    const pulse = ac.createGain(), chirp = ac.createGain(); pulse.gain.value = .06; chirp.gain.value = .5;
+    const fl = src(AU.white, 'bandpass', 4600, 9, 1); fl.disconnect(); fl.connect(pulse); pulse.connect(chirp); chirp.connect(g);
+    lfo('square', 28, .06, pulse.gain); lfo('square', 1.6, .5, chirp.gain);
+  }
   g.gain.setTargetAtTime(1, ac.currentTime, 0.5);
   AU.amb = { g, nodes };
 }

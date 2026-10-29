@@ -24,14 +24,17 @@ A practical map for anyone who wants to change **WOLFGVNG CLUB FIGHT** by hand: 
 | `js/art_hd.js` | fighters drawn by code (only used if a fighter has no sprites) |
 | `js/sprites.js` | loads the sprite sheets and decides **which drawing shows in each animation** |
 | `assets/fighters/` | the **generated** sprite atlases. Don't edit; rebuild them (section 2) |
-| `js/world.js` | the **stages / backgrounds** (buildings, crowd, floor, rain, pigeons…) |
+| `js/world.js` | the old Raval street stages (no longer in the list) and the perspective-floor maths the new stages reuse |
+| `js/stages.js` | the **stages**: background strip, floor, and the **crowd** of fighters reacting to the fight |
 | `js/fight.js` | **moves and hits, specials, projectiles, rounds, timer, KO, CPU AI, the HUD** |
 | `js/supers.js` | the **supers** (one scripted scene per fighter) and the super bar speed |
 | `js/story.js` | screen switching (`go`, `goFade`), difficulty, **stage list (`STAGES`)**, **title menu**, **controls screen**. The old story mode is commented out at the bottom |
 | `js/versus.js` | **fighter list (`ROSTER`)**, CPU tuning, **character select**, the **fight screen**, pause and end-of-match menus |
 | `js/main.js` | the main loop (60 ticks/s) |
-| `tools/` | the tool that turns the AI drawings into sprites |
+| `tools/` | the tools that turn the AI drawings into sprites (`build_sprites.py`) and stage backgrounds (`build_stages.py`) |
 | `images/sprites/<name>/` | the AI sprite sheets (A–F) for each fighter |
+| `images/fondos/` | the photos of the stages' places; the ChatGPT backgrounds go in `images/fondos/arte/` |
+| `assets/stages/` | the **generated** stage backgrounds. Don't edit; rebuild them (section 8) |
 | `music/` | the background songs (MP3) |
 
 ---
@@ -187,7 +190,7 @@ In `js/audio.js`.
 - **Sound effects:** `sfx(name)`. Each `case` builds the sound from synth tones (`osc`) and noise (`nz`), so there are no audio files. Add a new `case` to create a sound and call `sfx('mysound')` where you need it.
 - **Mute:** the M key (`toggleMute`); it mutes songs too.
 - **Old chiptune music:** set `CHIPTUNE = true` to bring it back. The tracks are in `TRACKS`; stages choose theirs with `music:` in `STAGES`.
-- **Street ambience / rain sound:** `ambient()`.
+- **Background sounds** (crickets, wind; the old street noise and rain): `ambient()`. Each stage picks one with `ambient:` in `STAGES`.
 
 ---
 
@@ -218,19 +221,53 @@ KeyK: [1, 'punch'],   // player 2 (1) punches with K
 
 ## 8. Stages (backgrounds)
 
-- **The list of stages** (name, look, time of day): `STAGES` in `js/story.js`.
-  - `theme` picks the street style: `hospital`, `rambla`, `macba`, `joaquin` or `riera`.
-  - `tod` is the time of day: `afternoon`, `sunset`, `dusk`, `night` or `rain`.
-  - `seed` changes the random details (shops, windows, crowd).
-  - The `ai` / `enemy` / `intro` fields belong to the old story mode and aren't used in versus.
+The stages are four real places: Marcos's attic, Bene's pool, Bene's garden at dusk and the Castilla-La Mancha bridge. A stage has three parts, drawn by `js/stages.js`:
 
-  To add a stage, copy an entry and change `name`, `theme`, `tod` and `seed`. It appears in the stage select automatically.
-- **How a stage is drawn:** `buildStage()` in `js/world.js`.
-  - It paints the sky, buildings, shops, signs, floor, people in the crowd, pigeons and rain from those settings.
-  - Theme-specific details are in `if (cfg.theme === '...')` blocks. A brand-new theme means adding such blocks.
-  - The time of day picks the colour palette and the lights.
+1. **The background**: a 560 × 162 pixel-art strip, `assets/stages/<art>.png`. It moves at 55% of the camera's speed, and its bottom row is the floor line (y = 150).
+2. **The floor** the fighters stand on: drawn in code, in perspective, below the strip (`buildGround`).
+3. **The crowd**: the fighters who aren't fighting, at half size, standing just in front of the background and reacting to the fight.
+
+**The list of stages:** `STAGES` in `js/story.js`.
+
+| Field | Meaning |
+|---|---|
+| `name`, `sub` | name on the stage select and in the round banner; the line under it on the stage select |
+| `art` | the background strip (see below) |
+| `floor` | `style`: `planks`, `tiles`, `lawn` or `field`; `cols`: `[main, second, seams / detail]`; `edge`: a stone edge along the floor line (the pool); `decals`: rugs or tarps, `{ x: [from, to], d: [from, to], col, rim }` (x in world units around the arena centre 620; d is the depth: 1 under the fighters, 1.65 at the crowd, 1.82 at the floor line) |
+| `haze` | the colour the floor fades into near the floor line |
+| `host` | a fighter who is always in the crowd when he isn't fighting (Marcos at his house, Bene at his parcela) |
+| `crowd`, `slots` | how many spectators (6) and where they stand (world x around the centre; the left half supports J1, the right half J2) |
+| `night`, `crowdTint`, `glow` | darker edges; a colour mixed into the crowd; lamps on the strip `[{ x, y }]` (strip pixels) with a pool of light on the floor |
+| `ambient` | background sound: `null`, `'crickets'`, `'wind'` (also `'street'`, `'rain'`) |
+
+**Making a background:**
+1. Make the picture with ChatGPT using `docs/stage-prompts.md` and save it in `images/fondos/arte/<art>.png`.
+2. Run `python3 tools/build_stages.py` (or `python3 tools/build_stages.py puente` for one). It needs Google Chrome.
+   - It cuts the strip above the picture's floor line, shrinks it and reduces its colours.
+   - Its settings are in `tools/stages.config.js`: crop, floor line (`horizon`), colours, dithering, brightness.
+   - Until the art exists, it uses the photo in `images/fondos/` as a stand-in.
+   - The log suggests the `haze` and floor colours for `STAGES`.
+3. To see the crop and a mock-up of the fight screen with fighters and crowd for scale, run `python3 serve.py` and open http://localhost:8765/tools/stage-cutter.html?stage=puente&debug=1.
+
+**The crowd** (`cast` and `react` in `js/stages.js`):
+- **Who:** `cast()` picks it when a fight starts: the host first, then the other free fighters at random.
+- **Poses:** watching uses the fight stance; cheering, the victory pose; shocked, `hit`; sad, `crouch_hit` and then turning away. These are the `crowd*` animations in `SPRITE_ANIM` (`js/sprites.js`). A future spectator sheet with `crowd_idle_1`, `crowd_cheer_1`… drawings would replace them without code changes.
+- **What they react to:** the calls to `stage.react(...)` in `js/fight.js`.
+
+  | Event | Reaction |
+  |---|---|
+  | `'hit'` | a landed hit: some of the attacker's fans cheer, a few of the others flinch |
+  | `'super'` | everyone is shocked |
+  | `'ko'` | the winner's fans cheer, the others are shocked |
+  | `'round'` | the winner's fans cheer until the next round, the others look sad |
+  | `'match'` | the winner's fans keep cheering |
+  | `'start'` | a short cheer at "¡PELEA!" |
+
+**Other screens:**
 - **Stage select screen:** `SelectScene.drawStage` in `js/versus.js`.
-- **Title screen background:** `TitleScene.init` in `js/story.js` (it builds the stage that appears behind the logo).
+- **Title screen background:** `TitleScene.init` in `js/story.js`. It shows its own copy of the garden at dusk.
+
+**The old Raval street stages** are still in `js/world.js` (`buildStage`), commented out of `STAGES` with the tag `[OLD STAGES]`. Uncomment them to bring them back; `stageWorld()` builds whichever kind an entry is.
 
 ---
 

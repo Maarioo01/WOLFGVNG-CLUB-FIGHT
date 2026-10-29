@@ -30,7 +30,12 @@ function defsFor(p1, p2) { return [CH[p1], p1 === p2 ? altDef(CH[p2]) : CH[p2]];
 const _worlds = new Map();
 function stageWorld(i) {
   let w = _worlds.get(i);
-  if (!w) { const st = STAGES[i]; w = buildStage({ theme: st.theme, tod: st.tod, seed: st.seed, arena: ARENA_C, crowd: 9 }); _worlds.set(i, w); }
+  if (!w) {
+    const st = STAGES[i];
+    w = st.art ? buildPhotoStage(st, { center: ARENA_C }) // the real places (stages.js)
+      : buildStage({ theme: st.theme, tod: st.tod, seed: st.seed, arena: ARENA_C, crowd: 9 }); // [OLD STAGES] street stages (world.js)
+    _worlds.set(i, w);
+  }
   return w;
 }
 const centerTiny = (g, s, y, col) => tiny(g, s, Math.round(W / 2 - tinyW(s) / 2), y, col);
@@ -86,7 +91,7 @@ class SelectScene {
     const n = STAGES.length + 1;
     if (Input.hit('left')) { this.stageSel = (this.stageSel + n - 1) % n; sfx('select'); }
     if (Input.hit('right')) { this.stageSel = (this.stageSel + 1) % n; sfx('select'); }
-    if (this.stageSel < STAGES.length) stageWorld(this.stageSel).update();
+    if (this.stageSel < STAGES.length) this.previewWorld().update();
     if (Input.ok()) {
       sfx('confirm'); stopMusic();
       const cfg = { mode: this.mode, p1: ROSTER[this.cur[0]], p2: ROSTER[this.cur[1]], stage: this.stageSel };
@@ -94,6 +99,8 @@ class SelectScene {
     } else if (Input.backHit() || Input.hit('kick')) { this.phase = 'chars'; this.done[1] = false; this.readyT = 0; sfx('back'); }
   }
   exit() { sfx('back'); goFade(() => new TitleScene()); }
+  // the stage on show, with its crowd picked from the fighters who aren't the two chosen ones
+  previewWorld() { const wd = stageWorld(this.stageSel); if (wd.cast) wd.cast([ROSTER[this.cur[0]], ROSTER[this.cur[1]]]); return wd; }
   draw(g) {
     if (this.phase === 'stage') { this.drawStage(g); return; }
     g.fillStyle = '#1a0e24'; g.fillRect(0, 0, W, H);
@@ -137,7 +144,7 @@ class SelectScene {
     const i = this.stageSel, rnd = i === RANDOM_STAGE, camX = ARENA_C - W / 2;
     const defs = defsFor(ROSTER[this.cur[0]], ROSTER[this.cur[1]]);
     if (!rnd) {
-      const wd = stageWorld(i);
+      const wd = this.previewWorld();
       wd.drawBack(g, camX); wd.drawCrowd(g, camX);
       defs.forEach((d, p) => { const x = W / 2 + (p ? 60 : -60); shadow(g, x, GROUND, 26 * d.b.s, .4); drawSpr(g, getSprite(d, 'idle', this.t, d.expr), x, GROUND, p ? -1 : 1); });
       wd.drawFront(g, camX);
@@ -152,7 +159,7 @@ class SelectScene {
     const name = rnd ? 'ALEATORIO' : STAGES[i].name;
     text(g, '◀', 50, 30, { color: '#ffd84a' }); text(g, '▶', W - 58, 30, { color: '#ffd84a' });
     text(g, name, W / 2, 30, { align: 'center', color: '#fff', outline: OUTL });
-    centerTiny(g, rnd ? 'UN ESCENARIO AL AZAR' : (TOD_NAME[STAGES[i].tod] || '') + '   ·   ' + (i + 1) + '/' + STAGES.length, 46, '#c8c0e0');
+    centerTiny(g, rnd ? 'UN ESCENARIO AL AZAR' : (STAGES[i].sub || TOD_NAME[STAGES[i].tod] || '') + '   ·   ' + (i + 1) + '/' + STAGES.length, 46, '#c8c0e0');
     centerTiny(g, '← → ELEGIR   ENTER: PELEAR   ESC: VOLVER', 214, '#fff');
   }
 }
@@ -167,7 +174,8 @@ class VersusScene {
     const c = this.cfg, idx = c.stage >= STAGES.length ? rndi(0, STAGES.length - 1) : c.stage, st = this.st = STAGES[idx];
     GAME.stage = idx;
     this.world = stageWorld(idx);
-    ambient(st.tod === 'rain' ? 'rain' : 'street');
+    if (this.world.cast) this.world.cast([c.p1, c.p2], true); // the crowd: the fighters who aren't fighting
+    ambient(st.ambient !== undefined ? st.ambient : st.tod === 'rain' ? 'rain' : 'street');
     const [d1, d2] = defsFor(c.p1, c.p2);
     this.fight = new Fight({ stage: this.world, center: ARENA_C, p1Def: d1, p2Def: d2, ai: c.mode === 'cpu' ? aiForChar(c.p2) : null, place: st.name, music: st.music, onEnd: w => this.endFight(w) });
     this.camX = this.fight.camX; this.paused = false; this.pauseSel = 0; this.post = null;

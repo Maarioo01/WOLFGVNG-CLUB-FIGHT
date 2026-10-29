@@ -28,7 +28,7 @@ function frame(now) {
   render();
   requestAnimationFrame(frame);
 }
-// dev shortcuts: #cpu  #2p  #fight=0..4  #fight2p=0..4
+// dev shortcuts: #cpu  #2p  #fight=0..3  #fight2p=0..3 (stage index; 4 or more = random)
 const HASH = location.hash.slice(1);
 go(new BootScene());
 if (HASH) {

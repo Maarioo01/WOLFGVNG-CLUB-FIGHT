@@ -129,7 +129,7 @@ class Fighter {
         this.vy += GRAV * 1.1; this.y += this.vy;
         if (this.y >= 0) {
           this.y = 0;
-          if (!this.bounced && this.vy > 2) { this.bounced = true; this.vy = -2.4; this.y = -1; this.vx *= .5; sfx('fall'); shake(3, 8); F.dust(this.x, 8); F.stage.react('hit', this.x); }
+          if (!this.bounced && this.vy > 2) { this.bounced = true; this.vy = -2.4; this.y = -1; this.vx *= .5; sfx('fall'); shake(3, 8); F.dust(this.x, 8); F.stage.react('hit', this.x, 1 - this.side); }
           else { this.vx = 0; this.vy = 0; this.setState('down'); this.downKO = this.hp <= 0; if (!this.bouncedSnd) sfx('land'); }
         }
         break;
@@ -427,6 +427,7 @@ class Fight {
     f.meter = 0; f.superUsed = true; f.comboN = 0; this.hitstop = 0; this.slow = 0;
     this.sup = new SuperScene(this, f);
     this.cutin = { f, t: 0, name: f.moves.super.name }; sfx('super'); flash(3, '#fff');
+    this.stage.react('super', f.x, f.side);
   }
   endSuper() {
     const S = this.sup; if (!S) return;
@@ -467,7 +468,7 @@ class Fight {
     this.spark(hx, hy, dmg >= 9 ? 'big' : 'hit');
     sfx(dmg >= 9 ? 'hitH' : m.snd || 'hitM');
     this.hitstop = m.stop || 6; shake(dmg >= 8 ? 4 : 2, dmg >= 8 ? 10 : 6);
-    this.stage.react('hit', def.x);
+    this.stage.react('hit', def.x, att.side);
     if (m.steal) { this.popup(def.x, -76, m.steal, '#ffd84a'); sfx('steal'); def.meter = Math.max(0, def.meter - 20); }
     if (m.hitPop) this.popup(def.x + rnd(-8, 8), -64 - rnd(0, 14), m.hitPop, '#ffd84a');
     // [OLD CHARS] if (def.kind === 'fumeta' && isProj === false && Math.random() < .3) sfx('cough');
@@ -480,7 +481,7 @@ class Fight {
   ko(att, def) {
     if (this.phase !== 'fight') return;
     this.phase = 'ko'; this.pt = 0; this.koBy = att; this.slow = 70; this.hitstop = 20; def.setState('ko'); def.vy = -5.8; def.vx = att.facing * 2.8; def.y = -3; def.bounced = false;
-    flash(6, '#fff'); sfx('ko'); shake(7, 24); this.stage.react('ko', def.x); setTimeout(() => sfx('crowd'), 400);
+    flash(6, '#fff'); sfx('ko'); shake(7, 24); this.stage.react('ko', def.x, att.side); setTimeout(() => sfx('crowd'), 400);
     announce('K O');
   }
   update() {
@@ -497,7 +498,7 @@ class Fight {
     if (this.phase === 'intro') {
       if (this.pt === 1) { P.setState('intro'); E.setState('intro'); E.introAnim = 'idle'; }
       if (this.pt === 20) { sfx('round'); announce('Ronda ' + ['uno', 'dos', 'tres', 'cuatro', 'cinco'][this.round - 1] || this.round); }
-      if (this.pt === 80) { sfx('fight'); announce('¡Pelea!'); }
+      if (this.pt === 80) { sfx('fight'); announce('¡Pelea!'); this.stage.react('start', this.center); }
       if (this.pt === 84) { this.phase = 'fight'; P.setState('idle'); E.setState('idle'); }
     }
     if (this.phase === 'fight') { this.timer--; if (this.timer <= 0) { this.timer = 0; this.phase = 'timeup'; this.pt = 0; announce('Tiempo'); sfx('ko'); } }
@@ -543,6 +544,7 @@ class Fight {
         if (this.phase === 'ko') w = this.koBy === P ? 0 : 1;
         else w = P.hp === E.hp ? -1 : P.hp > E.hp ? 0 : 1;
         this.result = { w, perfect: w >= 0 && [P, E][w].hp >= [P, E][w].maxHp };
+        this.stage.react('round', w >= 0 ? [P, E][w].x : this.center, w, this.result);
         if (w >= 0) { this.wins[w]++; const wf = [P, E][w]; if (wf.state !== 'down') wf.setState('win'); const lf = [P, E][1 - w]; if (this.phase === 'timeup' && lf.state !== 'down') lf.setState('idle'); }
         if (w === 0 || (w === 1 && !this.cpu)) { playMusic(null); setTimeout(() => playMusic('victory'), 100); }
         if (this.result.perfect) announce('Perfecto');
@@ -551,7 +553,7 @@ class Fight {
       if (this.result) {
         this.pt2++;
         if (this.pt2 === 170) {
-          if (this.wins[0] >= WINS_TO_WIN || this.wins[1] >= WINS_TO_WIN) { this.phase = 'over'; this.o.onEnd(this.wins[0] >= WINS_TO_WIN ? 0 : 1); }
+          if (this.wins[0] >= WINS_TO_WIN || this.wins[1] >= WINS_TO_WIN) { const mw = this.wins[0] >= WINS_TO_WIN ? 0 : 1; this.phase = 'over'; this.stage.react('match', this.center, mw); this.o.onEnd(mw); }
           else { this.round++; this.startRound(); playMusic(this.o.music); }
         }
       }

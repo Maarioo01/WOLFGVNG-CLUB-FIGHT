@@ -30,13 +30,15 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 | `js/art_hd.js` | code-drawn fighters (fallback when a fighter has no sprites) |
 | `js/sprites.js` | sprite atlas loading, `SPRITE_ANIM` (game anim → pose names), `SPRITE_FALLBACK`, `spriteFrame`, `spritePortrait` |
 | `assets/fighters/*` | **generated**: atlases + `sprites-data.js`. Never edit by hand; rebuild |
-| `js/world.js` | procedural stages (`buildStage`, themes, crowd, rain) |
+| `js/world.js` | the old procedural Raval stages (`buildStage`, out of `STAGES` as `[OLD STAGES]`) and the floor maths the new stages reuse (`HORIZON`, `floorF`, `projX`, `vignette`) |
+| `js/stages.js` | the stages (`buildPhotoStage`): background strip, code-drawn perspective floor (`buildGround`), the crowd of fighters (`cast`, `react`) |
+| `assets/stages/*` | **generated** stage backgrounds. Never edit by hand; rebuild |
 | `js/fight.js` | `MOVES`, `SPECIALS`, `WINS_TO_WIN`, `Fighter` (states, frame data), `PadCtrl`/`AICtrl`, `Proj` (projectiles), `Fight` (hits, KO, rounds, HUD, super cut-in) |
 | `js/supers.js` | `SUPER_CHARGE`, `SUPERS` (one generator script per fighter), `SuperScene`, props (`PROP_SIZE`, `PROP_DRAW` stand-ins) |
 | `js/story.js` | scene helpers `go`/`goFade`, `GAME` + difficulty, `STAGES`, `TitleScene`, `ControlsScene`, menu option helpers; the story mode is commented out |
 | `js/versus.js` | `ROSTER`, `CPU_AI`, `SelectScene`, `VersusScene` (fight scene, pause / post-match menus) |
 | `js/main.js` | fixed 60 Hz loop (`tick`/`render`), dev hashes `#cpu #2p #fight=N #fight2p=N` |
-| `tools/` | sprite pipeline: `sprites.config.js` (which figure is which pose), `sprite-cutter.html` (runs in Chrome), `build_sprites.py` |
+| `tools/` | sprite pipeline: `sprites.config.js` (which figure is which pose), `sprite-cutter.html` (runs in Chrome), `build_sprites.py`; stage pipeline: `stages.config.js`, `stage-cutter.html`, `build_stages.py` |
 
 ## Sprite pipeline (most of the work)
 
@@ -56,6 +58,22 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - They're cut at a fixed head size and re-sampled from the source image at 64 px (`hiresCrop`), so the faces stay sharp.
 - **Original JPG designs** (`images/<name>.jpg`) are commented out of the config. Never bring them back: they're a different style with halos.
 - Pose names and fallbacks: see `SPRITE_FALLBACK` in `js/sprites.js`. No sheet E means block = `idle_1` and hit = `crouch_hit`. A single victory drawing bounces (`hop`).
+
+## Stages
+
+- **Places:** four real places from the photos in `images/fondos/`: Marcos's attic, Bene's pool, Bene's garden at dusk, the bridge.
+- **Backgrounds:** the user makes them with ChatGPT from `docs/stage-prompts.md` (its status table tracks which exist) and saves them in `images/fondos/arte/<art>.png`.
+  - `python3 tools/build_stages.py` cuts each into a 560×162 strip in `assets/stages/`. Settings are in `tools/stages.config.js`.
+  - Until an art file exists, the tool uses the photo as a stand-in.
+- **Geometry:**
+  - The strip's bottom row is the floor line (y = 150). It moves at parallax 0.55 (= `floorF(150)`), centred on `ARENA_C`, so the seam with the floor never slides.
+  - The floor is code-drawn (`buildGround` styles `planks` / `tiles` / `lawn` / `field`).
+  - Colours, host, lamps and ambient sound are per stage in `STAGES`. The build log suggests the colours.
+- **The crowd:**
+  - Who: the fighters who aren't fighting, picked by `cast()` with the host first.
+  - Drawing: exactly half size, through `drawHalf`. At RES 2 one art pixel is one canvas pixel, and the anchors are snapped so the pixels stay crisp; other scales blur.
+  - Poses: `crowd*` animations in `sprites.js`, falling back to fight poses.
+  - Reactions: `stage.react(kind, x, side)` calls in `fight.js` (`hit`, `super`, `ko`, `round`, `match`, `start`).
 
 ## Supers
 
@@ -80,6 +98,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 
 My harness lived in the session scratchpad (gone now), so rebuild it if needed:
 - a copy of `index.html` with a scenario script, served by a threaded Python server with `request_queue_size = 128` (the default 5 drops script loads);
+- **give that page `<base href="/">`** if it isn't at the repo root. The game loads its atlases and stage strips by relative URL; when they 404 it silently falls back to code-drawn fighters, and every test still "passes". Assert `Object.keys(SPRITES).length === 12` and `Object.keys(STAGE_IMG).length === 4` in every run;
 - headless Chrome loads `page.html#scenario`, calls `tick()` synchronously, then `render()`;
 - results and `canvas.toDataURL()` are POSTed back to the server;
 - contact sheets of frames, taken every N ticks, are the way to check supers and animations;
