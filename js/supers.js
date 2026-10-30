@@ -77,10 +77,13 @@ const PROP_BACK = { tank: 116, tank_2: 116 }; // placed by their rear end (p.x);
 const PROP_CREW = { car: [.40, 0, .59, .38], tank: [.23, 0, .45, .34] };
 // the sheet F frame of a pose or prop, or null (stand-in)
 const frameOf = (f, name) => spriteHas(f.def, name) ? spriteFrame(f.def, name) : null;
+// props another fighter's sheet F already has: Mario's super borrows Carlottis's syringe
+const PROP_FROM = { syringe: 'carlottis' };
+const propFromOther = kind => { const def = CH[PROP_FROM[kind]]; return def && spriteHas(def, 'prop_' + kind) ? spriteFrame(def, 'prop_' + kind) : null; };
 const propScale = (s, kind) => { const z = PROP_SIZE[kind]; return z[0] === 'k' ? z[1] : z[1] / (z[0] === 'w' ? s.c.width : s.c.height); };
 function drawProp(g, p, camX, owner) {
   if (p.hidden) return;
-  const f = p.f, s = PROP_SIZE[p.kind] && frameOf(owner, 'prop_' + p.kind);
+  const f = p.f, s = PROP_SIZE[p.kind] && (frameOf(owner, 'prop_' + p.kind) || propFromOther(p.kind));
   g.save(); g.translate(Math.round(p.x - camX), Math.round(GROUND + p.y));
   if (p.alpha < 1) g.globalAlpha = Math.max(0, p.alpha);
   if (p.rot) { const px = (p.pivot || 0) * f; g.translate(px, 0); g.rotate(p.rot); g.translate(-px, 0); }
@@ -113,8 +116,15 @@ function pen(g, f) {
   };
 }
 const PROP_DRAW = {
-  ball(g, f, p) { stamp(g, 0, 0, 10, OUTL); stamp(g, 0, 0, 8, '#f4f4f4'); const a = p.t * .3 * f; g.fillStyle = '#1a1a1a'; g.fillRect(Math.round(Math.cos(a) * 2) - 1, Math.round(Math.sin(a) * 2) - 1, 2, 2); },
-  tear(g) { stamp(g, 0, 0, 8, OUTL); stamp(g, 0, 0, 6, '#6ab0f0'); g.fillStyle = '#e8f6ff'; g.fillRect(-2, -2, 1, 1); },
+  // [OLD OBJECTS] ball(g, f, p) { stamp(g, 0, 0, 10, OUTL); stamp(g, 0, 0, 8, '#f4f4f4'); const a = p.t * .3 * f; g.fillStyle = '#1a1a1a'; g.fillRect(Math.round(Math.cos(a) * 2) - 1, Math.round(Math.sin(a) * 2) - 1, 2, 2); },
+  // [OLD OBJECTS] tear(g) { stamp(g, 0, 0, 8, OUTL); stamp(g, 0, 0, 6, '#6ab0f0'); g.fillStyle = '#e8f6ff'; g.fillRect(-2, -2, 1, 1); },
+  // the shaded balls from objects.js; the football rolls with the distance it travels, with a shadow on the floor
+  ball(g, f, p) {
+    p.ang = (p.ang || 0) + clamp((p.x - (p.lx == null ? p.x : p.lx)) / 9, -.45, .45); p.lx = p.x;
+    const k = clamp(1 + p.y / 110, .35, 1); shadow(g, 0, -p.y, 15 * k, .32 * k);
+    drawBall(g, 'football', 0, 0, 18, p.ang);
+  },
+  tear(g) { drawBall(g, 'tear', 0, 0, 9); },
   syringe(g, f) {
     const P = pen(g, f);
     P.o(-18, -4, 2, 8, '#9a9ea8'); P.o(-16, -2, 4, 4, '#b8bcc4'); P.o(-12, -3, 18, 6, '#eef4fa');
@@ -127,11 +137,14 @@ const PROP_DRAW = {
     P.p([[12, -4], [19, 0], [12, 4]], OUTL); P.p([[12, -3], [17, 0], [12, 3]], '#d83030');
     if ((p.t >> 1) % 2) { P.c(-20, 0, 7, '#ffd040'); P.c(-19, 0, 3, '#fff4c0'); } else P.c(-20, 0, 6, '#ff8030');
   },
+  /* [OLD OBJECTS] the first code-drawn Poké Ball
   pokeball(g, f) {
     stamp(g, 0, 0, 12, OUTL); stamp(g, 0, 0, 10, '#f4f4f4');
     g.save(); g.beginPath(); g.rect(-6, -6, 12, 6); g.clip(); stamp(g, 0, 0, 10, '#e83030'); g.restore();
     g.fillStyle = OUTL; g.fillRect(-5, -1, 10, 2); stamp(g, 0, 0, 5, OUTL); stamp(g, 0, 0, 3, '#ffffff');
   },
+  */
+  pokeball(g, f, p) { p.ang = (p.ang || 0) + (p.spin || 0); drawBall(g, 'pokeball', 0, 0, 14, p.ang); }, // spin: turns per tick
   note(g, f, p) {
     const P = pen(g, f), c = p.col || '#ffd040';
     P.l(2, -1, 2, -13, 3, OUTL); P.l(2, -13, 7, -9, 3, OUTL); P.c(-1, 0, 8, OUTL);
@@ -344,13 +357,14 @@ function* superPeno(S, a, v, d) {
   const sim = { fbTint: ['#141418', .6] }; // stand-in: Peño dressed in black
   S.poof(a.x); yield* S.wait(8);
   S.set(a, { pose: 'super_1|idle_1', ...sim }); S.say(a.x, -100, '¡PARTIDO A PARTIDO!'); yield* S.wait(44);
-  const ball = S.prop({ kind: 'ball', x: a.x + d * 24, y: -6 });
+  const ball = S.prop({ kind: 'ball', x: a.x + d * 24, y: -9 });
   S.set(a, { pose: 'super_2|kick_1', ...sim }); yield* S.wait(12);
   S.set(a, { pose: 'super_3|kick_2', ...sim }); sfx('throw'); sfx('hitM');
   ball.vx = d * 9; ball.vy = -2.2; ball.g = .08;
   yield* S.until(() => d * (ball.x - v.x) > -10, 90);
   S.boom(v.x - d * 4, -36, true);
   ball.vx = -d * 2.2; ball.vy = -4.5; ball.g = .25; ball.life = ball.t + 60;
+  ball.update = q => { if (q.y > -9 && q.vy > 0) { q.y = -9; q.vy = q.vy > 1.5 ? -q.vy * .5 : 0; q.vx *= .7; } }; // bounces, then rolls
   S.finish(d * 7.5, -8);
   S.set(a, { frames: ['super_4|walk_fwd_1', 'super_5|walk_fwd_4'], every: 5, flip: true, ...sim });
   for (let i = 0; i < 64; i++) { a.ov.dx = -d * i * 5; if (i % 6 === 0) S.F.dust(a.x + a.ov.dx, 1); yield; }
@@ -552,9 +566,11 @@ function* superMadeverxp(S, a, v, d) {
   S.set(a, { pose: 'super_2|special_2' }); sfx('throw');
   const spot = a.x + d * 76; // Charizard comes out between them
   const x0 = a.x + d * 18, y0 = -62, T = 26, g = .26;
-  const ball = S.prop({ kind: 'pokeball', x: x0, y: y0, vx: (spot - x0) / T, vy: (-6 - y0 - g * T * (T + 1) / 2) / T, g, va: .35 * d });
+  const ball = S.prop({ kind: 'pokeball', x: x0, y: y0, vx: (spot - x0) / T, vy: (-7 - y0 - g * T * (T + 1) / 2) / T, g, spin: .35 * d });
   yield* S.wait(T);
-  ball.vx = ball.vy = ball.g = ball.va = 0; ball.y = -6; sfx('beep', 1500); yield* S.wait(12); sfx('beep', 1800); yield* S.wait(10);
+  ball.vx = ball.vy = ball.g = ball.spin = 0; ball.y = -7; sfx('beep', 1500);
+  for (let i = 0; i < 22; i++) { ball.rot = Math.sin(i * .9) * .3 * (1 - i / 26); if (i === 12) sfx('beep', 1800); yield; } // it wobbles
+  ball.rot = 0;
   flash(5, '#ffffff'); sfx('item'); ball.dead = true;
   const zard = S.prop({ kind: 'charizard', x: spot, layer: 'back', scale: .1 });
   for (let i = 1; i <= 16; i++) { zard.scale = i / 16; yield; }

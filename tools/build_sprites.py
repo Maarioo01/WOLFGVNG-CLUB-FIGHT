@@ -115,6 +115,11 @@ def main():
         for char in chars:
             print(f'building {char} ...', flush=True)
             r = run_cutter(chrome, srv.server_address[1], char)
+            if r.get('empty'):  # none of its sheets exist yet (e.g. the shared objects)
+                for line in r['log']:
+                    print('  ' + line)
+                print('  nothing to build yet')
+                continue
             write_png(os.path.join(OUT_DIR, f'{char}.png'), r['png'])
             write_png(os.path.join(OUT_DIR, f'{char}_alt.png'), r['altPng'])
             with open(os.path.join(OUT_DIR, f'{char}.json'), 'w', encoding='utf-8') as f:

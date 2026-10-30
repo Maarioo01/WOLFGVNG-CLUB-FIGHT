@@ -1,0 +1,20 @@
+{
+ "frames": {
+  "obj_yogurt": {
+   "x": 0,
+   "y": 0,
+   "w": 38,
+   "h": 38,
+   "ax": 19,
+   "ay": 19,
+   "hd": 2
+  }
+ },
+ "portraits": {},
+ "height": 38,
+ "size": {
+  "w": 512,
+  "h": 38
+ },
+ "body": true
+}

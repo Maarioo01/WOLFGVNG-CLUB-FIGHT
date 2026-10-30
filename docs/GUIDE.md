@@ -26,6 +26,7 @@ A practical map for anyone who wants to change **WOLFGVNG FIGHT CLUB** by hand: 
 | `assets/fighters/` | the **generated** sprite atlases. Don't edit; rebuild them (section 2) |
 | `js/world.js` | the old Raval street stages (no longer in the list) and the perspective-floor maths the new stages reuse |
 | `js/stages.js` | the **stages**: background strip, floor, and the **crowd** of fighters reacting to the fight |
+| `js/objects.js` | the **objects**: balls drawn as shaded spheres that spin, and the cap, sandal and cat (from the objects atlas, or code-drawn stand-ins) |
 | `js/fight.js` | **moves and hits, specials, projectiles, rounds, timer, KO, CPU AI, the HUD** |
 | `js/supers.js` | the **supers** (one scripted scene per fighter) and the super bar speed |
 | `js/story.js` | screen switching (`go`, `goFade`), difficulty, **stage list (`STAGES`)**, **title menu**, **controls screen**. The old story mode is commented out at the bottom |
@@ -33,6 +34,7 @@ A practical map for anyone who wants to change **WOLFGVNG FIGHT CLUB** by hand: 
 | `js/main.js` | the main loop (60 ticks/s) |
 | `tools/` | the tools that turn the AI drawings into sprites (`build_sprites.py`) and stage backgrounds (`build_stages.py`) |
 | `images/sprites/<name>/` | the AI sprite sheets (A–F) for each fighter |
+| `images/objetos/` | the AI object sheets (O1, O2), made with `docs/object-prompts.md` |
 | `images/fondos/` | the photos of the stages' places; the ChatGPT backgrounds go in `images/fondos/arte/` |
 | `assets/stages/` | the **generated** stage backgrounds. Don't edit; rebuild them (section 8) |
 | `music/` | the background songs (MP3) |
@@ -124,9 +126,14 @@ jab: { anim: 'jab', s: 4, a: 3, r: 8, dmg: 5, hs: 14, bs: 8, push: 2.4, box: [6,
 
 **Projectiles** (ball, cap, sandal, tennis ball, cat, shout, shock wave): class `Proj`.
 - The constructor sets speed, damage and size per `type`.
-- `draw()` draws each type.
+- `draw()` draws each type, with a shadow on the floor (`objShadow`).
 - `spawnProj` picks the throw sound.
 - To add a new one: give it a `type` in `SPECIALS`, and add a line in the constructor and a drawing in `draw()`.
+
+**The objects' drawings** (`js/objects.js`):
+- **Balls** (`BALLS`: football, tennis, Poké Ball, tear, bomb) are painted as spheres pixel by pixel: lit from the top-left, 3 tones, a highlight, a dark outline, and their pattern on the sphere (the football's pentagons sit where a real ball has them). Each has 16 spin angles. `drawBall(g, kind, x, y, size, angle)`; a projectile adds to its angle as it flies, so it really rolls.
+- **Other objects** come from the shared `objetos` atlas: `objFrame('obj_cap')`, or `objFrames('cap', 'flip')` for the spin frames. Until an object is in the atlas, `OBJ_STANDIN` draws it in code.
+- They're drawn at 2x detail (one pixel = one screen pixel), like the HUD faces.
 
 **What happens on a hit** (damage, block, combo scaling, knockdown, sparks, sounds, super bar gain): `Fight.hit()`.
 - Blocking is "hold back".

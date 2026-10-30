@@ -126,6 +126,8 @@ Los 12 luchadores usan solo las hojas generadas (A–E en `images/sprites/`); lo
 
 **Personajes nuevos:** los pasos y los prompts para crear un personaje desde fotos (hoja base y hojas A–E) están en [`docs/pose-prompts.md`](docs/pose-prompts.md#new-characters-manu-casado-madeverxp).
 
+**Objetos:** la gorra de Álvaro, la chancla de Carlottis, el gato de MadeverXP y los objetos del suelo salen de dos hojas de ChatGPT (`images/objetos/sheet_O1.png` y `sheet_O2.png`, prompts en [`docs/object-prompts.md`](docs/object-prompts.md)). Se recortan con `python3 tools/build_sprites.py objetos`, cada uno a su tamaño en el juego. Mientras falta una hoja, el juego los dibuja por código.
+
 ## Estructura
 
 Guía para hacer cambios a mano (dónde están los sprites, golpes, rondas, música, controles, escenarios…): [`docs/GUIDE.md`](docs/GUIDE.md).
@@ -138,6 +140,7 @@ Guía para hacer cambios a mano (dónde están los sprites, golpes, rondas, mús
 - `tools/` — herramientas que convierten los diseños en sprites (`build_sprites.py`, `sprite-cutter.html`, `sprites.config.js`) y en fondos de escenario (`build_stages.py`, `stage-cutter.html`, `stages.config.js`)
 - `js/world.js` — los escenarios antiguos del Raval (desactivados) y el suelo en perspectiva
 - `js/stages.js` — los escenarios: fondo, suelo y el público (los luchadores que no pelean) reaccionando al combate
+- `js/objects.js` — los objetos: balones y pelotas dibujados como esferas que giran de verdad, y la gorra, la chancla y el gato (de la hoja de objetos, o dibujados por código mientras no exista)
 - `js/fight.js` — luchadores, frame data, IA, proyectiles, HUD
 - `js/supers.js` — los súpers: escena de cada personaje (guion, objetos y efectos)
 - `js/story.js` — título, controles, datos de escenarios (el modo historia está comentado)

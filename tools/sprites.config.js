@@ -32,6 +32,7 @@
 //    alias:  { pose: 'otherPose' } reuse a drawing for another pose
 //    scale:  { pose: 1.1 } make one pose bigger/smaller by hand (on top of the size fit for sheets A–E)
 //    body:   false = only use the portraits; the in-game body stays code-drawn (not enough poses yet)
+//    objects: true (with size / hd) = not a fighter but a set of objects, see `objetos` at the end
 //
 //  Pose names the game understands (missing ones fall back to the closest):
 //    stance walk_1..walk_4 punch punch2 kick block crouch crouch_block crouch_punch sweep
@@ -191,6 +192,23 @@ const SPRITE_CONFIG = {
       // cut about 150 art px tall
       { src: 'images/sprites/madeverXP/charizard.jpg', props: true, palette: 'Z', colors: 40, grid: 3.2, poses: ['skip', 'prop_charizard', 'skip', 'skip', 'skip', 'skip', 'skip', 'prop_charizard_2'] }],
     portraits: FACES,
+  },
+  // Shared objects (docs/object-prompts.md): what the fighters throw (sheet O1) and the floor items (sheet O2), plus
+  // drawings already in a sheet F. objects: true = no portraits, no size fit, no mirror-match colours. Each figure
+  // is re-sampled at its in-game size, size: { pose: ['w' | 'h', units] }, with hd: 2 = twice the detail (one
+  // pixel = one screen pixel, like the portraits). The game uses code-drawn stand-ins for the missing ones (objects.js).
+  objetos: {
+    objects: true, hd: 2,
+    sheets: [
+      { src: 'images/objetos/sheet_O1.png', props: true, palette: 'O1', colors: 64, poses: ['obj_cap', 'obj_sandal', 'obj_cat_1', 'obj_cat_2'] },
+      { src: 'images/objetos/sheet_O2.png', props: true, palette: 'O2', colors: 64, poses: ['obj_dumbbell', 'obj_belt', 'obj_car', 'obj_laptop', 'obj_float', 'obj_firstaid', 'obj_book', 'obj_poop', 'obj_ration'] },
+      // Marcos's Greek yogurt (his sheet F) is also the floor item
+      { src: 'images/sprites/marcos/sheet_F.png', props: true, palette: 'O3', colors: 32, poses: ['skip', 'skip', 'skip', 'skip', 'obj_yogurt', 'skip'] }],
+    size: {
+      obj_cap: ['w', 18], obj_sandal: ['w', 16], obj_cat_1: ['w', 28], obj_cat_2: ['w', 24],
+      obj_dumbbell: ['w', 22], obj_belt: ['w', 20], obj_car: ['w', 26], obj_laptop: ['w', 20], obj_float: ['w', 30],
+      obj_firstaid: ['w', 18], obj_book: ['w', 16], obj_poop: ['w', 15], obj_ration: ['w', 18], obj_yogurt: ['h', 18],
+    },
   },
 };
 if (typeof module !== 'undefined') module.exports = SPRITE_CONFIG;

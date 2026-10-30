@@ -32,6 +32,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 | `assets/fighters/*` | **generated**: atlases + `sprites-data.js`. Never edit by hand; rebuild |
 | `js/world.js` | the old procedural Raval stages (`buildStage`, out of `STAGES` as `[OLD STAGES]`) and the floor maths the new stages reuse (`HORIZON`, `floorF`, `projX`, `vignette`) |
 | `js/stages.js` | the stages (`buildPhotoStage`): background strip, code-drawn perspective floor (`buildGround`), the crowd of fighters (`cast`, `react`) |
+| `js/objects.js` | thrown objects: `BALLS` painted as shaded spheres with 16 spin frames (`drawBall`), `objFrame`/`objFrames` from the `objetos` atlas, `OBJ_STANDIN` code-drawn stand-ins, `catFrames`, `objShadow` |
 | `assets/stages/*` | **generated** stage backgrounds. Never edit by hand; rebuild |
 | `js/fight.js` | `MOVES`, `SPECIALS`, `WINS_TO_WIN`, `Fighter` (states, frame data), `PadCtrl`/`AICtrl`, `Proj` (projectiles), `Fight` (hits, KO, rounds, HUD, super cut-in) |
 | `js/supers.js` | `SUPER_CHARGE`, `SUPERS` (one generator script per fighter), `SuperScene`, props (`PROP_SIZE`, `PROP_DRAW` stand-ins) |
@@ -76,6 +77,13 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - Poses: `crowd*` animations in `sprites.js`, falling back to fight poses.
   - Reactions: `stage.react(kind, x, side)` calls in `fight.js` (`hit`, `super`, `ko`, `round`, `match`, `start`).
 
+## Objects
+
+- **Balls** (football, tennis ball, Poké Ball, tears, Isaac bomb) are never drawn by ChatGPT: `js/objects.js` paints them as spheres with the real pattern (`BALLS`), 16 spin frames at 2x detail.
+- **Other objects** (cap, sandal, cat, the floor items) come from the shared `objetos` atlas: sheets `images/objetos/sheet_O1.png` / `sheet_O2.png` (`docs/object-prompts.md`, its status table tracks which exist), plus the yogurt from Marcos's sheet F.
+  - `objects: true` in `tools/sprites.config.js`: no portraits, no size fit, no mirror colours. `size: { pose: ['w' | 'h', units] }` re-samples each figure at its in-game size; `hd: 2` doubles the detail.
+  - Missing ones fall back to `OBJ_STANDIN` (code-drawn) through `objFrames(name, motion)`.
+
 ## Supers
 
 - `SUPERS[id].run` is a generator. Helpers:
@@ -85,7 +93,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - `S.spread(min)` steps the fighters apart;
   - `S.finish(vx, vy)` K.O.s the opponent and unfreezes the fight.
 - Frames named `super_*` / `prop_*` come from sheet F; `'super_1|idle_1'` means "super_1 if it exists, else idle_1" (a stand-in).
-- Every script measures its geometry from the real frames (`frameOf`) and has a code-drawn fallback.
+- Every script measures its geometry from the real frames (`frameOf`) and has a code-drawn fallback. `PROP_FROM` borrows a prop from another fighter's sheet F (Mario's syringe is Carlottis's `prop_syringe`).
 - When a vehicle or creature is drawn with the character in it, `PROP_CREW` hides him until he boards (car, tank). Manu's Isaac appears under him instead.
 - ChatGPT refuses some things:
   - self-injection with a syringe (Mario);
@@ -99,7 +107,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 
 My harness lived in the session scratchpad (gone now), so rebuild it if needed:
 - a copy of `index.html` with a scenario script, served by a threaded Python server with `request_queue_size = 128` (the default 5 drops script loads);
-- **give that page `<base href="/">`** if it isn't at the repo root. The game loads its atlases and stage strips by relative URL; when they 404 it silently falls back to code-drawn fighters, and every test still "passes". Assert `Object.keys(SPRITES).length === 12` and `Object.keys(STAGE_IMG).length === 4` in every run;
+- **give that page `<base href="/">`** if it isn't at the repo root. The game loads its atlases and stage strips by relative URL; when they 404 it silently falls back to code-drawn fighters, and every test still "passes". Assert `Object.keys(SPRITES).length === 13` (12 fighters + `objetos`) and `Object.keys(STAGE_IMG).length === 4` in every run;
 - headless Chrome loads `page.html#scenario`, calls `tick()` synchronously, then `render()`;
 - results and `canvas.toDataURL()` are POSTed back to the server;
 - contact sheets of frames, taken every N ticks, are the way to check supers and animations;

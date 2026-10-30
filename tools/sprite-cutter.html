@@ -279,6 +279,35 @@ function crop(F, r) {
   for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) { const sx = x + r.x, sy = y + r.y; if (sx < 0 || sy < 0 || sx >= F.w || sy >= F.h) continue; for (let k = 0; k < 4; k++) px[(y * r.w + x) * 4 + k] = F.px[(sy * F.w + sx) * 4 + k]; }
   return { w: r.w, h: r.h, px };
 }
+// objects (cfg.size): the whole figure re-sampled from the sheet at exactly tw x th px (area average of its own
+// pixels, magenta fringe left out; a pixel is opaque when the figure covers at least half of it)
+function resampleFigure(P, m, box, lab, bg, tw, th) {
+  const own = new Set(box.ids), sx = box.w / tw, sy = box.h / th, px = new Uint8ClampedArray(tw * th * 4);
+  const magBg = bg.some(c => c[0] > 150 && c[2] > 150 && c[1] < 90);
+  for (let v = 0; v < th; v++) for (let u = 0; u < tw; u++) {
+    let R = 0, G = 0, B = 0, n = 0, tot = 0;
+    for (let y = Math.floor(box.y + v * sy); y < Math.ceil(box.y + (v + 1) * sy); y++) for (let x = Math.floor(box.x + u * sx); x < Math.ceil(box.x + (u + 1) * sx); x++) {
+      if (x < 0 || y < 0 || x >= P.w || y >= P.h) continue; tot++;
+      const i = y * P.w + x; if (!m[i] || !own.has(lab[i])) continue;
+      const r = P.d[i * 4], g = P.d[i * 4 + 1], b = P.d[i * 4 + 2];
+      if (magBg && r > 110 && b > 110 && g < Math.min(r, b) * .62) continue;
+      R += r; G += g; B += b; n++;
+    }
+    const o = (v * tw + u) * 4;
+    if (tot && n >= tot * .5) { px[o] = R / n; px[o + 1] = G / n; px[o + 2] = B / n; px[o + 3] = 255; }
+  }
+  return trim({ w: tw, h: th, px });
+}
+// a 1-px dark outline around an object frame (the game's outline colour), so it reads like the fighters
+function addOutline(F) {
+  const w = F.w + 2, h = F.h + 2, px = new Uint8ClampedArray(w * h * 4), on = (x, y) => x >= 0 && y >= 0 && x < F.w && y < F.h && F.px[(y * F.w + x) * 4 + 3];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const o = (y * w + x) * 4;
+    if (on(x - 1, y - 1)) { for (let k = 0; k < 4; k++) px[o + k] = F.px[((y - 1) * F.w + x - 1) * 4 + k]; continue; }
+    if (on(x - 2, y - 1) || on(x, y - 1) || on(x - 1, y - 2) || on(x - 1, y)) { px[o] = 0x13; px[o + 1] = 0x0b; px[o + 2] = 0x16; px[o + 3] = 255; }
+  }
+  return { w, h, px, hd: F.hd, obj: true };
+}
 
 // ---------- 7b. size fit: every fight pose with a head as big as idle_1's ----------
 // The AI draws some rows or whole sheets bigger or smaller than the stance (MadeverXP's walk row is 20% smaller),
@@ -445,6 +474,14 @@ async function build(id) {
     const fitted = !sh.props && !sh.palette && sh.fit !== false && cfg.fit !== false;
     figs.forEach((b, i) => {
       const name = sh.poses[i]; if (!name || name === 'skip' || name[0] === '_') return; // '_ref': only used to measure the size
+      if (cfg.size && cfg.size[name]) { // an object: re-sampled at its in-game size (x cfg.hd for extra detail)
+        const [by, units] = cfg.size[name], hd = cfg.hd || 1, k = units * hd / (by === 'w' ? b.w : b.h);
+        const F = resampleFigure(P, m, b, comps.lab, bg, Math.max(1, Math.round(b.w * k)), Math.max(1, Math.round(b.h * k)));
+        F.hd = hd; F.obj = true; frames[name] = F; group.set(F, sh.palette || '');
+        if (sh.palette) groupColors[sh.palette] = sh.colors || 48;
+        log.push(`  ${name}: ${F.w}x${F.h} px = ${(F.w / hd).toFixed(1)}x${(F.h / hd).toFixed(1)} units`);
+        return;
+      }
       const pp = fitted ? p : p / ((cfg.scale && cfg.scale[name]) || 1); // per-pose size fix by hand (fitted sheets: after the fit)
       const F = cut(i, pp, name);
       frames[name] = F; group.set(F, sh.palette || '');
@@ -472,9 +509,11 @@ async function build(id) {
     const all = []; for (const F of Fs) for (let i = 0; i < F.w * F.h; i++) if (F.px[i * 4 + 3]) all.push([F.px[i * 4], F.px[i * 4 + 1], F.px[i * 4 + 2]]);
     const pal = medianCut(all, groupColors[gname]); for (const F of Fs) applyPalette(F, pal);
   }
-  // atlas items: frames + portraits
+  for (const [name, F] of Object.entries(frames)) if (F.obj) frames[name] = addOutline(F);
+  if (!Object.keys(frames).length) return { id, empty: true, log }; // no sheet exists yet (e.g. the objects)
+  // atlas items: frames + portraits (objects are anchored on their centre)
   const items = [], meta = { frames: {}, portraits: {} };
-  for (const [name, F] of Object.entries(frames)) { const a = bodyAnchor(F); a.ax += (cfg.dx && cfg.dx[name]) || 0; items.push({ kind: 'f', name, F, a }); }
+  for (const [name, F] of Object.entries(frames)) { const a = F.obj ? { ax: F.w / 2, ay: F.h / 2 } : bodyAnchor(F); a.ax += (cfg.dx && cfg.dx[name]) || 0; items.push({ kind: 'f', name, F, a }); }
   // portraits: head + shoulders, the same size for all of a character's faces (from the stance height), re-sampled
   // from the drawing at PORTRAIT px so the HUD / select / cut-in faces are sharp and framed alike
   const faceS = Math.round(((frames.idle_1 || frames.stance || {}).h || 88) * (cfg.faceSize || .3));
@@ -485,12 +524,12 @@ async function build(id) {
   }
   const size = pack(items);
   for (const it of items) {
-    if (it.kind === 'f') meta.frames[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h, ax: +it.a.ax.toFixed(1), ay: it.a.ay };
+    if (it.kind === 'f') { meta.frames[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h, ax: +it.a.ax.toFixed(1), ay: it.a.ay }; if (it.F.hd > 1) meta.frames[it.name].hd = it.F.hd; }
     else meta.portraits[it.name] = { x: it.x, y: it.y, w: it.F.w, h: it.F.h };
   }
   const st = frames.idle_1 || frames.stance || Object.values(frames)[0]; // fight.js sizes the hit boxes from it
   meta.height = st.h; meta.size = size; meta.body = cfg.body !== false;
-  const main = atlasCanvas(items, size), alt = atlasCanvas(items, size, altColor);
+  const main = atlasCanvas(items, size), alt = cfg.objects ? main : atlasCanvas(items, size, altColor); // objects aren't recoloured
   if (DEBUG) debugFrames(items, alt);
   return { id, meta, png: main.toDataURL('image/png'), altPng: alt.toDataURL('image/png'), log };
 }

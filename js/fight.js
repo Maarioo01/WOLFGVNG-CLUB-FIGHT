@@ -301,6 +301,7 @@ class AICtrl {
 }
 
 // ---------- projectiles ----------
+const BALL_R = { ball: 8, tennis: 4.5 }; // radius of the balls (objects.js draws them), for their spin and bounce
 class Proj {
   constructor(owner, type) {
     this.owner = owner; this.type = type; this.t = 0; this.dead = false; const f = owner.facing, s = owner.s;
@@ -308,19 +309,22 @@ class Proj {
     if (type === 'chancla') { this.vx = f * 4.4; this.dmg = 8; this.hs = 18; this.w = 12; this.h = 8; this.y = -46 * s; }
     if (type === 'smoke') { this.vx = f * 1.5; this.dmg = 7; this.hs = 34; this.w = 16; this.h = 14; this.y = -50 * s; this.life = 170; }
     if (type === 'can') { this.vx = f * 3.3; this.vy = -3.6; this.g = .17; this.dmg = 8; this.hs = 18; this.w = 7; this.h = 7; this.y = -56 * s; }
-    if (type === 'sandal') { this.vx = f * 4.4; this.dmg = 8; this.hs = 18; this.w = 12; this.h = 8; this.y = -46 * s; }
-    if (type === 'tennis') { this.vx = f * 6.2; this.dmg = 6; this.hs = 14; this.w = 6; this.h = 6; this.y = -58 * s; }
-    if (type === 'cap') { this.vx = f * 3.8; this.dmg = 8; this.hs = 18; this.w = 12; this.h = 8; this.y = -48 * s; }
-    if (type === 'ball') { this.x = owner.x + f * 22 * s; this.vx = f * 4; this.vy = -2.2; this.g = .12; this.dmg = 9; this.hs = 20; this.w = 9; this.h = 9; this.y = -18 * s; }
+    if (type === 'sandal') { this.vx = f * 4.4; this.dmg = 8; this.hs = 18; this.w = 15; this.h = 9; this.y = -46 * s; }
+    if (type === 'tennis') { this.vx = f * 6.2; this.dmg = 6; this.hs = 14; this.w = 8; this.h = 8; this.y = -58 * s; }
+    if (type === 'cap') { this.vx = f * 3.8; this.dmg = 8; this.hs = 18; this.w = 16; this.h = 10; this.y = -48 * s; }
+    if (type === 'ball') { this.x = owner.x + f * 22 * s; this.vx = f * 4; this.vy = -2.2; this.g = .12; this.dmg = 9; this.hs = 20; this.w = 14; this.h = 14; this.y = -18 * s; }
     if (type === 'shout') { this.vx = f * 3.4; this.dmg = 8; this.hs = 24; this.w = 14; this.h = 30; this.y = -50 * s; }
-    if (type === 'cat') { this.vx = f * 4.2; this.dmg = 9; this.hs = 20; this.w = 16; this.h = 10; this.y = -42 * s; }
+    if (type === 'cat') { this.vx = f * 4.2; this.dmg = 9; this.hs = 20; this.w = 22; this.h = 12; this.y = -42 * s; }
     if (type === 'wave') { this.x = owner.x + f * 16 * s; this.vx = f * 3.6; this.y = -9; this.dmg = 10; this.hs = 22; this.w = 16; this.h = 14; this.low = true; this.kd = true; }
+    this.ang = 0; this.trail = []; // spin angle (balls) and the last positions (motion trail)
   }
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }
   update(F) {
     this.t++; this.x += this.vx; this.vy += this.g; this.y += this.vy;
+    if (BALL_R[this.type]) this.ang += clamp(this.vx / BALL_R[this.type], -.45, .45);
+    this.trail.unshift([this.x, this.y]); if (this.trail.length > 6) this.trail.pop();
     if (this.type === 'smoke') { this.w = Math.min(28, 16 + this.t * .1); this.h = Math.min(24, 14 + this.t * .08); this.vx *= .996; if (this.t > this.life) this.dead = true; if (this.t % 3 === 0) F.smokePuff(this.x + rnd(-6, 6), this.y + rnd(-5, 5), true); }
-    if (this.type === 'ball' && this.y >= -5 && this.vy > 0) { this.y = -5; this.vy = -Math.max(1.4, this.vy * .7); sfx('land'); }
+    if (this.type === 'ball' && this.y >= -BALL_R.ball && this.vy > 0) { this.y = -BALL_R.ball; this.vy = -Math.max(1.4, this.vy * .7); sfx('land'); }
     if (this.type === 'can' && this.y >= -3) { if (!this.bounce) { this.bounce = true; this.vy = -2; this.y = -3; this.vx *= .5; sfx('can'); } else { this.dead = true; F.parts.push({ type: 'fizz', x: this.x, y: -2, t: 0, life: 30 }); sfx('fizz'); } }
     if (this.type === 'wave' && this.t % 2 === 0) F.parts.push({ type: 'debris', x: this.x + rnd(-6, 6), y: -rnd(0, 6), vx: rnd(-.6, .6), vy: rnd(-2.6, -1), t: 0, life: 24, col: pick(['#c8b8a0', '#8a7a6a', '#fff4c0']) });
     if (this.x < F.arena.l - 40 || this.x > F.arena.r + 40) this.dead = true;
@@ -329,9 +333,24 @@ class Proj {
     const sx = Math.round(this.x - camX), sy = Math.round(GROUND + this.y), t = this.t;
     if (this.type === 'chancla') { const im = SMALL.chancla[Math.floor(t / 3) % 4]; g.drawImage(im, sx - (im.width >> 1), sy - (im.height >> 1)); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(sx - Math.sign(this.vx) * 10, sy, 5, 1); g.fillRect(sx - Math.sign(this.vx) * 14, sy - 2, 3, 1); }
     if (this.type === 'can') { const im = SMALL.can[Math.floor(t / 3) % 4]; g.drawImage(im, sx - (im.width >> 1), sy - (im.height >> 1)); }
-    if (this.type === 'sandal') { const im = SMALL.sandal[Math.floor(t / 3) % 4]; g.drawImage(im, sx - (im.width >> 1), sy - (im.height >> 1)); }
-    if (this.type === 'tennis') { stamp(g, sx, sy, 6, OUTL); stamp(g, sx, sy, 4, '#d8f040'); g.fillStyle = '#f8fff0'; g.fillRect(sx - 1, sy - 1, 1, 1); g.fillStyle = 'rgba(216,240,64,.45)'; g.fillRect(sx - Math.sign(this.vx) * 10, sy, 6, 1); }
-    if (this.type === 'ball') { stamp(g, sx, sy, 10, OUTL); stamp(g, sx, sy, 8, '#f4f4f4'); const a = t * .3 * Math.sign(this.vx); g.fillStyle = '#1a1a1a'; g.fillRect(Math.round(sx + Math.cos(a) * 2) - 1, Math.round(sy + Math.sin(a) * 2) - 1, 2, 2); g.fillRect(Math.round(sx - Math.cos(a) * 2.5), Math.round(sy - Math.sin(a) * 2.5), 1, 1); }
+    // [OLD OBJECTS] if (this.type === 'sandal') { const im = SMALL.sandal[Math.floor(t / 3) % 4]; g.drawImage(im, sx - (im.width >> 1), sy - (im.height >> 1)); }
+    // [OLD OBJECTS] if (this.type === 'tennis') { stamp(g, sx, sy, 6, OUTL); stamp(g, sx, sy, 4, '#d8f040'); g.fillStyle = '#f8fff0'; g.fillRect(sx - 1, sy - 1, 1, 1); g.fillStyle = 'rgba(216,240,64,.45)'; g.fillRect(sx - Math.sign(this.vx) * 10, sy, 6, 1); }
+    // [OLD OBJECTS] if (this.type === 'ball') { stamp(g, sx, sy, 10, OUTL); stamp(g, sx, sy, 8, '#f4f4f4'); const a = t * .3 * Math.sign(this.vx); g.fillStyle = '#1a1a1a'; g.fillRect(Math.round(sx + Math.cos(a) * 2) - 1, Math.round(sy + Math.sin(a) * 2) - 1, 2, 2); g.fillRect(Math.round(sx - Math.cos(a) * 2.5), Math.round(sy - Math.sin(a) * 2.5), 1, 1); }
+    // objects.js: the balls are shaded spheres that really spin; the cap, sandal and cat come from the objects atlas
+    // (or their stand-ins). Each has a shadow on the floor; the fast balls leave a short trail
+    const dir = Math.sign(this.vx) || 1, ghost = (fn, k) => { const q = this.trail[k]; if (!q) return; g.globalAlpha = k > 3 ? .16 : .32; fn(Math.round(q[0] - camX), Math.round(GROUND + q[1])); g.globalAlpha = 1; };
+    if (this.type === 'sandal') { objShadow(g, sx, this.y, 12); drawSpr(g, objFrames('sandal', 'rot90')[Math.floor(t / 3) % 4], sx, sy, dir); }
+    if (this.type === 'tennis') {
+      objShadow(g, sx, this.y, 7);
+      g.fillStyle = 'rgba(216,240,64,.45)'; g.fillRect(sx - dir * 14, sy, 8, 1); g.fillRect(sx - dir * 20, sy - 1, 4, 1);
+      for (const k of [4, 2]) ghost((x, y) => drawBall(g, 'tennis', x, y, 9, this.ang), k);
+      drawBall(g, 'tennis', sx, sy, 9, this.ang);
+    }
+    if (this.type === 'ball') {
+      objShadow(g, sx, this.y, 14);
+      for (const k of [4, 2]) ghost((x, y) => drawBall(g, 'football', x, y, 16, this.ang), k);
+      drawBall(g, 'football', sx, sy, 16, this.ang);
+    }
     if (this.type === 'shout') { // sound wave: three arcs opening in the travel direction
       const d = Math.sign(this.vx) || 1;
       for (const pass of [0, 1]) for (let i = 0; i < 3; i++) {
@@ -342,7 +361,8 @@ class Proj {
         }
       }
     }
-    if (this.type === 'cat') { // black cat flying at the opponent, legs stretched, green eyes
+    if (this.type === 'cat') { objShadow(g, sx, this.y, 20); drawSpr(g, catFrames()[Math.floor(t / 4) % 2], sx, sy + Math.round(Math.sin(t * .35) * 1.5), dir); }
+    if (this.type === 'cat' && false) { // [OLD OBJECTS] black cat flying at the opponent, legs stretched, green eyes (now catFrames in objects.js)
       const d = Math.sign(this.vx) || 1, fr = Math.floor(t / 4) % 2, y = sy + Math.round(Math.sin(t * .35) * 1.5);
       const X = v => sx + v * d, rect = (a, yy, w, h, col) => { g.fillStyle = col; g.fillRect(d > 0 ? sx + a : sx - a - w, yy, w, h); };
       for (const [col, k] of [[OUTL, 2], ['#24212c', 0]]) {
@@ -357,7 +377,8 @@ class Proj {
       rect(6, y - 3, 1, 1, '#a8f060'); rect(9, y - 3, 1, 1, '#a8f060');                 // eyes
       rect(8, y - 1, 1, 1, '#e88aa0');                                                  // nose
     }
-    if (this.type === 'cap') {
+    if (this.type === 'cap') { objShadow(g, sx, this.y, 14); drawSpr(g, objFrames('cap', 'flip')[Math.floor(t / 3) % 4], sx, sy, dir); }
+    if (this.type === 'cap' && false) { // [OLD OBJECTS] the first code-drawn cap
       const fr = Math.floor(t / 3) % 4, dir = Math.sign(this.vx), fl = fr % 2 ? -1 : 1;
       g.fillStyle = OUTL; g.fillRect(sx - 6, sy - 4, 12, 7); g.fillStyle = '#f0f0f0'; g.fillRect(sx - 5, sy - 3 * fl - (fl < 0 ? 2 : 0), 8, 3);
       g.fillStyle = '#c8c8c8'; g.fillRect(sx + (fr < 2 ? 3 : -6) * dir, sy, 4, 2); g.fillStyle = '#2a2a2a'; g.fillRect(sx - 1, sy - 3 * fl - (fl < 0 ? 2 : 0), 2, 1);
