@@ -50,6 +50,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/mario/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/mario/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
       { src: 'images/sprites/mario/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/mario/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/mario/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_2', 'idle_1'], poses: ['super_1', 'super_2', 'super_3', 'super_4'] }],
     portraits: FACES,
@@ -61,6 +63,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/peño/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/peño/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
       { src: 'images/sprites/peño/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/peño/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/peño/sheet_F.png', props: true, palette: 'F', match: ['super_1', 'face_front'], poses: ['super_1', 'super_2', 'super_3', 'super_4', 'super_5'] }],
     portraits: FACES,
@@ -73,6 +77,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/alba/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch'] },
       { src: 'images/sprites/alba/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/alba/sheet_D.png', grid: 3.27, poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/alba/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/alba/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_1', 'idle_1'], poses: ['super_1', 'super_2', 'super_3', 'super_4'] }],
     alias: { jump_3: 'jump_2' }, // her sheet B has no jump; sheet A's extra crouch / tuck frames are the jump
@@ -86,6 +92,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/alvaro/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/alvaro/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/alvaro/sheet_D.png', grid: 3.49, poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/alvaro/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/alvaro/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_1', 'idle_1'], headWin: [.36, .72], poses: ['super_1', 'prop_car'] }],
     portraits: FACES,
@@ -98,6 +106,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/belli/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/belli/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/belli/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/belli/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/belli/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_1', 'idle_1'], poses: ['super_1', 'super_2'] }],
     portraits: FACES,
@@ -110,6 +120,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/bene/seed_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/bene/seed_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/bene/seed_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/bene/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/bene/sheet_F.png', props: true, palette: 'F', match: ['super_1', 'idle_1'], poses: ['super_1', 'super_2', 'prop_note'] }],
     portraits: FACES,
@@ -122,6 +134,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/carlotis/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3', 'skip'] },
       { src: 'images/sprites/carlotis/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/carlotis/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'skip', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/carlotis/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/carlotis/sheet_F.png', props: true, palette: 'F', match: ['super_1', 'idle_1'], poses: ['super_1', 'super_2', 'skip', 'prop_syringe'] }],
     portraits: FACES,
@@ -133,7 +147,10 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/marcos/sheet_A.png', poses: ['idle_1', 'idle_2', 'idle_3', 'idle_4', 'skip', 'walk_fwd_1', 'walk_fwd_2', 'walk_fwd_3', 'walk_fwd_4', 'walk_fwd_5', 'walk_fwd_6'] },
       { src: 'images/sprites/marcos/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/marcos/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
-      { src: 'images/sprites/marcos/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // sheet D's special frames are his grab (¡AGARRÓN!, his second special); sheet F's pico frames are special_1–3
+      { src: 'images/sprites/marcos/sheet_D.png', match: ['grab_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'grab_1', 'grab_2', 'grab_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/marcos/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/marcos/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['special_1', 'idle_1'], poses: ['special_1', 'special_2', 'special_3', 'super_1', 'prop_yogurt', 'prop_yogurt_2'] }],
     portraits: FACES,
@@ -147,6 +164,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/oso/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/oso/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/oso/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/oso/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/oso/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_2', 'idle_1'], headWin: [.43, .57], poses: ['super_1', 'super_2'] }],
     dx: { super_2: -18 }, // the gavel pulls the slam frame's anchor forward: keep it on his body
@@ -161,6 +180,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/manu/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       // his sheet D stance is drawn more crouched, so the height comparison would blow the sheet up: compare heads
       { src: 'images/sprites/manu/sheet_D.png', match: ['special_3', 'idle_1'], matchBy: 'head', poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/manu/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/manu/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_1', 'idle_1'], headWin: [0, .68], shadow: true, poses: ['super_1', 'prop_isaac', 'prop_isaac_2'] }],
     alias: { hit: 'crouch_hit', victory_1: 'victory_2' },
@@ -172,6 +193,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/casado/sheet_B.png', match: ['walk_back_1', 'walk_fwd_1'], poses: ['walk_back_1', 'walk_back_2', 'walk_back_3', 'walk_back_4', 'walk_back_5', 'walk_back_6', 'crouch', 'jump_1', 'jump_2', 'jump_3'] },
       { src: 'images/sprites/casado/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/casado/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/casado/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/casado/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['prop_tank_2', 'idle_1'], headWin: [.37, .53], poses: ['super_1', 'prop_tank', 'prop_tank_2', 'prop_missile'] }],
     alias: { hit: 'crouch_hit', victory_1: 'victory_2' },
@@ -186,6 +209,8 @@ const SPRITE_CONFIG = {
       { src: 'images/sprites/madeverXP/sheet_C.png', match: ['punch_1', 'idle_1'], poses: ['punch_1', 'punch_2', 'strong_1', 'strong_2', 'kick_1', 'kick_2', 'crouch_punch', 'sweep_1', 'sweep_2', 'jump_kick', 'jump_punch', 'crouch_block'] },
       { src: 'images/sprites/madeverXP/sheet_D.png', match: ['special_3', 'idle_1'], poses: ['crouch_hit', 'knockdown_1', 'knockdown_2', 'getup_1', 'getup_2', 'victory_2', 'special_1', 'special_2', 'special_3'] },
       { src: 'images/sprites/madeverXP/sheet_E.png', match: ['stance', 'idle_1'], poses: ['face_front', 'block', 'hit', 'ko', 'victory_1', 'stance'] },
+      // throw and dash poses (docs/pose-prompts.md, sheet G, optional); skipped until the file exists
+      { src: 'images/sprites/madeverXP/sheet_G.png', match: ['dash', 'idle_1'], poses: ['throw_grab', 'throw_toss', 'dash', 'backdash'] },
       // super move (docs/super-prompts.md); skipped until the file exists
       { src: 'images/sprites/madeverXP/sheet_F.png', props: true, palette: 'F', matchBy: 'headTop', match: ['super_2', 'idle_1'], poses: ['super_1', 'super_2'] },
       // Charizard for his super, from the user's Charizard sheet (13 poses; only the 3/4 stance and the roar are used),

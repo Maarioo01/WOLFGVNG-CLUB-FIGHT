@@ -4,13 +4,22 @@
 // ============================================================
 const MOVES = {
   jab:    { anim: 'jab', s: 4, a: 3, r: 8, dmg: 5, hs: 14, bs: 8, push: 2.4, box: [6, -50, 26, 10], lvl: 'mid', snd: 'hitL', stop: 5, cancel: ['cross', 'kick'], meter: 5 },
-  cross:  { anim: 'cross', s: 6, a: 3, r: 14, dmg: 8, hs: 17, bs: 10, push: 3.2, box: [6, -50, 32, 10], lvl: 'mid', snd: 'hitM', stop: 7, lunge: 1.4, meter: 7 },
+  cross:  { anim: 'cross', s: 6, a: 3, r: 14, dmg: 8, hs: 17, bs: 10, push: 3.2, box: [6, -50, 32, 10], lvl: 'mid', snd: 'hitM', stop: 7, lunge: 1.4, cancel: ['remate'], meter: 7 },
   kick:   { anim: 'kick', s: 7, a: 4, r: 15, dmg: 9, hs: 18, bs: 10, push: 3.6, box: [4, -40, 36, 12], lvl: 'mid', snd: 'hitM', stop: 7, meter: 8 },
-  cpunch: { anim: 'cpunch', s: 4, a: 3, r: 8, dmg: 4, hs: 13, bs: 7, push: 2, box: [6, -34, 26, 9], lvl: 'mid', crouch: 1, snd: 'hitL', stop: 5, cancel: ['sweep'], meter: 4 },
+  cpunch: { anim: 'cpunch', s: 4, a: 3, r: 8, dmg: 4, hs: 13, bs: 7, push: 2, box: [6, -34, 26, 9], lvl: 'mid', crouch: 1, snd: 'hitL', stop: 5, cancel: ['sweep', 'cpunch'], meter: 4 },
   sweep:  { anim: 'sweep', s: 8, a: 4, r: 20, dmg: 8, hs: 20, bs: 10, push: 2, box: [2, -14, 38, 12], lvl: 'low', crouch: 1, kd: 1, snd: 'hitM', stop: 7, meter: 8 },
   jkick:  { anim: 'jkick', s: 4, a: 60, r: 0, dmg: 9, hs: 18, bs: 10, push: 2.6, box: [2, -38, 28, 16], lvl: 'high', air: 1, snd: 'hitM', stop: 7, meter: 7 },
   jpunch: { anim: 'jpunch', s: 4, a: 60, r: 0, dmg: 7, hs: 16, bs: 9, push: 2.2, box: [4, -46, 24, 14], lvl: 'high', air: 1, snd: 'hitL', stop: 6, meter: 6 },
+  // combos and moves for everyone: □ □ ✕ ends in ¡REMATE! (the cross cancels into it, ↓□ ↓□ ↓✕ is the low chain),
+  // PISOTÓN = ↓ + ✕ in the air, AGARRE = □ + ✕ up close (Fight.throwLand throws the opponent), counterA = the punch
+  // of Casado's ¡A LA ORDEN! (its hit is COUNTER_HIT, applied by Fight.counter)
+  remate: { anim: 'remate', s: 6, a: 4, r: 18, dmg: 8, hs: 20, bs: 12, push: 3.4, box: [4, -40, 38, 12], lvl: 'mid', kd: 1, hitPop: '¡REMATE!', snd: 'hitH', stop: 10, meter: 8 },
+  dive:   { anim: 'dive', s: 3, a: 60, r: 0, dmg: 8, hs: 18, bs: 10, push: 2.4, box: [0, -30, 28, 22], lvl: 'high', air: 1, dive: 1, snd: 'hitM', stop: 7, meter: 7 },
+  grab:   { anim: 'grab', s: 8, a: 12, r: 16, grab: 1, dmg: 10, push: 2.6, kd: 1, snd: 'hitH', stop: 10, meter: 10 },
+  counterA: { anim: 'counterA', s: 0, a: 0, r: 18 },
 };
+const COUNTER_HIT = { dmg: 11, hs: 20, bs: 12, kd: 1, push: 3.4, lvl: 'mid', snd: 'hitH', stop: 14, meter: 8, box: [6, -50, 30, 12] };
+const COMBO_RANKS = [[7, '¡WOLFGVNG!'], [5, '¡BRUTAL!'], [3, '¡BIEN!']]; // shown under "N GOLPES"; the crowd cheers each one
 // [OLD CHARS] original specials
 /*
 const SPECIALS = {
@@ -22,22 +31,36 @@ const SPECIALS = {
   capo: { special: { anim: 'pound', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' }, super: { name: '¡PEAJE!', dmg: 3, fin: 12 } },
 };
 */
-// special move per fighter (pop = text shown when the special comes out; multi = re-hits every n ticks while active,
-// hitPop = text on each hit). The supers are in supers.js
+// special moves per fighter: special (△, or ↓↘→ + □) and special2 (↓ + △, or ↓↙← + □). pop = text shown when it comes
+// out (name: its name in the move list when there's no pop); multi = re-hits every n ticks while active; hitPop = text on
+// each hit; fly: [vx, vy] = a jump attack; spin: the kick frames turn; teleport, counter: see Fighter.updateMove /
+// Fight.hit; ai: [min, max] distance at which the CPU uses it. The supers are in supers.js
 const SPECIALS = {
-  mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } },
-  peno: { special: { anim: 'ballkick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' } },
-  alba: { special: { anim: 'flip', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 } },
-  alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' } },
-  belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 } },
-  bene: { special: { anim: 'throw', pop: '¡SAQUE!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'tennis' }, cd: 50, snd: 'throw' } },
-  carlottis: { special: { anim: 'throw', pop: '¡CHANCLAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'sandal' }, cd: 45, snd: 'throw' } },
-  // marcos: { special: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } }, // [OLD SPECIAL] grab, replaced by ¡PICO!
-  marcos: { special: { anim: 'pico', pop: '¡PICO!', s: 5, a: 18, r: 14, multi: 6, hitPop: 'PICO', lunge: 1, dmg: 3.5, hs: 15, bs: 8, push: .6, box: [6, -54, 30, 14], lvl: 'mid', snd: 'hitL', stop: 3, cd: 50, meter: 3 } },
-  oso: { special: { anim: 'pound', pop: '¡TERREMOTO!', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' } },
-  manu: { special: { anim: 'charge', pop: '¡CABEZAZO!', s: 8, a: 14, r: 18, dash: 5.6, dmg: 9, hs: 26, bs: 12, push: 3.4, box: [4, -46, 30, 22], lvl: 'mid', snd: 'hitH', stop: 10, cd: 80, meter: 8 } },
-  casado: { special: { anim: 'throw', pop: '¡FIRMES!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'shout' }, cd: 70, snd: 'shout' } },
-  madeverxp: { special: { anim: 'throw', pop: '¡GATAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cat' }, cd: 60, snd: 'throw' } },
+  mario: { special: { anim: 'dpunch', pop: '¡DIRECTO!', s: 8, a: 14, r: 16, dash: 5.4, dmg: 9, hs: 24, bs: 12, push: 3, box: [4, -52, 28, 14], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 },
+    special2: { anim: 'knee', pop: '¡RODILLAZO!', fly: [4.6, -3.8], s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 20, bs: 12, push: 3, box: [2, -56, 26, 28], lvl: 'mid', kd: 1, snd: 'hitH', stop: 9, cd: 70, meter: 8, ai: [50, 120] } },
+  peno: { special: { anim: 'ballkick', pop: '¡GOLAZO!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'ball' }, cd: 70, snd: 'throw' },
+    special2: { anim: 'ballkick', pop: '¡VASELINA!', s: 7, a: 0, r: 19, spawn: { at: 7, type: 'lob' }, cd: 70, snd: 'throw', ai: [90, 260] } },
+  alba: { special: { anim: 'flip', pop: '¡MORTAL!', flip: 1, s: 5, a: 60, r: 0, air: 1, dmg: 9, hs: 18, bs: 10, push: 3, box: [0, -38, 30, 18], lvl: 'high', snd: 'hitM', stop: 8, cd: 70, meter: 8 },
+    special2: { anim: 'spinkick', pop: '¡PATADA GIRATORIA!', s: 6, a: 18, r: 14, multi: 9, spin: 1, lunge: 1.6, dash: 2.4, dmg: 6, hs: 16, bs: 10, push: 1.2, box: [0, -46, 34, 16], lvl: 'mid', snd: 'hitM', stop: 5, cd: 60, meter: 6, ai: [24, 70] } },
+  alvaro: { special: { anim: 'throw', pop: '¡GORRAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cap' }, cd: 60, snd: 'throw' },
+    special2: { anim: 'throw', pop: '¡BUMERÁN!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'boomerang' }, cd: 70, snd: 'throw', ai: [70, 200] } },
+  belli: { special: { anim: 'charge', pop: '¡EMBESTIDA!', s: 8, a: 14, r: 18, dash: 5, dmg: 10, hs: 22, bs: 12, push: 4, box: [2, -50, 26, 30], lvl: 'mid', kd: 1, snd: 'hitH', stop: 10, cd: 80, meter: 8 },
+    special2: { anim: 'glitchTP', pop: '¡CTRL+Z!', s: 6, a: 10, r: 14, teleport: 1, cd: 90, ai: [60, 220] } },
+  bene: { special: { anim: 'throw', pop: '¡SAQUE!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'tennis' }, cd: 50, snd: 'throw' },
+    special2: { anim: 'throw', pop: '¡SMASH!', s: 11, a: 0, r: 20, spawn: { at: 11, type: 'smash' }, cd: 60, snd: 'throw', ai: [70, 220] } },
+  carlottis: { special: { anim: 'throw', pop: '¡CHANCLAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'sandal' }, cd: 45, snd: 'throw' },
+    special2: { anim: 'throw', pop: '¡CHANCLA TELEDIRIGIDA!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'homing' }, cd: 70, snd: 'throw', ai: [80, 260] } },
+  // marcos: { special: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8 } }, // [OLD SPECIAL] grab, replaced by ¡PICO! (now his special2)
+  marcos: { special: { anim: 'pico', pop: '¡PICO!', s: 5, a: 18, r: 14, multi: 6, hitPop: 'PICO', lunge: 1, dmg: 3.5, hs: 15, bs: 8, push: .6, box: [6, -54, 30, 14], lvl: 'mid', snd: 'hitL', stop: 3, cd: 50, meter: 3 },
+    special2: { anim: 'snatch', pop: '¡AGARRÓN!', s: 8, a: 14, r: 16, dash: 5.2, dmg: 8, hs: 26, bs: 12, push: 2, box: [4, -52, 26, 16], lvl: 'mid', snd: 'hitM', stop: 9, cd: 70, meter: 8, ai: [40, 100] } },
+  oso: { special: { anim: 'pound', pop: '¡TERREMOTO!', s: 23, a: 0, r: 24, hop: 1, spawn: { at: 23, type: 'wave' }, cd: 110, snd: 'shock' },
+    special2: { anim: 'point', name: '¡PROTESTO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'objection' }, cd: 70, snd: 'shout', ai: [70, 240] } },
+  manu: { special: { anim: 'charge', pop: '¡CABEZAZO!', s: 8, a: 14, r: 18, dash: 5.6, dmg: 9, hs: 26, bs: 12, push: 3.4, box: [4, -46, 30, 22], lvl: 'mid', snd: 'hitH', stop: 10, cd: 80, meter: 8 },
+    special2: { anim: 'place', pop: '¡BOMBA!', s: 11, a: 0, r: 16, spawn: { at: 11, type: 'bomb' }, cd: 120, snd: 'tick', ai: [60, 130] } },
+  casado: { special: { anim: 'throw', pop: '¡FIRMES!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'shout' }, cd: 70, snd: 'shout' },
+    special2: { anim: 'salute', name: '¡A LA ORDEN!', s: 3, a: 28, r: 16, counter: 1, cd: 60, ai: [0, 0] } },
+  madeverxp: { special: { anim: 'throw', pop: '¡GATAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'cat' }, cd: 60, snd: 'throw' },
+    special2: { anim: 'throw', pop: '¡ZARPAZO!', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'catPounce' }, cd: 80, snd: 'throw', ai: [60, 160] } },
 };
 const JUMP_V = -6.3, GRAV = 0.3;
 const WINS_TO_WIN = 3; // round wins that take the match (so a match lasts 3 to 5 rounds)
@@ -51,7 +74,8 @@ class Fighter {
     this.moves = Object.assign({}, MOVES, SPECIALS[this.kind] || {});
     const sup = typeof SUPERS !== 'undefined' && SUPERS[this.kind];
     if (sup) this.moves.super = { name: sup.name };
-    this.superUsed = false; this.ov = null; // ov: drawing taken over by a super cinematic (supers.js)
+    this.superUsed = false; this.ov = null; // ov: drawing taken over by a super cinematic (supers.js) or a throw
+    this.chainN = 0; this.thBuf = 0; this.grabbed = null; this.thrower = null; this.trail = []; // low-chain repeats, throw input window, throws, dash afterimages
     this.spd = 1.35 * (def.speed || 1); this.dmgMul = 1; this.opp = null; this.ctrl = null; this.hitDone = false; this.hitConfirmed = false; this.stun = 0;
     // body size for hurtboxes / hitboxes: from the sprite's standing height when drawn from the designs
     const set = typeof spriteSet === 'function' && spriteSet(def);
@@ -62,7 +86,7 @@ class Fighter {
   face() { if (this.opp) { const d = this.opp.x - this.x; if (Math.abs(d) > 2) this.facing = Math.sign(d); } }
   hurtbox() {
     const s = this.s;
-    if (['knock', 'down', 'ko', 'getup'].includes(this.state) || this.inv > 0) return null;
+    if (['knock', 'down', 'ko', 'getup', 'thrown'].includes(this.state) || this.inv > 0) return null;
     const crouch = this.state === 'crouch' || (this.state === 'blockstun' && this.crouchBlock) || (this.state === 'hitstun' && this.crouchHit) || (this.move && this.move.crouch && this.state === 'attack');
     if (this.y < -2 || this.state === 'jump') return { x: this.x - 10 * s, y: this.y - 56 * s, w: 20 * s, h: 46 * s };
     if (crouch) return { x: this.x - 11 * s, y: -42 * s, w: 22 * s, h: 42 * s };
@@ -82,8 +106,26 @@ class Fighter {
     if (m.cd) this.projCD = m.cd;
     if (!m.air) this.vx = 0;
     if (m.flip) { this.vy = -5.4; this.vx = this.facing * 3.3; this.y = -1; }
-    if (name === 'special' && F) { F.popup(this.x, -70, m.pop || '', this.def.color); }
+    if (m.fly) { this.vx = this.facing * m.fly[0]; this.vy = m.fly[1]; this.y = -1; }
+    if ((name === 'special' || name === 'special2') && F) { F.popup(this.x, -70, m.pop || '', this.def.color); }
     return true;
+  }
+  // a special can come out: off cooldown, and (projectiles) none of this fighter's still flying
+  canSpecial(F, name) { const m = this.moves[name]; return !!m && this.projCD <= 0 && (!m.spawn || !F.projs.some(p => p.owner === this)); }
+  // AGARRE: up close, against an opponent standing or crouching on the ground (not in the middle of a hit or a throw)
+  tryThrow(F) {
+    const o = this.opp; if (!o || F.phase !== 'fight' || this.y < 0) return false;
+    if (Math.abs(o.x - this.x) > 30 * Math.max(this.s, o.s) || o.y < -2 || o.inv > 0 || !['idle', 'walk', 'crouch', 'attack', 'dash'].includes(o.state) || (o.move && (o.move.air || o.move.grab))) return false;
+    this.face(); this.doMove('grab'); this.grabbed = o; this.thBuf = 0;
+    o.setState('thrown'); o.move = null; o.vx = o.vy = 0; o.y = 0; o.thrower = this; o.ov = { pose: 'hit|idle_1', cy: 40, noShadow: false };
+    F.popup(this.x, -84, '¡AGARRE!', '#ffd84a'); sfx('steal');
+    return true;
+  }
+  // dash forward (→ →) or back (← ←); the back-dash hops and dodges for a moment
+  startDash(dir) {
+    this.setState('dash'); this.dashDir = dir; this.vx = this.facing * (dir > 0 ? 5.2 : -4.6); this.trail = [];
+    if (dir < 0) this.inv = 7;
+    sfx('dash'); if (FIGHT_REF) FIGHT_REF.dust(this.x, 3);
   }
   jump(dir) { this.setState('jump'); this.vy = JUMP_V; this.vx = dir * 2.3 * this.facing; this.y = -1; this.move = null; this.airAtk = false; sfx('jump'); }
   canBlock() { return ['idle', 'walk', 'crouch', 'blockstun'].includes(this.state) && this.y >= 0; }
@@ -98,11 +140,15 @@ class Fighter {
       case 'idle': case 'walk': case 'crouch': {
         this.face();
         if (!act || !c) { this.setState('idle'); this.vx = 0; break; }
-        const down = c.down();
+        const down = c.down(); this.chainN = 0;
         if (c.press('super') && this.canSuper(F)) { F.startSuper(this); break; }
-        if ((c.press('special') || (c.press('punch') && c.qcf && c.qcf())) && this.moves.special && this.projCD <= 0 && (!this.moves.special.spawn || !F.projs.some(p => p.owner === this))) { this.doMove('special', F); break; }
-        if (c.press('punch')) { this.doMove(down ? 'cpunch' : 'jab'); sfx('whiff'); break; }
-        if (c.press('kick')) { this.doMove(down ? 'sweep' : 'kick'); sfx('whiffH'); break; }
+        if (c.press('punch') && c.press('kick') && !down && this.tryThrow(F)) break;
+        if (((c.press('special') && down) || (c.press('punch') && c.qcb && c.qcb())) && this.canSpecial(F, 'special2')) { this.doMove('special2', F); break; }
+        if ((c.press('special') || (c.press('punch') && c.qcf && c.qcf())) && this.canSpecial(F, 'special')) { this.doMove('special', F); break; }
+        if (c.press('punch')) { this.doMove(down ? 'cpunch' : 'jab'); this.thBuf = down ? 0 : 3; sfx('whiff'); break; }
+        if (c.press('kick')) { this.doMove(down ? 'sweep' : 'kick'); this.thBuf = down ? 0 : 3; sfx('whiffH'); break; }
+        const dd = c.dash ? c.dash() : 0; // read once: the CPU's dash input is used up when read
+        if (!down && dd) { this.startDash(dd); break; }
         if (c.up()) { this.jump(c.fwd() ? 1 : c.back() ? -1 : 0); break; }
         if (down) { this.setState('crouch'); this.vx = 0; break; }
         if (c.fwd()) { this.setState('walk'); this.walkDir = 1; this.vx = this.facing * this.spd; }
@@ -113,7 +159,8 @@ class Fighter {
       case 'jump': {
         this.vy += GRAV; this.y += this.vy;
         if (act && c && !this.airAtk && this.st > 3) {
-          if (c.press('kick')) { this.airAtk = true; this.startAir('jkick'); sfx('whiffH'); }
+          if (c.press('kick') && c.down() && this.y < -18) { this.airAtk = true; this.startAir('dive'); this.vx = this.facing * 3.6; this.vy = 5; sfx('whiffH'); } // PISOTÓN
+          else if (c.press('kick')) { this.airAtk = true; this.startAir('jkick'); sfx('whiffH'); }
           else if (c.press('punch')) { this.airAtk = true; this.startAir('jpunch'); sfx('whiff'); }
         }
         if (this.y >= 0) this.land(F);
@@ -138,11 +185,30 @@ class Fighter {
         if (this.hp > 0 && this.st > 38) { this.setState('getup'); this.inv = 30; }
         break;
       case 'getup': this.vx = 0; if (this.st >= ANIM.getup.total) { this.setState('idle'); this.inv = 8; } break;
+      case 'dash': {
+        this.vx *= .87; this.trail.unshift(this.x); if (this.trail.length > 8) this.trail.pop();
+        const n = this.dashDir > 0 ? 14 : 13;
+        if (this.dashDir < 0) this.y = -Math.round(Math.sin(Math.PI * Math.min(1, this.st / n)) * 5);
+        if (this.st >= n) { this.y = 0; this.vx = 0; this.setState('idle'); break; }
+        if (this.st > 6 && act && c) { // the end of a dash can turn into an attack
+          if (c.press('punch')) { this.y = 0; this.doMove('jab'); this.thBuf = 3; sfx('whiff'); }
+          else if (c.press('kick')) { this.y = 0; this.doMove('kick'); this.thBuf = 3; sfx('whiffH'); }
+        }
+        break;
+      }
+      case 'thrown': { // AGARRE: carried by the thrower's move, then thrown forward (Fight.throwLand)
+        const a = this.thrower; this.vx = 0;
+        if (!a || a.state !== 'attack' || !a.move || !a.move.grab) { this.ov = null; this.thrower = null; this.y = 0; this.setState('idle'); break; } // the throw was broken
+        const m = a.move, f = a.facing, k = clamp((a.mt - m.s) / m.a, 0, 1);
+        this.x = lerp(a.x + f * 20 * a.s, a.x + f * 64 * a.s, easeIn(k)); this.y = 0; this.facing = -f;
+        this.ov.dy = -Math.sin(Math.PI * k) * 46 - (k > 0 ? 0 : 3); this.ov.rot = -k * Math.PI * 1.1;
+        break;
+      }
       case 'super': this.vx = 0; break; // moved by the SuperScene script while the fight is frozen
       case 'win': case 'lose': case 'intro': this.vx = 0; break;
     }
     this.x += this.vx;
-    if (this.state !== 'knock' && this.state !== 'ko' && this.state !== 'jump' && !(this.move && (this.move.air || this.move.hop) && this.state === 'attack') && this.y < 0 && this.state !== 'hitstun' && this.state !== 'super') { this.y = Math.min(0, this.y + 4); }
+    if (this.state !== 'knock' && this.state !== 'ko' && this.state !== 'jump' && !(this.move && (this.move.air || this.move.hop) && this.state === 'attack') && this.y < 0 && this.state !== 'hitstun' && this.state !== 'super' && this.state !== 'dash') { this.y = Math.min(0, this.y + 4); }
   }
   startAir(name) { const m = this.moves[name]; this.move = m; this.moveName = name; this.mt = 0; this.hitDone = false; this.hitConfirmed = false; this.state = 'attack'; }
   land(F) {
@@ -150,6 +216,19 @@ class Fighter {
   }
   updateMove(F) {
     const m = this.move, c = this.ctrl; this.mt++;
+    // □ + ✕ pressed a few ticks apart still throw: the jab or kick that came out first turns into the AGARRE
+    if (this.thBuf > 0) {
+      this.thBuf--;
+      if (c && F.phase === 'fight' && ((this.moveName === 'jab' && c.press('kick')) || (this.moveName === 'kick' && c.press('punch'))) && this.tryThrow(F)) return;
+    }
+    if (m.grab && this.grabbed && this.mt === m.s + m.a) F.throwLand(this, this.grabbed);
+    if (m.teleport) { // Belli's ¡CTRL+Z!: glitches out and reappears on the other side of the opponent
+      if (this.mt === 2) { this.inv = m.s + m.a + 4; sfx('blip', 900); }
+      if (this.mt === m.s + 4 && this.opp) {
+        const o = this.opp, side = Math.sign(this.x - o.x) || -this.facing;
+        this.x = clamp(o.x - side * 38 * Math.max(this.s, o.s), Math.max(F.arena.l + 14, F.camX + 14), Math.min(F.arena.r - 14, F.camX + W - 14)); this.face(); sfx('blip', 1500);
+      }
+    }
     if (m.air) {
       this.vy += GRAV; this.y += this.vy;
       if (this.y >= 0) { this.land(F); this.st = -4; }
@@ -167,13 +246,16 @@ class Fighter {
     if (m.snd && this.mt === (m.spawn ? m.spawn.at - 2 : -1)) sfx(m.snd);
     // cancels (on hit/block)
     if (this.hitConfirmed && c && this.mt >= m.s && F.phase === 'fight') {
+      const down = c.down();
       if (m.cancel) {
-        const down = c.down();
         if (c.press('punch') && m.cancel.includes('cross') && !down) { this.doMove('cross'); sfx('whiff'); return; }
         if (c.press('kick') && m.cancel.includes('kick') && !down) { this.doMove('kick'); sfx('whiffH'); return; }
+        if (c.press('kick') && m.cancel.includes('remate') && !down) { this.doMove('remate'); sfx('whiffH'); return; }
+        if (c.press('punch') && m.cancel.includes('cpunch') && down && this.chainN < 1) { this.chainN++; this.doMove('cpunch'); sfx('whiff'); return; }
         if (c.press('kick') && m.cancel.includes('sweep')) { this.doMove('sweep'); sfx('whiffH'); return; }
       }
-      if (c.press('special') && this.moves.special && this.projCD <= 0 && this.moveName !== 'special') { this.doMove('special', F); return; }
+      if (c.press('special') && down && this.moves.special2 && !this.moveName.startsWith('special') && this.canSpecial(F, 'special2')) { this.doMove('special2', F); return; }
+      if (c.press('special') && this.moves.special && this.projCD <= 0 && !this.moveName.startsWith('special')) { this.doMove('special', F); return; }
       if (c.press('super') && this.canSuper(F)) { F.startSuper(this); return; }
     }
     if (this.mt >= m.s + m.a + m.r) { this.move = null; this.setState(m.crouch && c && c.down() ? 'crouch' : 'idle'); }
@@ -196,6 +278,8 @@ class Fighter {
       case 'down': return ['lie', 0, this.hp <= 0 ? 'ko' : 'hurt'];
       case 'getup': return ['getup', this.st, 'angry'];
       case 'super': return ['idle', this.st, 'angry'];
+      case 'dash': return [this.dashDir > 0 ? 'dashF' : 'dashB', this.st, expr];
+      case 'thrown': return ['hit', 0, 'hurt'];
       case 'win': return ['win', this.st, 'happy'];
       case 'intro': return [this.introAnim || 'idle', this.st, expr];
       case 'lose': return ['lie', 0, 'ko'];
@@ -209,8 +293,17 @@ class Fighter {
     const sx = this.x - camX, sy = GROUND + this.y;
     const sh = clamp(1 + this.y / 90, .4, 1);
     shadow(g, sx, GROUND, 26 * sh * this.s, .4 * sh);
-    const img = this.flash > 0 && this.flash % 2 === 1 ? whiteOf(spr) : (this.inv > 0 && this.state === 'getup' && this.st % 4 < 2 ? tintedOf(spr, '#ffffff', .3) : null);
-    drawSpr(g, spr, sx, sy, this.facing, img);
+    let img = this.flash > 0 && this.flash % 2 === 1 ? whiteOf(spr) : (this.inv > 0 && this.state === 'getup' && this.st % 4 < 2 ? tintedOf(spr, '#ffffff', .3) : null);
+    let facing = this.facing, x = sx;
+    const m = this.state === 'attack' && this.move;
+    if (this.state === 'dash') for (const [k, a] of [[6, .18], [3, .32]]) if (this.trail[k] != null) { g.globalAlpha = a; drawSpr(g, spr, this.trail[k] - camX, sy, facing, tintedOf(spr, this.def.color || '#8fe0ff', .5)); g.globalAlpha = 1; }
+    if (m && m.spin && this.mt >= m.s && this.mt < m.s + m.a && Math.floor((this.mt - m.s) / 4) % 2) facing = -facing; // the kick turns
+    if (m && m.teleport && this.mt >= 2 && this.mt < m.s + m.a) { // glitching out: green, jittering, gone for a moment
+      if (this.mt >= m.s && this.mt < m.s + 4) return;
+      img = tintedOf(spr, '#40ff60', .5); x += rndi(-3, 3);
+      if (FIGHT_REF && FIGHT_REF.tick % 3 === 0) { g.globalAlpha = .5; g.fillStyle = '#40ff60'; g.fillRect(Math.round(x) - 14, Math.round(sy - 40 - rndi(0, 30)), 28, 1); g.globalAlpha = 1; }
+    }
+    drawSpr(g, spr, x, sy, facing, img);
     // [OLD CHARS] if (this.kind === 'fumeta' && Math.random() < .08 && this.state !== 'down') FIGHT_REF && FIGHT_REF.smokePuff(this.x + this.facing * 10, this.y - 66);
   }
 }
@@ -225,11 +318,17 @@ class PadCtrl {
     const fw = f.facing > 0 ? Rr : L, bk = f.facing > 0 ? L : Rr;
     let n = 5; if (D && bk) n = 1; else if (D && fw) n = 3; else if (D) n = 2; else if (U) n = 8; else if (fw) n = 6; else if (bk) n = 4;
     this.hist.push(n); if (this.hist.length > 24) this.hist.shift();
+    // dash: the same direction tapped twice within 14 ticks
+    this.t = (this.t || 0) + 1; this._dash = 0;
+    if (fw && !this._fw) { if (this.t - (this.fwT || -99) < 14) this._dash = 1; this.fwT = this.t; }
+    if (bk && !this._bk) { if (this.t - (this.bkT || -99) < 14) this._dash = -1; this.bkT = this.t; }
     this._fw = fw; this._bk = bk;
   }
   fwd() { return this._fw; } back() { return this._bk; } up() { return !!this.src.held.up; } down() { return !!this.src.held.down; }
   press(b) { return !!this.src.pressed[b]; }
+  dash() { return this._dash; }
   qcf() { const h = this.hist.slice(-16); let s = 0; for (const n of h) { if (s === 0 && n === 2) s = 1; else if (s === 1 && n === 3) s = 2; else if (s === 2 && n === 6) s = 3; } return s === 3; }
+  qcb() { const h = this.hist.slice(-16); let s = 0; for (const n of h) { if (s === 0 && n === 2) s = 1; else if (s === 1 && n === 1) s = 2; else if (s === 2 && n === 4) s = 3; } return s === 3; }
 }
 
 // ---------- AI controller ----------
@@ -256,12 +355,33 @@ class AICtrl {
         if (this.willBlock) this.blockT = this.threatWasProj ? 30 : 20;
       }
     }
+    // Casado: a close attack coming in can be met with the salute counter instead of a block
+    const s2 = me.moves.special2;
+    if (this.blockT > 0 && s2 && s2.counter && oAtk && !this.threatWasProj && me.canSpecial(F, 'special2') && ['idle', 'walk', 'crouch'].includes(me.state) && Math.random() < P.block * .35) { this.blockT = 0; this.pr.special = 1; this.h = { fwd: 0, back: 0, up: 0, down: 1 }; this.pt = 6; return; }
     if (this.blockT > 0) { this.blockT--; this.h = { fwd: 0, back: 1, up: 0, down: this.low ? 1 : 0 }; return; }
-    // in air: attack near opponent
-    if (me.state === 'jump') { if (!me.airAtk && dist < 56 && me.vy > -2 && Math.random() < .5) this.pr.kick = 1; return; }
-    // chain combos
-    if (me.state === 'attack') { if (me.hitConfirmed && me.move && me.move.cancel && Math.random() < P.combo) { if (me.move.cancel.includes('cross')) this.pr[Math.random() < .6 ? 'punch' : 'kick'] = 1; else this.pr.kick = 1; this.h.down = me.move.crouch ? 1 : 0; } return; }
+    // in air: attack near opponent (a dive kick from high up)
+    if (me.state === 'jump') {
+      if (!me.airAtk && dist < 70 && me.y < -26 && me.vy > -1 && Math.random() < .2) { this.pr.kick = 1; this.h.down = 1; }
+      else if (!me.airAtk && dist < 56 && me.vy > -2 && Math.random() < .5) { this.pr.kick = 1; this.h.down = 0; }
+      return;
+    }
+    // chain combos: jab -> cross -> remate, the low chain, or a special on top
+    if (me.state === 'attack') {
+      if (me.hitConfirmed && me.move && Math.random() < P.combo) {
+        const mv = me.move;
+        if (mv.cancel && mv.cancel.includes('cross')) this.pr[Math.random() < .6 ? 'punch' : 'kick'] = 1;
+        else if (mv.cancel && mv.cancel.includes('remate')) this.pr.kick = 1;
+        else if (mv.cancel && mv.cancel.includes('cpunch')) this.pr[Math.random() < .4 ? 'punch' : 'kick'] = 1;
+        else if (!me.moveName.startsWith('special') && me.projCD <= 0 && Math.random() < .25) this.pr.special = 1;
+        this.h.down = mv.crouch ? 1 : 0;
+      }
+      return;
+    }
     if (!['idle', 'walk', 'crouch'].includes(me.state)) return;
+    const bomb = F.projs.find(p => p.type === 'bomb' && Math.abs(p.x - me.x) < 56);
+    if (bomb) { const away = Math.sign(me.x - bomb.x) === me.facing; this.h = { fwd: away ? 1 : 0, back: away ? 0 : 1, up: 0, down: 0 }; this.pt = 4; return; } // get away from a bomb
+    // up close against a blocker (or someone standing still): throw
+    if (dist < 26 * me.s && o.y >= 0 && ['idle', 'crouch', 'walk'].includes(o.state) && Math.random() < (P.punish || .3) * .12) { this.pr.punch = 1; this.pr.kick = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = 8; return; }
     // anti-air: opponent jumping in close -> kick them out of the air
     if ((o.state === 'jump' || (o.move && o.move.air)) && dist < 70 && o.vy > -1 && Math.random() < (P.punish || .3)) { this.pr.kick = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = 6; return; }
     // punish: opponent stuck in recovery of a whiffed / blocked attack within reach
@@ -273,11 +393,14 @@ class AICtrl {
     // super (once per match): sooner when losing
     if (me.canSuper(F) && r < (me.hp < o.hp ? .12 : .04)) { this.pr.super = 1; return; }
     if (o.state === 'down' || o.state === 'getup') { this.h = { fwd: dist > 60 ? 1 : 0, back: 0, up: 0, down: 0 }; this.pt = 10; return; }
+    // the second special, at its own distance (CPU_AI.special shares its chances with the first one)
+    if (s2 && s2.ai && dist >= s2.ai[0] && dist <= s2.ai[1] && me.canSpecial(F, 'special2') && Math.random() < P.special * .45) { this.pr.special = 1; this.h = { fwd: 0, back: 0, up: 0, down: 1 }; this.pt = 12; return; }
     if (dist > P.range) {
       if (me.moves.special && me.projCD <= 0 && r < P.special) {
         const sp = me.moves.special;
         if ((sp.spawn && dist > 70) || (sp.dash && dist < 120 && dist > 50) || (sp.flip && dist < 120 && dist > 55) || (sp.hop && dist > 60) || (sp.multi && dist < 64)) { this.pr.special = 1; this.pt = 12; return; }
       }
+      if (dist > P.range + 70 && Math.random() < P.aggr * .05) { this.h = { fwd: 1, back: 0, up: 0, down: 0, dash: 1 }; this.pt = 14; return; } // dash in
       if (r < P.special + P.jump && dist < 140) { this.h = { fwd: 1, back: 0, up: 1, down: 0 }; this.pt = 4; return; }
       if (Math.random() < P.aggr + .25) { this.h = { fwd: 1, back: 0, up: 0, down: 0 }; this.pt = rndi(8, 26); }
       else { this.h = { fwd: 0, back: Math.random() < .5 ? 1 : 0, up: 0, down: 0 }; this.pt = rndi(10, 28); }
@@ -297,11 +420,12 @@ class AICtrl {
     }
   }
   fwd() { return !!this.h.fwd; } back() { return !!this.h.back; } up() { return !!this.h.up; } down() { return !!this.h.down; }
-  press(b) { return !!this.pr[b]; } qcf() { return false; }
+  press(b) { return !!this.pr[b]; } qcf() { return false; } qcb() { return false; }
+  dash() { const d = this.h.dash || 0; this.h.dash = 0; return d; }
 }
 
 // ---------- projectiles ----------
-const BALL_R = { ball: 8, tennis: 4.5 }; // radius of the balls (objects.js draws them), for their spin and bounce
+const BALL_R = { ball: 8, lob: 8, tennis: 4.5, smash: 4.5 }; // radius of the balls (objects.js draws them), for their spin and bounce
 class Proj {
   constructor(owner, type) {
     this.owner = owner; this.type = type; this.t = 0; this.dead = false; const f = owner.facing, s = owner.s;
@@ -316,19 +440,87 @@ class Proj {
     if (type === 'shout') { this.vx = f * 3.4; this.dmg = 8; this.hs = 24; this.w = 14; this.h = 30; this.y = -50 * s; }
     if (type === 'cat') { this.vx = f * 4.2; this.dmg = 9; this.hs = 20; this.w = 22; this.h = 12; this.y = -42 * s; }
     if (type === 'wave') { this.x = owner.x + f * 16 * s; this.vx = f * 3.6; this.y = -9; this.dmg = 10; this.hs = 22; this.w = 16; this.h = 14; this.low = true; this.kd = true; }
-    this.ang = 0; this.trail = []; // spin angle (balls) and the last positions (motion trail)
+    // second specials (high = block it standing; hits = how many times it can hit; custom = Proj.update handles its hits)
+    if (type === 'lob') { // Peño's ¡VASELINA!: a football lobbed so it drops on the opponent
+      const T = 2 * 6.2 / .2, tx = owner.opp ? owner.opp.x : this.x + f * 150;
+      this.x = owner.x + f * 22 * s; this.y = -10; this.vy = -6.2; this.g = .2; this.vx = f * clamp(f * (tx - this.x) / T, 1, 5);
+      this.dmg = 9; this.hs = 20; this.w = 14; this.h = 14; this.high = true;
+    }
+    if (type === 'boomerang') { this.vx = f * 4.6; this.vx0 = this.vx; this.dmg = 7; this.hs = 16; this.w = 16; this.h = 10; this.y = -48 * s; this.hits = 2; this.life = 150; }
+    if (type === 'smash') { this.y = -66 * s; this.vx = f * 5.4; this.vy = 2.6; this.g = .08; this.dmg = 7; this.hs = 16; this.w = 8; this.h = 8; }
+    if (type === 'homing') { this.vx = f * 1.8; this.vy = -5.4; this.dmg = 8; this.hs = 18; this.w = 15; this.h = 9; this.y = -60 * s; this.high = true; this.life = 120; }
+    if (type === 'objection') { this.vx = f * 3.2; this.dmg = 9; this.hs = 22; this.w = 46; this.h = 16; this.y = -50 * s; }
+    if (type === 'bomb') { this.x = owner.x + f * 34 * s; this.y = -7; this.dmg = 12; this.w = 12; this.h = 12; this.fuse = 90; this.custom = true; this.noClash = true; }
+    if (type === 'catPounce') { this.vx = f * 4.4; this.vy = -3; this.g = .17; this.dmg = 2.5; this.hs = 14; this.w = 20; this.h = 12; this.y = -44 * s; this.custom = true; }
+    this.ang = 0; this.trail = []; this.hitCD = 0; // spin angle (balls), the last positions (motion trail), ticks before it can hit again
   }
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }
   update(F) {
     this.t++; this.x += this.vx; this.vy += this.g; this.y += this.vy;
     if (BALL_R[this.type]) this.ang += clamp(this.vx / BALL_R[this.type], -.45, .45);
     this.trail.unshift([this.x, this.y]); if (this.trail.length > 6) this.trail.pop();
+    if (this.hitCD > 0) this.hitCD--;
+    if (this.life && this.t > this.life) this.dead = true;
+    const o = this.owner.opp, f0 = Math.sign(this.vx0 || this.vx) || 1;
+    if (this.type === 'lob' && this.y >= -BALL_R.lob && this.vy > 0) { // bounces twice, then it's gone
+      this.y = -BALL_R.lob; this.high = false; this.bounces = (this.bounces || 0) + 1; this.vy = -Math.max(1.2, this.vy * .55); this.vx *= .8; sfx('land');
+      if (this.bounces > 2) this.dead = true;
+    }
+    if (this.type === 'boomerang') { // slows down, comes back, and is caught
+      if (this.t > 24) this.vx -= f0 * .22;
+      if (Math.sign(this.vx) !== f0 && Math.abs(this.x - this.owner.x) < 14) { this.dead = true; sfx('land'); }
+    }
+    if (this.type === 'smash' && this.y >= -5 && this.vy > 0) { // the ball hits the floor and bounces at the shins
+      if (this.bounced) this.dead = true; else { this.bounced = true; this.low = true; this.y = -5; this.vy = -2.2; this.g = .06; sfx('land'); }
+    }
+    if (this.type === 'homing' && this.t > 12 && o) { // the sandal turns toward the opponent's head
+      const sp = 4.2, cur = Math.atan2(this.vy, this.vx), want = Math.atan2(o.y - 60 * o.s - this.y, o.x - this.x);
+      let d = want - cur; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+      const a = cur + clamp(d, -.12, .12); this.vx = Math.cos(a) * sp; this.vy = Math.sin(a) * sp;
+    }
+    if (this.type === 'bomb') this.updateBomb(F);
+    if (this.type === 'catPounce') this.updateCat(F);
     if (this.type === 'smoke') { this.w = Math.min(28, 16 + this.t * .1); this.h = Math.min(24, 14 + this.t * .08); this.vx *= .996; if (this.t > this.life) this.dead = true; if (this.t % 3 === 0) F.smokePuff(this.x + rnd(-6, 6), this.y + rnd(-5, 5), true); }
     if (this.type === 'ball' && this.y >= -BALL_R.ball && this.vy > 0) { this.y = -BALL_R.ball; this.vy = -Math.max(1.4, this.vy * .7); sfx('land'); }
     if (this.type === 'can' && this.y >= -3) { if (!this.bounce) { this.bounce = true; this.vy = -2; this.y = -3; this.vx *= .5; sfx('can'); } else { this.dead = true; F.parts.push({ type: 'fizz', x: this.x, y: -2, t: 0, life: 30 }); sfx('fizz'); } }
     if (this.type === 'wave' && this.t % 2 === 0) F.parts.push({ type: 'debris', x: this.x + rnd(-6, 6), y: -rnd(0, 6), vx: rnd(-.6, .6), vy: rnd(-2.6, -1), t: 0, life: 24, col: pick(['#c8b8a0', '#8a7a6a', '#fff4c0']) });
     if (this.x < F.arena.l - 40 || this.x > F.arena.r + 40) this.dead = true;
   }
+  // Manu's Isaac bomb: the fuse burns 1.5 s, then it blows up anyone close, Manu too (that hit counts for his opponent)
+  updateBomb(F) {
+    this.fuse--;
+    if (this.fuse > 0) { if (this.fuse % (this.fuse < 30 ? 6 : 15) === 0) sfx('tick'); return; }
+    this.dead = true; F.boom(this.x, this.y - 6);
+    if (F.phase !== 'fight') return;
+    for (const f of [F.p, F.e]) if (Math.abs(f.x - this.x) < 40 && f.hurtbox()) {
+      const att = f === this.owner ? f.opp : this.owner;
+      F.hit(att, f, { dmg: this.dmg, hs: 20, bs: 16, push: 3.2, lvl: 'mid', meter: 6, stop: 10, snd: 'hitH' }, { vx: Math.sign(f.x - this.x) || 1, y: -30, kd: true, type: 'bomb' }, f.x);
+    }
+  }
+  // MadeverXP's ¡ZARPAZO!: the cat jumps on the opponent's face and scratches 4 times; blocked, it bounces off;
+  // if it lands on the floor it runs away
+  updateCat(F) {
+    const o = this.owner.opp;
+    if (this.cling) {
+      const v = this.cling; this.x = v.x - v.facing * 2; this.y = v.y - 58 * v.s; this.vx = this.vy = this.g = 0;
+      if (this.slash > 0) this.slash--;
+      if ((this.t - this.clingT) % 10 === 0) {
+        if (this.n < 4 && F.phase === 'fight' && v.hurtbox() && !['knock', 'down', 'ko', 'thrown'].includes(v.state)) { F.hit(this.owner, v, this.scratch(), this, this.x); this.n++; this.slash = 6; sfx('chancla'); }
+        else { this.dead = true; F.smokePuff(this.x, this.y, true); sfx('meow'); }
+      }
+      return;
+    }
+    if (this.ran) return;
+    const hb = o && o.hurtbox();
+    if (hb && F.phase === 'fight' && overlap(this.box(), hb)) {
+      F.hit(this.owner, o, this.scratch(), this, this.x);
+      if (o.state === 'blockstun') { this.vx = -this.vx * .5; this.vy = -3; this.ran = true; this.life = this.t + 40; }
+      else { this.cling = o; this.clingT = this.t; this.n = 1; this.slash = 6; sfx('meow'); }
+      return;
+    }
+    if (this.y >= -6 && this.vy > 0) { this.y = -6; this.vy = 0; this.g = 0; this.vx = Math.sign(this.vx) * 5; this.ran = true; this.life = this.t + 80; } // missed: runs off
+  }
+  scratch() { return { dmg: this.dmg, hs: 14, bs: 12, push: .3, lvl: 'high', meter: 3, stop: 4, snd: 'hitL' }; }
   draw(g, camX) {
     const sx = Math.round(this.x - camX), sy = Math.round(GROUND + this.y), t = this.t;
     if (this.type === 'chancla') { const im = SMALL.chancla[Math.floor(t / 3) % 4]; g.drawImage(im, sx - (im.width >> 1), sy - (im.height >> 1)); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(sx - Math.sign(this.vx) * 10, sy, 5, 1); g.fillRect(sx - Math.sign(this.vx) * 14, sy - 2, 3, 1); }
@@ -362,6 +554,36 @@ class Proj {
       }
     }
     if (this.type === 'cat') { objShadow(g, sx, this.y, 20); drawSpr(g, catFrames()[Math.floor(t / 4) % 2], sx, sy + Math.round(Math.sin(t * .35) * 1.5), dir); }
+    if (this.type === 'lob') { objShadow(g, sx, this.y, 14); for (const k of [4, 2]) ghost((x, y) => drawBall(g, 'football', x, y, 16, this.ang), k); drawBall(g, 'football', sx, sy, 16, this.ang); }
+    if (this.type === 'boomerang') { objShadow(g, sx, this.y, 14); drawSpr(g, objFrames('cap', 'flip')[Math.floor(t / 2) % 4], sx, sy, dir); }
+    if (this.type === 'smash') {
+      objShadow(g, sx, this.y, 7); g.fillStyle = 'rgba(216,240,64,.45)'; g.fillRect(sx - dir * 14, sy - (this.bounced ? 0 : 4), 8, 1);
+      for (const k of [4, 2]) ghost((x, y) => drawBall(g, 'tennis', x, y, 9, this.ang), k);
+      drawBall(g, 'tennis', sx, sy, 9, this.ang);
+    }
+    if (this.type === 'homing') { objShadow(g, sx, this.y, 12); for (const k of [5, 3]) ghost((x, y) => drawSpr(g, objFrames('sandal', 'rot90')[Math.floor(t / 3) % 4], x, y, dir), k); drawSpr(g, objFrames('sandal', 'rot90')[Math.floor(t / 3) % 4], sx, sy, dir); }
+    if (this.type === 'objection') { // a speech bubble with the shout in it
+      const w = 48, h = 15, x0 = sx - w / 2, y0 = sy - h / 2 + Math.round(Math.sin(t * .3));
+      g.fillStyle = OUTL; g.fillRect(x0 - 1, y0, w + 2, h); g.fillRect(x0, y0 - 1, w, h + 2);
+      g.fillStyle = '#ffffff'; g.fillRect(x0, y0, w, h); g.fillStyle = '#e4e2ee'; g.fillRect(x0, y0 + h - 2, w, 2);
+      const tx = dir > 0 ? x0 + 4 : x0 + w - 8; g.fillStyle = OUTL; g.fillRect(tx - 1, y0 + h, 6, 2); g.fillStyle = '#ffffff'; g.fillRect(tx, y0 + h, 4, 1); g.fillRect(tx + (dir > 0 ? 0 : 2), y0 + h + 1, 2, 2);
+      tiny(g, '¡PROTESTO!', Math.round(sx - tinyW('¡PROTESTO!') / 2), y0 + 5, t % 8 < 4 ? '#c81e2a' : '#1a1424');
+    }
+    if (this.type === 'bomb') { // the Isaac bomb: fuse burning down, blinking at the end
+      const left = this.fuse / 90, hot = this.fuse < 30 && (this.fuse >> 2) % 2;
+      drawBall(g, 'bomb', sx, sy, 12, 0, hot ? tintedOf(ballFrames('bomb', 12)[0], '#ff3030', .5) : null);
+      const fx = sx + 2, fy = sy - 7, len = Math.max(1, Math.round(5 * left));
+      g.fillStyle = OUTL; g.fillRect(fx - 1, fy - len, 3, len + 1); g.fillStyle = '#c8a070'; g.fillRect(fx, fy - len + 1, 1, len);
+      if (t % 4 < 3) { g.fillStyle = t % 2 ? '#fff4a0' : '#ff8a30'; g.fillRect(fx - 1 + rndi(0, 1), fy - len - 2, 2, 2); }
+    }
+    if (this.type === 'catPounce') {
+      const cf = catFrames(), v = this.cling;
+      if (!v) { objShadow(g, sx, this.y, 20); drawSpr(g, cf[this.ran ? Math.floor(t / 4) % 2 : 0], sx, sy, dir); }
+      else {
+        drawSpr(g, cf[1], sx, sy + (t % 4 < 2 ? 0 : -1), -v.facing);
+        if (this.slash > 0) { g.fillStyle = '#ffffff'; for (let i = 0; i < 3; i++) for (let k = 0; k < 7; k++) g.fillRect(sx - 6 + i * 4 + k, sy - 6 + k, 1, 1); }
+      }
+    }
     if (this.type === 'cat' && false) { // [OLD OBJECTS] black cat flying at the opponent, legs stretched, green eyes (now catFrames in objects.js)
       const d = Math.sign(this.vx) || 1, fr = Math.floor(t / 4) % 2, y = sy + Math.round(Math.sin(t * .35) * 1.5);
       const X = v => sx + v * d, rect = (a, yy, w, h, col) => { g.fillStyle = col; g.fillRect(d > 0 ? sx + a : sx - a - w, yy, w, h); };
@@ -440,7 +662,7 @@ class Fight {
     for (let i = 0; i < n; i++) { const a = rnd(0, Math.PI * 2), v = rnd(1.5, 3.5) * (kind === 'big' ? 1.4 : 1); this.parts.push({ type: 'bit', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, t: 0, life: rndi(8, 16), col: kind === 'block' ? pick(['#9fe8ff', '#fff', '#5ab0ff']) : pick(['#fff', '#fff4a0', '#ffc040', '#ff8030']) }); }
     if (kind !== 'block' && Math.random() < .5) for (let i = 0; i < 2; i++) this.parts.push({ type: 'sweat', x, y: y - 6, vx: rnd(-1.5, 1.5), vy: rnd(-2.5, -1), t: 0, life: 22 });
   }
-  spawnProj(f, type) { this.projs.push(new Proj(f, type)); const snd = { wave: 'shock', shout: null, cat: 'meow' }; const s = type in snd ? snd[type] : 'throw'; if (s) sfx(s); }
+  spawnProj(f, type) { this.projs.push(new Proj(f, type)); const snd = { wave: 'shock', shout: null, cat: 'meow', catPounce: 'meow', objection: 'shout', bomb: 'land' }; const s = type in snd ? snd[type] : 'throw'; if (s) sfx(s); }
   // super bar: SUPER_CHARGE (supers.js) sets how fast it fills; it stops once the super has been used
   gain(f, n) { if (!f.superUsed) f.meter = Math.min(100, f.meter + n * SUPER_CHARGE); }
   // super: cut-in, then the fighter's cinematic (SuperScene) freezes the fight and ends in a K.O.
@@ -458,12 +680,18 @@ class Fight {
   }
   // --- apply a hit (melee or projectile)
   hit(att, def, m, isProj, px) {
+    // Casado's ¡A LA ORDEN!: a punch or kick landing during the salute is countered
+    const dm = def.move;
+    if (!isProj && dm && dm.counter && def.state === 'attack' && def.mt >= dm.s && def.mt < dm.s + dm.a) { this.counter(def, att); return; }
     const facing = isProj ? Math.sign(isProj.vx) || att.facing : att.facing;
     const lvl = m.lvl || 'mid';
     const holdBack = def.ctrl && def.ctrl.back();
     const crouching = def.ctrl && def.ctrl.down();
     const canB = def.canBlock() && holdBack && !(lvl === 'low' && !crouching) && !(lvl === 'high' && crouching);
-    const hx = px != null ? px : def.x - facing * 8, hy = isProj ? isProj.y : (m.box[1] + m.box[3] / 2) * att.s;
+    const hx = px != null ? px : def.x - facing * 8, hy = isProj ? isProj.y : m.box ? (m.box[1] + m.box[3] / 2) * att.s : -30 * att.s;
+    // ¡CONTRA!: caught while starting an attack (not a throw)
+    const counterHit = !canB && def.state === 'attack' && dm && !dm.grab && !dm.counter && def.mt < dm.s;
+    if (def.grabbed) { const v = def.grabbed; def.grabbed = null; if (v.state === 'thrown') { v.ov = null; v.thrower = null; v.y = 0; v.setState('idle'); } } // hit while throwing: the throw breaks
     if (canB) {
       def.setState('blockstun'); def.stun = m.bs || 12; def.crouchBlock = crouching; def.vx = facing * (m.push || 2) * .9; def.face();
       if (isProj) def.hp = Math.max(1, def.hp - 1);
@@ -473,8 +701,10 @@ class Fight {
     }
     const wasStun = def.state === 'hitstun' || def.state === 'knock';
     att.comboN = wasStun ? att.comboN + 1 : 1; att.combo = att.comboN; if (att.combo >= 2) att.comboShow = 70;
+    if (COMBO_RANKS.some(([n]) => n === att.comboN)) { this.stage.react('combo', def.x, att.side); sfx('crowd'); }
     const scale = Math.max(.5, 1 - (att.comboN - 1) * .12);
-    const dmg = m.dmg * scale * att.dmgMul;
+    const dmg = m.dmg * scale * att.dmgMul * (counterHit ? 1.25 : 1);
+    if (counterHit) { this.popup(def.x, -86, '¡CONTRA!', '#ff8a3a'); flash(2, '#fff4c0'); }
     def.hp = Math.max(0, def.hp - dmg); def.flash = 6;
     this.gain(att, m.meter || 5); this.gain(def, dmg * .7);
     att.hitConfirmed = true;
@@ -482,8 +712,9 @@ class Fight {
     if (def.hp <= 0 || m.kd || air || isProj && isProj.kd) {
       def.setState('knock'); def.vy = def.hp <= 0 ? -5.5 : (m.kd && !air ? -3.8 : -4.2); def.vx = facing * (def.hp <= 0 ? 2.8 : 2.2); def.y = Math.min(def.y, -2); def.bounced = false; def.move = null;
     } else {
-      def.setState('hitstun'); def.stun = m.hs || 14; def.crouchHit = def.state === 'crouch' || (def.ctrl && def.ctrl.down() && def.y >= 0); def.vx = facing * (m.push || 2.5); def.move = null;
+      def.setState('hitstun'); def.stun = (m.hs || 14) + (counterHit ? 6 : 0); def.crouchHit = def.state === 'crouch' || (def.ctrl && def.ctrl.down() && def.y >= 0); def.vx = facing * (m.push || 2.5); def.move = null;
     }
+    if (m.dive && !isProj) { att.vy = -3.2; att.vx = -att.facing * 1.4; } // the dive kick bounces off
     // pushback into walls transfers to attacker
     if (!isProj && (def.x <= this.camX + 18 || def.x >= this.camX + W - 18)) att.vx = -facing * (m.push || 2.5) * .8;
     this.spark(hx, hy, dmg >= 9 ? 'big' : 'hit');
@@ -498,6 +729,24 @@ class Fight {
     if (isProj && isProj.type === 'cat') sfx('meow');
     if (isProj && isProj.type === 'can') sfx('can');
     if (def.hp <= 0) this.ko(att, def);
+  }
+  // AGARRE: the thrown opponent lands (Fighter 'thrown' state carried them) and takes the throw as a hit
+  throwLand(a, v) {
+    a.grabbed = null; v.thrower = null; v.ov = null; v.y = -2;
+    if (v.state !== 'thrown') return;
+    this.hit(a, v, a.move, false, v.x); this.dust(v.x, 12); sfx('fall'); shake(6, 14);
+  }
+  // Casado's counter: the attacker's hit doesn't land; he answers with a punch that knocks down
+  counter(def, att) {
+    att.hitDone = true; def.doMove('counterA'); def.face(); def.inv = 10;
+    this.popup(def.x, -84, '¡A LA ORDEN!', '#ffd84a'); flash(3, '#ffffff'); sfx('shout');
+    this.hit(def, att, COUNTER_HIT, false, att.x);
+  }
+  // an explosion (Manu's bomb): flash, sparks, smoke and fire
+  boom(x, y) {
+    this.spark(x, y, 'big'); flash(4, '#fff4c0'); shake(9, 20); sfx('shock'); sfx('hitH');
+    for (let i = 0; i < 18; i++) { const a = rnd(0, Math.PI * 2), v = rnd(.8, 3.2); this.parts.push({ type: 'fire', x: x + rnd(-6, 6), y: y + rnd(-6, 6), vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, t: 0, life: rndi(18, 32) }); }
+    for (let i = 0; i < 8; i++) this.smokePuff(x + rnd(-14, 14), y + rnd(-14, 6), true);
   }
   ko(att, def) {
     if (this.phase !== 'fight') return;
@@ -530,10 +779,13 @@ class Fight {
     if (this.sup && this.sup.freeze) { this.updateParts(); return; } // a super just started
     // projectiles
     for (const pr of this.projs) pr.update(this);
-    for (const a of this.projs) for (const b of this.projs) if (a !== b && a.owner !== b.owner && !a.dead && !b.dead && overlap(a.box(), b.box())) { a.dead = b.dead = true; this.spark((a.x + b.x) / 2, (a.y + b.y) / 2, 'hit'); sfx('block'); }
+    for (const a of this.projs) for (const b of this.projs) if (a !== b && a.owner !== b.owner && !a.dead && !b.dead && !a.noClash && !b.noClash && !a.cling && !b.cling && overlap(a.box(), b.box())) { a.dead = b.dead = true; this.spark((a.x + b.x) / 2, (a.y + b.y) / 2, 'hit'); sfx('block'); }
     if (this.phase === 'fight' || this.phase === 'ko') for (const pr of this.projs) {
-      if (pr.dead) continue; const tgt = pr.owner === P ? E : P;
-      if (overlap(pr.box(), tgt.hurtbox())) { pr.dead = true; this.hit(pr.owner, tgt, { dmg: pr.dmg, hs: pr.hs, bs: 14, push: 2.4, lvl: pr.low ? 'low' : 'mid', meter: 6, stop: 6, snd: 'hitM' }, pr, pr.x); }
+      if (pr.dead || pr.custom || pr.hitCD > 0) continue; const tgt = pr.owner === P ? E : P;
+      if (overlap(pr.box(), tgt.hurtbox())) {
+        if (pr.hits > 1) { pr.hits--; pr.hitCD = 24; } else pr.dead = true;
+        this.hit(pr.owner, tgt, { dmg: pr.dmg, hs: pr.hs, bs: 14, push: 2.4, lvl: pr.low ? 'low' : pr.high ? 'high' : 'mid', meter: 6, stop: 6, snd: 'hitM' }, pr, pr.x);
+      }
     }
     this.projs = this.projs.filter(p => !p.dead);
     // melee
@@ -581,7 +833,7 @@ class Fight {
     }
   }
   updateParts() {
-    for (const p of this.parts) { p.t++; if (p.vx !== undefined) { p.x += p.vx; p.y += p.vy; } if (p.type === 'bit' || p.type === 'sweat' || p.type === 'debris') p.vy += .18; if (p.type === 'dust') p.vx *= .92; }
+    for (const p of this.parts) { p.t++; if (p.vx !== undefined) { p.x += p.vx; p.y += p.vy; } if (p.type === 'bit' || p.type === 'sweat' || p.type === 'debris') p.vy += .18; if (p.type === 'dust') p.vx *= .92; if (p.type === 'fire') { p.vx *= .9; p.vy = p.vy * .9 - .06; } }
     this.parts = this.parts.filter(p => p.t < p.life);
     for (const p of this.pops) { p.t++; p.y -= .4; }
     this.pops = this.pops.filter(p => p.t < 70);
@@ -601,6 +853,7 @@ class Fight {
       if (p.type === 'sweat') { g.fillStyle = '#bfe8ff'; g.fillRect(sx, sy, 1, 2); g.fillStyle = '#fff'; g.fillRect(sx, sy, 1, 1); }
       if (p.type === 'debris') { g.fillStyle = p.col; g.fillRect(sx, sy, 2, 2); }
       if (p.type === 'fizz') { for (let i = 0; i < 3; i++) { g.fillStyle = '#fff4c0'; g.fillRect(sx + rndi(-3, 3), sy - rndi(0, 6), 1, 1); } }
+      if (p.type === 'fire') stamp(g, sx, sy, 3 + f * 8, f < .25 ? '#fff4a0' : f < .55 ? '#ffb030' : f < .8 ? '#ff5a20' : '#6a2a20');
       if (p.type === 'spark' || p.type === 'bspark') drawSpark(g, sx, sy, p.t, p.type === 'bspark', p.big);
     }
     for (const p of this.pops) { if (p.t % 6 < 5 || p.t < 40) text(g, p.txt, Math.round(p.x - camX), Math.round(GROUND + p.y), { align: 'center', color: p.col, outline: '#10061a' }); }
@@ -658,6 +911,8 @@ class Fight {
       if (f.comboShow > 0 && f.combo >= 2) {
         const cx = side ? W - 60 : 60, cy = 70;
         text(g, f.combo + ' GOLPES', cx, cy, { align: 'center', color: f.comboShow % 6 < 3 ? '#ffe04a' : '#ff8a3a', outline: OUTL, thick: 1 });
+        const rank = COMBO_RANKS.find(([n]) => f.combo >= n);
+        if (rank) textGrad(g, rank[1], cx, cy + 12, 16, f.combo >= 7 ? ['#ffffff', '#8ff0ff', '#4a90ff', '#2a40c0'] : ['#fff4a0', '#ffd040', '#ff8030', '#e83020']);
       }
     }
     // timer

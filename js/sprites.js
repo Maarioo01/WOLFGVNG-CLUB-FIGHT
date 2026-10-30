@@ -22,6 +22,9 @@ const SPRITE_FALLBACK = {
   knockdown_1: 'knockdown', knockdown_2: 'ko', knockdown: 'hit', ko: 'hit', getup_1: 'crouch', getup_2: 'getup_1',
   victory_1: 'victory_2', victory_2: 'victory', victory: 'stance',
   special_1: 'stance', special_2: 'special', special_3: 'special_2', special: 'punch_2',
+  // sheet G (optional, docs/pose-prompts.md): the throw and the dash; Marcos's grab frames come from his sheet D
+  throw_grab: 'strong_1', throw_toss: 'strong_2', dash: 'walk_fwd_2', backdash: 'walk_back_2',
+  grab_1: 'special_1', grab_2: 'special_2', grab_3: 'special_3',
   // the crowd (stages.js): a spectator sheet could add these drawings; until then, the fight poses
   crowd_idle_1: 'idle_1', crowd_idle_2: 'idle_2', crowd_cheer_1: 'victory_1', crowd_cheer_2: 'victory_2', crowd_shock: 'hit', crowd_sad: 'crouch_hit',
   // super_* / prop_* (sheet F) have no fallback here: supers.js picks a stand-in pose for each one
@@ -45,7 +48,7 @@ const SPRITE_ANIM = {
   throw: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   ballkick: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   blow: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
-  snatch: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
+  snatch: ['idle_1', 'grab_1', 'grab_2', 'grab_2', 'grab_3', 'idle_1'], // Marcos's ¡AGARRÓN! (his sheet D grab)
   dpunch: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   charge: ['idle_1', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
   pound: ['idle_1', 'crouch', 'special_1', 'special_2', 'special_2', 'special_3', 'idle_1'],
@@ -54,6 +57,14 @@ const SPRITE_ANIM = {
   block: ['block'], blockC: ['crouch_block'],
   knock: ['knockdown_1', 'knockdown_2'], lie: ['knockdown_2'], getup: ['knockdown_2', 'getup_1', 'getup_2', 'idle_1'], // knockdown_2 = lying (old sheets: ko)
   win: { loop: ['victory_1', 'victory_2'], d: 12, hop: 1 }, laugh: { loop: ['victory_1', 'victory_2'], d: 12, hop: 1 },
+  // combos and new moves (fight.js MOVES / SPECIALS special2)
+  remate: ['idle_1', 'kick_1', 'kick_2', 'kick_2', 'idle_1', 'idle_1'], dive: ['jump_kick', 'jump_kick'],
+  grab: ['idle_1', 'throw_grab', 'throw_toss', 'throw_toss', 'idle_1', 'idle_1'],
+  dashF: { loop: ['dash'], d: 99 }, dashB: { loop: ['backdash'], d: 99 },
+  knee: ['jump_1', 'jump_2', 'jump_2'], spinkick: ['idle_1', 'kick_1', 'kick_2', 'kick_2', 'idle_1', 'idle_1'],
+  glitchTP: ['crouch', 'crouch', 'idle_1', 'idle_1'], point: ['idle_1', 'punch_1', 'punch_2', 'punch_2', 'punch_2', 'idle_1'],
+  place: ['idle_1', 'crouch', 'crouch', 'crouch', 'idle_1', 'idle_1'], salute: ['idle_1', 'special_1', 'idle_1'],
+  counterA: ['strong_1', 'strong_2', 'strong_2', 'strong_2', 'idle_1', 'idle_1'],
   // the crowd (stages.js): watching, cheering, shocked (a super, their fighter hit hard), sad (their fighter lost)
   crowdIdle: { loop: ['crowd_idle_1', 'crowd_idle_2'], d: 24 }, crowdCheer: { loop: ['crowd_cheer_1', 'crowd_cheer_2'], d: 10, hop: 1 },
   crowdShock: { loop: ['crowd_shock'], d: 60 }, crowdSad: { loop: ['crowd_sad'], d: 60 },

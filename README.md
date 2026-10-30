@@ -18,10 +18,23 @@ Abre http://localhost:8765 (también funciona abriendo `index.html` directamente
 | Moverse (atrás = bloquear) | W A S D | ← ↑ ↓ → |
 | Puñetazo | F | K · Num 1 |
 | Patada (↓ + patada = barrido) | G | L · Num 2 |
-| Especial (o ↓↘→ + puño) | H | Ñ (`;` en teclado US) · Num 3 |
+| Especial (o ↓↘→ + puño) · ↓ + especial = especial 2 (o ↓↙← + puño) | H | Ñ (`;` en teclado US) · Num 3 |
 | Súper (barra azul llena, una vez por combate) | T | O · Num 0 |
 
 En modo **vs CPU** el jugador 1 puede usar cualquiera de los dos lados del teclado (y cualquier mando).
+
+### Combos y movimientos de todos
+
+| Cómo | Qué hace |
+|---|---|
+| Puño, puño, patada | Combo de 3 golpes que acaba en **¡REMATE!** y derriba |
+| ↓ puño, ↓ puño, ↓ patada | Combo bajo, acaba en barrido |
+| Puño + patada a la vez, de cerca | **Agarre:** lanza al rival al suelo (no se puede bloquear) |
+| → → / ← ← (dos toques rápidos) | Carrera hacia delante / paso atrás (esquiva un momento) |
+| En el aire: ↓ + patada | **Pisotón** en picado |
+| Pegar cuando el rival empieza a atacar | **¡CONTRA!**: más daño y más aturdimiento |
+
+A partir de 3 golpes seguidos sale el rango del combo (¡BIEN!, ¡BRUTAL!, ¡WOLFGVNG!) y el público lo celebra. La lista completa de cada luchador está en el menú de pausa, en **MOVIMIENTOS**.
 
 | Tecla | Acción |
 |---|---|
@@ -41,7 +54,7 @@ El primer mando conectado es el J1 y el segundo el J2 (pulsa un botón para que 
 | R2 / RT | Agacharse (también ↓) |
 | □ / X | Puñetazo |
 | ✕ / A | Patada · confirmar en menús |
-| △ / Y · L1 / LB | Especial |
+| △ / Y · L1 / LB | Especial (con ↓: especial 2) |
 | ○ / B · R1 / RB | Súper · volver en menús |
 | Options / Menu | Pausa · confirmar |
 | Create / View | Pausa |
@@ -50,20 +63,20 @@ El primer mando conectado es el J1 y el segundo el J2 (pulsa un botón para que 
 
 Diseños de referencia en `images/`. Los especiales están en `SPECIALS` en `js/fight.js` y los súpers en `js/supers.js`.
 
-| Personaje | Especial | Súper |
-|---|---|---|
-| Mario | ¡Directo! (puñetazo con carrerilla) | ¡Inyección! (se pincha, crece hasta llenar la pantalla y suelta un puñetazo gigante) |
-| Peño | ¡Golazo! (balón que bota) | ¡Cholismo! (se convierte en el Cholo Simeone, chuta el balón y se va corriendo) |
-| Alba | ¡Mortal! (patada voladora) | ¡Ippon! (judogi y cinturón negro, mortal hacia atrás por encima del rival y lo tumba) |
-| Álvaro | ¡Gorrazo! (lanza la gorra) | ¡A todo gas! (se sube a un deportivo y atropella al rival) |
-| Belli | ¡Embestida! (carga que derriba) | ¡Hackeo! (programa en su mesa, un virus llena la pantalla y el rival cae) |
-| Bene | ¡Saque! (pelota de tenis rápida) | ¡Concierto! (toca la raqueta como una guitarra y dispara notas) |
-| Carlottis | ¡Chanclazo! (lanza la sandalia) | ¡Vacuna! (uniforme de enfermera y lluvia de jeringuillas) |
-| Marcos | ¡Pico! (golpes rápidos con la mano en pico) | ¡Yogurazo! (un yogur griego gigante que vuelca sobre el rival) |
-| Oso | ¡Terremoto! (pisotón con onda) | ¡Culpable! (mazo de juez gigante, un solo golpe) |
-| Manu | ¡Cabezazo! (se lanza de cabeza) | ¡Lágrimas! (aparece Isaac, Manu se sube encima e Isaac llora sobre el rival) |
-| Casado | ¡Firmes! (saludo militar y grito que lanza una onda) | ¡Artillería! (llega un tanque, se sube y dispara un misil) |
-| MadeverXP (Alberto) | ¡Gatazo! (lanza a su gato) | ¡Lanzallamas! (lanza una Poké Ball, sale Charizard y escupe fuego) |
+| Personaje | Especial | Especial 2 (↓ + especial) | Súper |
+|---|---|---|---|
+| Mario | ¡Directo! (puñetazo con carrerilla) | ¡Rodillazo! (rodilla voladora que derriba) | ¡Inyección! (se pincha, crece hasta llenar la pantalla y suelta un puñetazo gigante) |
+| Peño | ¡Golazo! (balón que bota) | ¡Vaselina! (balón por alto que cae sobre el rival; se bloquea de pie) | ¡Cholismo! (se convierte en el Cholo Simeone, chuta el balón y se va corriendo) |
+| Alba | ¡Mortal! (patada voladora) | ¡Patada giratoria! (avanza girando, 2 golpes) | ¡Ippon! (judogi y cinturón negro, mortal hacia atrás por encima del rival y lo tumba) |
+| Álvaro | ¡Gorrazo! (lanza la gorra) | ¡Bumerán! (la gorra va y vuelve, golpea a la ida y a la vuelta) | ¡A todo gas! (se sube a un deportivo y atropella al rival) |
+| Belli | ¡Embestida! (carga que derriba) | ¡Ctrl+Z! (se teletransporta detrás del rival) | ¡Hackeo! (programa en su mesa, un virus llena la pantalla y el rival cae) |
+| Bene | ¡Saque! (pelota de tenis rápida) | ¡Smash! (la pelota bota y va a los tobillos; se bloquea agachado) | ¡Concierto! (toca la raqueta como una guitarra y dispara notas) |
+| Carlottis | ¡Chanclazo! (lanza la sandalia) | ¡Chancla teledirigida! (sube y persigue la cabeza del rival) | ¡Vacuna! (uniforme de enfermera y lluvia de jeringuillas) |
+| Marcos | ¡Pico! (golpes rápidos con la mano en pico) | ¡Agarrón! (se lanza a agarrar) | ¡Yogurazo! (un yogur griego gigante que vuelca sobre el rival) |
+| Oso | ¡Terremoto! (pisotón con onda) | ¡Protesto! (un bocadillo de cómic que golpea) | ¡Culpable! (mazo de juez gigante, un solo golpe) |
+| Manu | ¡Cabezazo! (se lanza de cabeza) | ¡Bomba! (bomba de Isaac que explota a los 1,5 s; también le hace daño a él) | ¡Lágrimas! (aparece Isaac, Manu se sube encima e Isaac llora sobre el rival) |
+| Casado | ¡Firmes! (saludo militar y grito que lanza una onda) | ¡A la orden! (se cuadra; si le pegan en ese momento, contraataca y derriba) | ¡Artillería! (llega un tanque, se sube y dispara un misil) |
+| MadeverXP (Alberto) | ¡Gatazo! (lanza a su gato) | ¡Zarpazo! (el gato salta a la cara del rival y le araña 4 veces) | ¡Lanzallamas! (lanza una Poké Ball, sale Charizard y escupe fuego) |
 
 **Súper:** la barra azul (debajo de la vida) se llena pegando y recibiendo golpes, y se conserva entre rondas. Se llena en algo menos de una ronda. Con la barra llena, el súper (T / O · Num 0 / ○ · R1 en el mando) lanza la escena del personaje, que deja K.O. al rival al instante y gana esa ronda. Solo se puede usar **una vez por combate**; después la barra pone USADO. La velocidad de carga se ajusta con `SUPER_CHARGE` en `js/supers.js`.
 

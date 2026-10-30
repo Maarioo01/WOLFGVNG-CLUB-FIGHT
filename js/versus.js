@@ -179,7 +179,8 @@ class VersusScene {
     const [d1, d2] = defsFor(c.p1, c.p2);
     this.fight = new Fight({ stage: this.world, center: ARENA_C, p1Def: d1, p2Def: d2, ai: c.mode === 'cpu' ? aiForChar(c.p2) : null, place: st.name, music: st.music, onEnd: w => this.endFight(w) });
     this.camX = this.fight.camX; this.paused = false; this.pauseSel = 0; this.post = null;
-    this.pauseItems = c.mode === 'cpu' ? ['CONTINUAR', 'DIFICULTAD', 'MÚSICA', 'REINICIAR', 'ELEGIR PERSONAJES', 'SALIR AL MENÚ'] : ['CONTINUAR', 'MÚSICA', 'REINICIAR', 'ELEGIR PERSONAJES', 'SALIR AL MENÚ'];
+    this.pauseItems = c.mode === 'cpu' ? ['CONTINUAR', 'MOVIMIENTOS', 'DIFICULTAD', 'MÚSICA', 'REINICIAR', 'ELEGIR PERSONAJES', 'SALIR AL MENÚ'] : ['CONTINUAR', 'MOVIMIENTOS', 'MÚSICA', 'REINICIAR', 'ELEGIR PERSONAJES', 'SALIR AL MENÚ'];
+    this.moveList = false;
     playMusic(st.music);
   }
   endFight(w) {
@@ -190,6 +191,7 @@ class VersusScene {
   act(item) {
     sfx('confirm');
     if (item === 'CONTINUAR') this.paused = false;
+    else if (item === 'MOVIMIENTOS') this.moveList = true;
     else if (item === 'REINICIAR' || item === 'REVANCHA') { this.paused = false; goFade(() => new VersusScene(this.cfg)); }
     else if (item === 'ELEGIR PERSONAJES') { this.paused = false; goFade(() => new SelectScene(this.cfg.mode, this.cfg)); }
     else { this.paused = false; goFade(() => new TitleScene()); }
@@ -199,6 +201,7 @@ class VersusScene {
     if (Input.hit('down')) { obj[key] = (obj[key] + 1) % n; sfx('select'); }
   }
   update() {
+    if (this.moveList) { if (Input.ok() || Input.hit('back') || Input.hit('pause') || Input.hit('start')) { this.moveList = false; sfx('back'); } return; }
     if (this.paused) {
       const items = this.pauseItems;
       this.menuNav(this, 'pauseSel', items.length);
@@ -231,11 +234,34 @@ class VersusScene {
       const title = cpu ? (w === 0 ? '¡HAS GANADO!' : 'HAS PERDIDO') : '¡GANA ' + F.tags[w] + '!';
       drawMenu(g, title, ['REVANCHA', 'ELEGIR PERSONAJES', 'MENÚ PRINCIPAL'], this.post.sel, 64, [F.p, F.e][w].def.name);
     }
+    if (this.moveList) { drawMoveList(g, F); return; }
     if (this.paused) {
-      drawMenu(g, 'PAUSA', this.pauseItems, this.pauseSel, 54);
+      drawMenu(g, 'PAUSA', this.pauseItems, this.pauseSel, 44);
       if (['DIFICULTAD', 'MÚSICA'].includes(this.pauseItems[this.pauseSel])) centerTiny(g, '← → CAMBIAR', 200, '#8a80b0');
     }
   }
+}
+// pause -> MOVIMIENTOS: the moves everyone has, then each fighter's specials and super (names from SPECIALS / SUPERS)
+const MOVE_LIST = [
+  ['PUÑO, PUÑO, PATADA', '¡REMATE! (DERRIBA)'], ['↓ PUÑO, ↓ PUÑO, ↓ PATADA', 'COMBO BAJO'],
+  ['PUÑO + PATADA, DE CERCA', 'AGARRE (NO SE BLOQUEA)'], ['→ → / ← ←', 'CARRERA / PASO ATRAS'],
+  ['EN EL AIRE: ↓ + PATADA', 'PISOTON'], ['PEGA CUANDO EMPIEZA A ATACAR', '¡CONTRA! (MAS DAÑO)'],
+];
+function drawMoveList(g, F) {
+  drawFade(g, .86, '#05020a');
+  textGrad(g, 'MOVIMIENTOS', W / 2, 6, 16, ['#fff', '#ffd860', '#ff9030']);
+  MOVE_LIST.forEach(([k, v], i) => { const y = 30 + i * 9; tiny(g, k, W / 2 - 6 - tinyW(k), y, '#ffd84a'); tiny(g, v, W / 2 + 6, y, '#e8e0ff'); });
+  [F.p, F.e].forEach((f, i) => {
+    const x0 = i ? W / 2 + 8 : 16; let y = 94;
+    g.fillStyle = i ? 'rgba(255,74,90,.14)' : 'rgba(79,179,255,.14)'; g.fillRect(x0 - 6, y - 4, W / 2 - 20, 108);
+    text(g, f.def.name, x0, y, { color: i ? '#ff8a8a' : '#8fe0ff', outline: OUTL }); y += 16;
+    const row = (k, v) => { tiny(g, k, x0, y, '#ffd84a'); text(g, v, x0, y + 8, { color: '#ffffff', outline: OUTL }); y += 26; };
+    const sp = f.moves.special, s2 = f.moves.special2;
+    if (sp) row('ESPECIAL  ·  ↓↘→ + PUÑO', sp.pop || sp.name || '');
+    if (s2) row('↓ + ESPECIAL  ·  ↓↙← + PUÑO', s2.pop || s2.name || '');
+    if (f.moves.super) row('SUPER  ·  BARRA LLENA, UNA VEZ', f.moves.super.name);
+  });
+  centerTiny(g, 'ENTER / ESC: VOLVER', 214, '#8a80b0');
 }
 function drawMenu(g, title, items, sel, y0, sub) {
   drawFade(g, .6, '#05020a');

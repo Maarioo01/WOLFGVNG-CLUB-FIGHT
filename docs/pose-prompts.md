@@ -290,6 +290,15 @@ Completes the basic set: the front view for the HUD face, block, hit, K.O., vict
 6. stance: fighting stance (same as idle_1), wearing his shorts.
 ```
 
+### Sheet G (optional): throw and dash (4 poses, one row)
+The moves everyone has (the throw with punch + kick, the dash with → →) already work with existing poses: the grab uses the strong-punch poses and the dash a walking frame. This sheet gives them their own drawings. It goes in the same folder, named `sheet_G.png`, and `tools/sprites.config.js` already lists it for everyone.
+```
+1. throw_grab: grabbing an opponent (the opponent is NOT drawn): leaning in, both hands forward at chest height, gripping as if holding someone by the collar.
+2. throw_toss: throwing that opponent forward over the hip: body twisted, both arms swinging forward and down, hands open (nobody drawn).
+3. dash: dashing forward fast: body leaning far forward, one leg pushing off behind, guard up.
+4. backdash: hopping backward: both feet off the ground, body leaning back, guard up.
+```
+
 ---
 
 ## Checklist before sending a sheet

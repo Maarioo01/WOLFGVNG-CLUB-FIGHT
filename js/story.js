@@ -336,8 +336,9 @@ class ControlsScene {
       text(g, a, cA, y, { color: '#e8e0ff' }); text(g, k1, c1, y, { align: 'center', color: '#ffd84a' }); text(g, k2, c2, y, { align: 'center', color: '#ffd84a' });
     });
     const tip = (s, y, col) => tiny(g, s, Math.round(W / 2 - tinyW(s) / 2), y, col);
-    tip('ATRAS: BLOQUEAR   ↓ + ATRAS: BLOQUEO BAJO   ↓↘→ + PUÑO: ESPECIAL', 107, '#c8c0e0');
-    tip('SUPER: BARRA AZUL LLENA  ·  UNA VEZ POR COMBATE  ·  K.O. DIRECTO', 115, '#8ff0ff');
+    // tip('ATRAS: BLOQUEAR   ↓ + ATRAS: BLOQUEO BAJO   ↓↘→ + PUÑO: ESPECIAL', 107, '#c8c0e0'); // before the combos
+    tip('ATRAS: BLOQUEAR · ↓+ATRAS: BLOQUEO BAJO · PUÑO+PATADA CERCA: AGARRE', 107, '#c8c0e0');
+    tip('↓+ESPECIAL: ESPECIAL 2 · SUPER: BARRA LLENA, 1 VEZ · COMBOS: PAUSA', 115, '#8ff0ff');
     tip('VS CPU: EL J1 PUEDE USAR CUALQUIERA DE LOS DOS LADOS DEL TECLADO', 123, '#8a80b0');
     // gamepads (PlayStation name / Xbox name); a row lights up while a connected pad holds its button
     text(g, 'MANDOS  PS5 / XBOX', cA, 134, { color: '#9fe8ff' });

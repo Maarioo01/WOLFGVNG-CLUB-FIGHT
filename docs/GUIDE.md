@@ -112,7 +112,19 @@ jab: { anim: 'jab', s: 4, a: 3, r: 8, dmg: 5, hs: 14, bs: 8, push: 2.4, box: [6,
 
 **Which button does which move:** `Fighter.update` → the `case 'idle'` block. Punch is `jab` (crouching: `cpunch`), kick is `kick` (crouching: `sweep`), jumping gives `jpunch` / `jkick`.
 
-**Specials** (one per fighter): `SPECIALS`, same keys plus:
+**Combos and the moves everyone has** (also in `MOVES`):
+
+| Input | Move | Where |
+|---|---|---|
+| □ □ ✕ | `jab` → `cross` → `remate` (knocks down) | `cancel` lists; the cancel block in `Fighter.updateMove` |
+| ↓□ ↓□ ↓✕ | `cpunch` → `cpunch` (once, `chainN`) → `sweep` | same |
+| □ + ✕ up close | `grab` (AGARRE) | `Fighter.tryThrow`; the opponent is in the `'thrown'` state, drawn rotated (`ov`), until `Fight.throwLand` hits them with the move. Pressing the two buttons up to 3 ticks apart works too (`thBuf`) |
+| → → / ← ← | dash / back-dash | `PadCtrl.dash` (two taps within 14 ticks), `Fighter.startDash`, state `'dash'` (afterimages in `draw`) |
+| ↓ + ✕ in the air | `dive` (PISOTÓN) | the `case 'jump'` block; bounces off on hit |
+| automatic | ¡CONTRA! counter-hit: +25% damage, +6 stun | `Fight.hit` (`counterHit`) |
+| automatic | combo ranks at 3, 5, 7 hits | `COMBO_RANKS`; the crowd reacts with `'combo'` |
+
+**Specials** (two per fighter): `SPECIALS[id].special` (△, or ↓↘→ + □) and `.special2` (↓ + △, or ↓↙← + □), same keys plus:
 
 | Key | Meaning |
 |---|---|
@@ -123,9 +135,15 @@ jab: { anim: 'jab', s: 4, a: 3, r: 8, dmg: 5, hs: 14, bs: 8, push: 2.4, box: [6,
 | `hop` | small jump, as in Oso's ground pound |
 | `multi: n` | hits again every `n` ticks while active (Marcos's PICO) |
 | `hitPop` | text on each hit |
+| `name` | the move list name when there's no `pop` |
+| `fly: [vx, vy]` | a jump attack (Mario's knee) |
+| `spin` | the kick frames alternate sides while active (Alba's spinning kick) |
+| `teleport` | reappears behind the opponent (Belli) |
+| `counter` | a stance: a punch or kick landing during it is countered with `COUNTER_HIT` (Casado, `Fight.counter`) |
+| `ai: [min, max]` | the distance at which the CPU uses it |
 
-**Projectiles** (ball, cap, sandal, tennis ball, cat, shout, shock wave): class `Proj`.
-- The constructor sets speed, damage and size per `type`.
+**Projectiles** (ball, cap, sandal, tennis ball, cat, shout, shock wave, and the second specials' lob, boomerang, smash, homing sandal, ¡PROTESTO! bubble, Isaac bomb, pouncing cat): class `Proj`.
+- The constructor sets speed, damage and size per `type`. `high` = must be blocked standing; `hits` = how many times it can hit (the boomerang: 2); `custom` = it handles its own hits in `update` (the bomb's explosion, the cat that clings); `noClash` = other projectiles go through it.
 - `draw()` draws each type, with a shadow on the floor (`objShadow`).
 - `spawnProj` picks the throw sound.
 - To add a new one: give it a `type` in `SPECIALS`, and add a line in the constructor and a drawing in `draw()`.
@@ -134,6 +152,8 @@ jab: { anim: 'jab', s: 4, a: 3, r: 8, dmg: 5, hs: 14, bs: 8, push: 2.4, box: [6,
 - **Balls** (`BALLS`: football, tennis, Poké Ball, tear, bomb) are painted as spheres pixel by pixel: lit from the top-left, 3 tones, a highlight, a dark outline, and their pattern on the sphere (the football's pentagons sit where a real ball has them). Each has 16 spin angles. `drawBall(g, kind, x, y, size, angle)`; a projectile adds to its angle as it flies, so it really rolls.
 - **Other objects** come from the shared `objetos` atlas: `objFrame('obj_cap')`, or `objFrames('cap', 'flip')` for the spin frames. Until an object is in the atlas, `OBJ_STANDIN` draws it in code.
 - They're drawn at 2x detail (one pixel = one screen pixel), like the HUD faces.
+
+**The move list** (pause → MOVIMIENTOS): `MOVE_LIST` and `drawMoveList` in `js/versus.js`; the specials' names come from `SPECIALS` and `SUPERS`.
 
 **What happens on a hit** (damage, block, combo scaling, knockdown, sparks, sounds, super bar gain): `Fight.hit()`.
 - Blocking is "hold back".
@@ -217,10 +237,13 @@ KeyK: [1, 'punch'],   // player 2 (1) punches with K
 - If the browser doesn't recognise a PlayStation pad (no "standard" mapping), `padButtons` puts its buttons back in the standard order.
 - The CONTROLES screen is also a button test: it shows each connected pad's name, and a row lights up while its button is held. `(SIN MAPEO)` after the name means the browser gives an unknown layout.
 
+**Combinations** need no extra buttons: ↓ + special is the second special, punch + kick together is the throw, two quick taps of a direction dash (`PadCtrl` in `js/fight.js`: `qcf`, `qcb`, `dash`).
+
 **Touch buttons (phone):** the `<div class="tb" data-a="...">` elements in `index.html`.
 
 **After changing controls, update the help:**
 - the CONTROLES screen (`ControlsScene` in `js/story.js`);
+- the move list (`MOVE_LIST` in `js/versus.js`);
 - the tables in `README.md`;
 - the hint lines on the select screen (`SelectScene.draw` in `js/versus.js`).
 

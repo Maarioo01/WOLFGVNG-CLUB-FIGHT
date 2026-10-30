@@ -19,6 +19,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - Everyone has 100 HP, including the CPU.
   - Each fighter's super is once per match and an instant K.O.
   - Pad layout (PlayStation names): □ punch, ✕ kick, △ special, ○ super, L2 jump, R2 crouch. In menus ✕ confirms and ○ goes back.
+  - Combinations (no extra buttons): ↓ + △ second special (or ↓↙← + □), □ + ✕ up close throw, □ □ ✕ chain ending in ¡REMATE!, → → / ← ← dash, ↓ + ✕ in the air dive kick. The move list is in the pause menu (MOVIMIENTOS).
 
 ## Code map (script order in `index.html` = load order, all globals)
 
@@ -34,7 +35,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 | `js/stages.js` | the stages (`buildPhotoStage`): background strip, code-drawn perspective floor (`buildGround`), the crowd of fighters (`cast`, `react`) |
 | `js/objects.js` | thrown objects: `BALLS` painted as shaded spheres with 16 spin frames (`drawBall`), `objFrame`/`objFrames` from the `objetos` atlas, `OBJ_STANDIN` code-drawn stand-ins, `catFrames`, `objShadow` |
 | `assets/stages/*` | **generated** stage backgrounds. Never edit by hand; rebuild |
-| `js/fight.js` | `MOVES`, `SPECIALS`, `WINS_TO_WIN`, `Fighter` (states, frame data), `PadCtrl`/`AICtrl`, `Proj` (projectiles), `Fight` (hits, KO, rounds, HUD, super cut-in) |
+| `js/fight.js` | `MOVES` (incl. `remate`, `dive`, `grab`), `SPECIALS` (`special` + `special2` each), `COMBO_RANKS`, `WINS_TO_WIN`, `Fighter` (states incl. `dash`, `thrown`; `tryThrow`), `PadCtrl` (`qcf`, `qcb`, `dash`) / `AICtrl`, `Proj` (projectiles), `Fight` (hits, counters, throws, KO, rounds, HUD, super cut-in) |
 | `js/supers.js` | `SUPER_CHARGE`, `SUPERS` (one generator script per fighter), `SuperScene`, props (`PROP_SIZE`, `PROP_DRAW` stand-ins) |
 | `js/story.js` | scene helpers `go`/`goFade`, `GAME` + difficulty, `STAGES`, `TitleScene`, `ControlsScene`, menu option helpers; the story mode is commented out |
 | `js/versus.js` | `ROSTER`, `CPU_AI`, `SelectScene`, `VersusScene` (fight scene, pause / post-match menus) |

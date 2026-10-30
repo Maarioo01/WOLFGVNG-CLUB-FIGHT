@@ -135,7 +135,7 @@ const PhotoStageProto = {
       else if (--c.lookT <= 0) { c.away = !c.away; c.lookT = c.away ? rndi(40, 110) : rndi(150, 450); } // now and then they look around
     }
   },
-  // kind: 'hit' (a landed hit), 'super', 'ko', 'round' (o = Fight.result), 'match', 'start' (¡PELEA!).
+  // kind: 'hit' (a landed hit), 'combo' (3, 5, 7 hits), 'super', 'ko', 'round' (o = Fight.result), 'match', 'start' (¡PELEA!).
   // side: the fighter it's good news for (0 = J1, 1 = J2; -1 = nobody, e.g. a draw). Fans support that side.
   react(kind, wx, side = -1, o = {}) {
     for (const c of this.crowd) {
@@ -149,6 +149,7 @@ const PhotoStageProto = {
       else if (kind === 'round') this.mood(c, side < 0 ? 'shock' : fan || o.perfect ? 'cheer' : 'sad', side < 0 ? 60 : 170);
       else if (kind === 'match') this.mood(c, fan ? 'cheer' : 'sad', fan ? Infinity : 240);
       else if (kind === 'start' && c.mood === 'idle') this.mood(c, 'cheer', 30);
+      else if (kind === 'combo') this.mood(c, fan ? 'cheer' : 'shock', fan ? 90 : 40);
     }
     if (kind === 'super') sfx('ooh');
     if (kind === 'match') sfx('crowd');

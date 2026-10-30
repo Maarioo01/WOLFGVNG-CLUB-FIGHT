@@ -381,6 +381,17 @@ defA('upper', 0, [[X(CR, { ua2: 60, fa2: 100 }), 4], [UPPER, 6], [UPPER, 20], [S
 const SNATCH = X(STANCE, { t: 34, hx: 4, ua2: 92, fa2: 92, h2: 'open', th1: -30, sh1: -50, th2: 55, sh2: 25 });
 defA('snatch', 0, [[STANCE, 4], [X(STANCE, { t: -6, ua2: 20, fa2: 60 }), 4], [SNATCH, 14], [SNATCH, 7], [STANCE, 9], [STANCE, 1]]);
 defA('pico', 0, [[STANCE, 3], [JAB_C, 2], [JAB_A, 6], [CROSS_A, 6], [JAB_A, 6], [STANCE, 13], [STANCE, 1]]); // Marcos's ¡PICO!: three quick strikes (own sprite frames)
+// combos and new moves: the timing of each (the sprite frames are in SPRITE_ANIM, sprites.js)
+atk('remate', KICK_C, KICK_A, 6, 4, 18, STANCE);                                  // □ □ ✕ finisher
+defA('dive', 0, [[JK_A, 3], [JK_A, 60]]);                                          // PISOTÓN
+atk('grab', CROSS_C, CROSS_A, 8, 12, 16, STANCE);                                 // AGARRE: hold, then throw
+defA('knee', 0, [[JU, 3], [JU, 2], [JU, 60]]);                                     // Mario's ¡RODILLAZO!
+atk('spinkick', KICK_C, KICK_A, 6, 18, 14, STANCE);                               // Alba's ¡PATADA GIRATORIA!
+defA('glitchTP', 0, [[CR, 3], [CR, 3], [STANCE, 10], [STANCE, 14]]);               // Belli's ¡CTRL+Z!
+ANIM.point = ANIM.throw;                                                            // Oso's ¡PROTESTO!
+defA('place', 0, [[STANCE, 4], [CR, 7], [CR, 3], [CR, 8], [STANCE, 10], [STANCE, 1]]); // Manu's ¡BOMBA!
+defA('salute', 0, [[STANCE, 3], [STANCE, 28], [STANCE, 16]]);                      // Casado's ¡A LA ORDEN!
+atk('counterA', CROSS_C, CROSS_A, 2, 6, 12, STANCE);                              // and his counter punch
 const DPUNCH = X(CROSS_A, { t: 30, hx: 5, th1: -30, sh1: -50, th2: 55, sh2: 25 });
 defA('dpunch', 0, [[STANCE, 4], [CROSS_C, 4], [DPUNCH, 14], [DPUNCH, 7], [STANCE, 9], [STANCE, 1]]);
 const CHARGE = X(DASH, { t: 40, hx: 5, ua2: 70, fa2: 150, ua1: 60, fa1: 160, hdx: 1 });
