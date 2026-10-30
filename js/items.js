@@ -186,7 +186,7 @@ Object.assign(Fight.prototype, {
   },
   // a friend in the crowd throws their item (any item, from the sky, on a stage without a crowd)
   spawnItem(id) {
-    const crowd = this.stage.crowd || [], pool = crowd.length ? crowd.map(c => c.id) : ROSTER;
+    const crowd = (this.stage.cast && this.stage.crowd) || [], pool = crowd.length ? crowd.map(c => c.id) : ROSTER; // the old street stages' crowd isn't the fighters
     const ids = Object.keys(ITEMS).filter(k => pool.includes(ITEMS[k].owner)); if (!id && !ids.length) return;
     id = id || pick(ids);
     const c = crowd.find(m => m.id === ITEMS[id].owner);

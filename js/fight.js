@@ -305,7 +305,7 @@ class Fighter {
     if (this.ov) { drawFighterOv(this, g, camX); return; } // posed by a super cinematic
     const fx = this.fx, T = FIGHT_REF ? FIGHT_REF.tick : 0;
     if (this.state === 'caught') { // inside the Poké Ball, which shakes three times
-      const left = fx.caught || 0, w = left > 10 && Math.floor(left / 24) % 1 === 0 && left % 24 < 10 ? Math.sin(left * .9) * .35 : 0;
+      const left = fx.caught || 0, w = left > 0 && left % 30 < 10 ? Math.sin(left * .9) * .35 : 0; // three shakes
       shadow(g, this.x - camX, GROUND, 12, .35); drawSprEx(g, ballFrames('pokeball', 14)[0], this.x - camX, GROUND - 7, 1, { rot: w });
       return;
     }
@@ -633,7 +633,8 @@ class Proj {
         if (this.slash > 0) { g.fillStyle = '#ffffff'; for (let i = 0; i < 3; i++) for (let k = 0; k < 7; k++) g.fillRect(sx - 6 + i * 4 + k, sy - 6 + k, 1, 1); }
       }
     }
-    if (this.type === 'cat' && false) { // [OLD OBJECTS] black cat flying at the opponent, legs stretched, green eyes (now catFrames in objects.js)
+    /* [OLD OBJECTS] black cat flying at the opponent, legs stretched, green eyes (now catFrames in objects.js)
+    if (this.type === 'cat') {
       const d = Math.sign(this.vx) || 1, fr = Math.floor(t / 4) % 2, y = sy + Math.round(Math.sin(t * .35) * 1.5);
       const X = v => sx + v * d, rect = (a, yy, w, h, col) => { g.fillStyle = col; g.fillRect(d > 0 ? sx + a : sx - a - w, yy, w, h); };
       for (const [col, k] of [[OUTL, 2], ['#24212c', 0]]) {
@@ -648,12 +649,15 @@ class Proj {
       rect(6, y - 3, 1, 1, '#a8f060'); rect(9, y - 3, 1, 1, '#a8f060');                 // eyes
       rect(8, y - 1, 1, 1, '#e88aa0');                                                  // nose
     }
+    */
     if (this.type === 'cap') { objShadow(g, sx, this.y, 14); drawSpr(g, objFrames('cap', 'flip')[Math.floor(t / 3) % 4], sx, sy, dir); }
-    if (this.type === 'cap' && false) { // [OLD OBJECTS] the first code-drawn cap
+    /* [OLD OBJECTS] the first code-drawn cap
+    if (this.type === 'cap') {
       const fr = Math.floor(t / 3) % 4, dir = Math.sign(this.vx), fl = fr % 2 ? -1 : 1;
       g.fillStyle = OUTL; g.fillRect(sx - 6, sy - 4, 12, 7); g.fillStyle = '#f0f0f0'; g.fillRect(sx - 5, sy - 3 * fl - (fl < 0 ? 2 : 0), 8, 3);
       g.fillStyle = '#c8c8c8'; g.fillRect(sx + (fr < 2 ? 3 : -6) * dir, sy, 4, 2); g.fillStyle = '#2a2a2a'; g.fillRect(sx - 1, sy - 3 * fl - (fl < 0 ? 2 : 0), 2, 1);
     }
+    */
     if (this.type === 'smoke') {
       const cols = ['#e8e8ee', '#c8c8d4', '#a8a8b8'];
       for (let i = 0; i < 7; i++) { const a = i * 0.9 + t * .05; const r = this.w * .22 + (i % 3); stamp(g, sx + Math.cos(a) * this.w * .3, sy + Math.sin(a * 1.3) * this.h * .25, r * 2 + 2, OUTL); }
