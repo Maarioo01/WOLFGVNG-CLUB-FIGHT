@@ -16,10 +16,11 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - Mario and Peño always wear shorts.
   - "Alberto" in the user's messages is MadeverXP.
   - A match goes to 3 round wins.
-  - Everyone has 100 HP, including the CPU.
+  - Everyone has 100 HP, including the CPU. The first-aid item heals, but never above 100.
   - Each fighter's super is once per match and an instant K.O.
   - Pad layout (PlayStation names): □ punch, ✕ kick, △ special, ○ super, L2 jump, R2 crouch. In menus ✕ confirms and ○ goes back.
   - Combinations (no extra buttons): ↓ + △ second special (or ↓↙← + □), □ + ✕ up close throw, □ □ ✕ chain ending in ¡REMATE!, → → / ← ← dash, ↓ + ✕ in the air dive kick. The move list is in the pause menu (MOVIMIENTOS).
+  - Floor items: crouch on one to pick it up, □ to use it. Each friend has one, thrown in only by that friend from the crowd. OBJETOS: SÍ / NO in the menus.
 
 ## Code map (script order in `index.html` = load order, all globals)
 
@@ -34,6 +35,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
 | `js/world.js` | the old procedural Raval stages (`buildStage`, out of `STAGES` as `[OLD STAGES]`) and the floor maths the new stages reuse (`HORIZON`, `floorF`, `projX`, `vignette`) |
 | `js/stages.js` | the stages (`buildPhotoStage`): background strip, code-drawn perspective floor (`buildGround`), the crowd of fighters (`cast`, `react`) |
 | `js/objects.js` | thrown objects: `BALLS` painted as shaded spheres with 16 spin frames (`drawBall`), `objFrame`/`objFrames` from the `objetos` atlas, `OBJ_STANDIN` code-drawn stand-ins, `catFrames`, `objShadow` |
+| `js/items.js` (after fight.js) | floor items: `ITEMS` (one per friend, thrown in by that friend from the crowd), `ITEM_FX`, the item stand-ins, `itemProj*` (Proj type `'item'`), `Fight` methods `updateItems`/`spawnItem`/`tryPickup`/`useItem`/`dropItem`/`drawItems` |
 | `assets/stages/*` | **generated** stage backgrounds. Never edit by hand; rebuild |
 | `js/fight.js` | `MOVES` (incl. `remate`, `dive`, `grab`), `SPECIALS` (`special` + `special2` each), `COMBO_RANKS`, `WINS_TO_WIN`, `Fighter` (states incl. `dash`, `thrown`; `tryThrow`), `PadCtrl` (`qcf`, `qcb`, `dash`) / `AICtrl`, `Proj` (projectiles), `Fight` (hits, counters, throws, KO, rounds, HUD, super cut-in) |
 | `js/supers.js` | `SUPER_CHARGE`, `SUPERS` (one generator script per fighter), `SuperScene`, props (`PROP_SIZE`, `PROP_DRAW` stand-ins) |

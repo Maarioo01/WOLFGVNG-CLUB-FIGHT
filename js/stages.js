@@ -154,6 +154,8 @@ const PhotoStageProto = {
     if (kind === 'super') sfx('ooh');
     if (kind === 'match') sfx('crowd');
   },
+  // a friend throws their item into the arena (items.js): they cheer while it flies
+  toss(c) { this.mood(c, 'cheer', 50); },
   drawBack(g, camX) {
     const bx = Math.round(W / 2 + (this.C - camX - W / 2) * BACK_F - this.back.width / 2), by = HORIZON - STRIP_H, glow = this.st.glow || [];
     g.drawImage(this.back, bx, by);

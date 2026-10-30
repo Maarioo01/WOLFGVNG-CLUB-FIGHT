@@ -14,8 +14,15 @@ const COUNTRIES = [
 ];
 ===== end of disabled story block ===== */
 // const GAME = { country: COUNTRIES[0], stage: 0, tutorialShown: false, startTime: 0, continues: 0, diff: 1 }; // [STORY]
-const GAME = { stage: 0, diff: 1 };
+const GAME = { stage: 0, diff: 1, items: true };
 try { const v = localStorage.getItem('wolfgvng.diff'); if (v === '0' || v === '1' || v === '2') GAME.diff = +v; } catch (e) { }
+try { if (localStorage.getItem('wolfgvng.items') === '0') GAME.items = false; } catch (e) { }
+// the friends' items on the floor (items.js): OBJETOS: SÍ / NO in the title and pause menus, saved in the browser
+const itemsOn = () => GAME.items !== false;
+function setItems(on) {
+  GAME.items = !!on; sfx('select');
+  try { localStorage.setItem('wolfgvng.items', on ? '1' : '0'); } catch (e) { }
+}
 const DIFFS = ['FÁCIL', 'MEDIO', 'DIFÍCIL'];
 const DIFF_COL = ['#8fe08a', '#ffd84a', '#ff5a5a'];
 function setDiff(d) {
@@ -45,11 +52,13 @@ function drawOption(g, y, sel, label, val, col) {
 }
 const drawDiffOption = (g, y, sel, prefix = 'DIFICULTAD') => drawOption(g, y, sel, prefix, DIFFS[GAME.diff], DIFF_COL[GAME.diff]);
 const drawMusicOption = (g, y, sel) => drawOption(g, y, sel, 'MÚSICA', songName(), BGM.sel < SONGS.length ? '#8ff0ff' : '#8a80b0');
+const drawItemsOption = (g, y, sel) => drawOption(g, y, sel, 'OBJETOS', itemsOn() ? 'SÍ' : 'NO', itemsOn() ? '#8fe08a' : '#8a80b0');
 // left / right on a setting row: true if it was handled
 function optionInput(item) {
   let ch = 0; if (Input.hit('left')) ch = -1; if (Input.hit('right') || Input.ok()) ch = 1;
   if (item === 'DIFICULTAD') { if (ch) setDiff(GAME.diff + ch); return ch; }
   if (item === 'MÚSICA') { if (ch) setSong(BGM.sel + ch); return true; }
+  if (item === 'OBJETOS') { if (ch) setItems(!itemsOn()); return true; }
   return false;
 }
 // [STORY] const C = () => GAME.country;
@@ -265,7 +274,7 @@ class BootScene {
 class TitleScene {
   init() {
     // this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES']; // [STORY]
-    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'CONTROLES'];
+    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'OBJETOS', 'CONTROLES'];
     // this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 })); // [OLD STAGES]
     // its own copy of Bene's garden at dusk, with Mario and Peño in front and the others watching
     this.stage = TITLE_STAGE || (TITLE_STAGE = buildPhotoStage(STAGES.find(s => s.art === 'parcela_bene_2') || STAGES[0], { center: 620 }));
@@ -280,7 +289,7 @@ class TitleScene {
     if (Input.hit('up')) { this.sel = (this.sel + n - 1) % n; sfx('select'); }
     if (Input.hit('down')) { this.sel = (this.sel + 1) % n; sfx('select'); }
     const it = this.items[this.sel];
-    if (it === 'DIFICULTAD' || it === 'MÚSICA') { optionInput(it); return; }
+    if (it === 'DIFICULTAD' || it === 'MÚSICA' || it === 'OBJETOS') { optionInput(it); return; }
     if (Input.ok()) {
       sfx('confirm');
       // if (this.sel === 0) goFade(() => new CountryScene()); // [STORY]
@@ -307,10 +316,11 @@ class TitleScene {
     drawFlag(g, 'es', W / 2 - 86, 22 + bob, 12, 8, this.t, 1); drawFlag(g, 'cat', W / 2 + 74, 22 + bob, 12, 8, this.t, 1);
     if (!this.started) { if ((this.t >> 5) % 2 === 0) text(g, 'PULSA ENTER', W / 2, 128, { align: 'center', color: '#fff', outline: OUTL, thick: 1 }); }
     else this.items.forEach((it, i) => {
-      const y = 116 + i * 14, s = i === this.sel;
+      const y = 112 + i * 14, s = i === this.sel;
       if (s) { g.fillStyle = 'rgba(255,216,74,.18)'; g.fillRect(W / 2 - 100, y - 3, 200, 13); }
       if (it === 'DIFICULTAD') { drawDiffOption(g, y, s); return; }
       if (it === 'MÚSICA') { drawMusicOption(g, y, s); return; }
+      if (it === 'OBJETOS') { drawItemsOption(g, y, s); return; }
       if (s) text(g, '▶', W / 2 - 84, y, { color: '#ffd84a' });
       text(g, it, W / 2, y, { align: 'center', color: s ? '#ffd84a' : '#c8c0e0', outline: OUTL });
     });

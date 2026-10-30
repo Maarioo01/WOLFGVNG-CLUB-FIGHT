@@ -76,6 +76,7 @@ class Fighter {
     if (sup) this.moves.super = { name: sup.name };
     this.superUsed = false; this.ov = null; // ov: drawing taken over by a super cinematic (supers.js) or a throw
     this.chainN = 0; this.thBuf = 0; this.grabbed = null; this.thrower = null; this.trail = []; // low-chain repeats, throw input window, throws, dash afterimages
+    this.held = null; this.fx = {}; // the item in hand (items.js) and the items' effects still running (ticks left)
     this.spd = 1.35 * (def.speed || 1); this.dmgMul = 1; this.opp = null; this.ctrl = null; this.hitDone = false; this.hitConfirmed = false; this.stun = 0;
     // body size for hurtboxes / hitboxes: from the sprite's standing height when drawn from the designs
     const set = typeof spriteSet === 'function' && spriteSet(def);
@@ -86,7 +87,7 @@ class Fighter {
   face() { if (this.opp) { const d = this.opp.x - this.x; if (Math.abs(d) > 2) this.facing = Math.sign(d); } }
   hurtbox() {
     const s = this.s;
-    if (['knock', 'down', 'ko', 'getup', 'thrown'].includes(this.state) || this.inv > 0) return null;
+    if (['knock', 'down', 'ko', 'getup', 'thrown', 'caught'].includes(this.state) || this.inv > 0) return null;
     const crouch = this.state === 'crouch' || (this.state === 'blockstun' && this.crouchBlock) || (this.state === 'hitstun' && this.crouchHit) || (this.move && this.move.crouch && this.state === 'attack');
     if (this.y < -2 || this.state === 'jump') return { x: this.x - 10 * s, y: this.y - 56 * s, w: 20 * s, h: 46 * s };
     if (crouch) return { x: this.x - 11 * s, y: -42 * s, w: 22 * s, h: 42 * s };
@@ -111,7 +112,9 @@ class Fighter {
     return true;
   }
   // a special can come out: off cooldown, and (projectiles) none of this fighter's still flying
-  canSpecial(F, name) { const m = this.moves[name]; return !!m && this.projCD <= 0 && (!m.spawn || !F.projs.some(p => p.owner === this)); }
+  canSpecial(F, name) { const m = this.moves[name]; return !!m && this.projCD <= 0 && (!m.spawn || !F.projs.some(p => p.owner === this && p.type !== 'item')); }
+  // walking speed with the items' effects (yogurt: half speed; stuck in the float: slower still)
+  spdK() { return (this.fx.slow > 0 ? .5 : 1) * (this.fx.stuck > 0 ? .4 : 1); }
   // AGARRE: up close, against an opponent standing or crouching on the ground (not in the middle of a hit or a throw)
   tryThrow(F) {
     const o = this.opp; if (!o || F.phase !== 'fight' || this.y < 0) return false;
@@ -135,24 +138,31 @@ class Fighter {
     const c = this.ctrl; this.st++;
     if (this.flash > 0) this.flash--; if (this.inv > 0) this.inv--; if (this.projCD > 0) this.projCD--; if (this.comboShow > 0) this.comboShow--;
     if (--this.blinkT < 0) this.blinkT = rndi(120, 260);
+    for (const k in this.fx) if (this.fx[k] > 0) this.fx[k]--;
     const act = F.phase === 'fight';
     switch (this.state) {
       case 'idle': case 'walk': case 'crouch': {
         this.face();
         if (!act || !c) { this.setState('idle'); this.vx = 0; break; }
         const down = c.down(); this.chainN = 0;
-        if (c.press('super') && this.canSuper(F)) { F.startSuper(this); break; }
-        if (c.press('punch') && c.press('kick') && !down && this.tryThrow(F)) break;
-        if (((c.press('special') && down) || (c.press('punch') && c.qcb && c.qcb())) && this.canSpecial(F, 'special2')) { this.doMove('special2', F); break; }
-        if ((c.press('special') || (c.press('punch') && c.qcf && c.qcf())) && this.canSpecial(F, 'special')) { this.doMove('special', F); break; }
-        if (c.press('punch')) { this.doMove(down ? 'cpunch' : 'jab'); this.thBuf = down ? 0 : 3; sfx('whiff'); break; }
-        if (c.press('kick')) { this.doMove(down ? 'sweep' : 'kick'); this.thBuf = down ? 0 : 3; sfx('whiffH'); break; }
+        // floor items (items.js): crouching on one picks it up, □ uses the one in hand
+        if (down && F.tryPickup && F.tryPickup(this)) { this.setState('crouch'); this.vx = 0; break; }
+        const stuck = this.fx.stuck > 0; // stuck in the unicorn float: can only walk
+        if (!stuck) {
+          if (c.press('super') && this.canSuper(F)) { F.startSuper(this); break; }
+          if (c.press('punch') && c.press('kick') && !down && this.tryThrow(F)) break;
+          if (c.press('punch') && !down && this.held && F.useItem(this)) break;
+          if (((c.press('special') && down) || (c.press('punch') && c.qcb && c.qcb())) && this.canSpecial(F, 'special2')) { this.doMove('special2', F); break; }
+          if ((c.press('special') || (c.press('punch') && c.qcf && c.qcf())) && this.canSpecial(F, 'special')) { this.doMove('special', F); break; }
+          if (c.press('punch')) { this.doMove(down ? 'cpunch' : 'jab'); this.thBuf = down ? 0 : 3; sfx('whiff'); break; }
+          if (c.press('kick')) { this.doMove(down ? 'sweep' : 'kick'); this.thBuf = down ? 0 : 3; sfx('whiffH'); break; }
+        }
         const dd = c.dash ? c.dash() : 0; // read once: the CPU's dash input is used up when read
-        if (!down && dd) { this.startDash(dd); break; }
-        if (c.up()) { this.jump(c.fwd() ? 1 : c.back() ? -1 : 0); break; }
+        if (!down && dd && this.spdK() === 1) { this.startDash(dd); break; }
+        if (c.up() && !stuck) { this.jump(c.fwd() ? 1 : c.back() ? -1 : 0); break; }
         if (down) { this.setState('crouch'); this.vx = 0; break; }
-        if (c.fwd()) { this.setState('walk'); this.walkDir = 1; this.vx = this.facing * this.spd; }
-        else if (c.back()) { this.setState('walk'); this.walkDir = -1; this.vx = -this.facing * this.spd * 0.78; }
+        if (c.fwd()) { this.setState('walk'); this.walkDir = 1; this.vx = this.facing * this.spd * this.spdK(); }
+        else if (c.back()) { this.setState('walk'); this.walkDir = -1; this.vx = -this.facing * this.spd * 0.78 * this.spdK(); }
         else { this.setState('idle'); this.vx = 0; }
         break;
       }
@@ -204,6 +214,10 @@ class Fighter {
         this.ov.dy = -Math.sin(Math.PI * k) * 46 - (k > 0 ? 0 : 3); this.ov.rot = -k * Math.PI * 1.1;
         break;
       }
+      case 'caught': // inside the Poké Ball (an item): out when the effect ends
+        this.vx = 0; this.y = 0;
+        if (!(this.fx.caught > 0)) { this.setState('idle'); this.inv = 20; flash(2, '#ffffff'); sfx('item'); F.popup(this.x, -80, '¡LIBRE!', '#8fe0ff'); F.smokePuff(this.x, -20, true); }
+        break;
       case 'super': this.vx = 0; break; // moved by the SuperScene script while the fight is frozen
       case 'win': case 'lose': case 'intro': this.vx = 0; break;
     }
@@ -280,6 +294,7 @@ class Fighter {
       case 'super': return ['idle', this.st, 'angry'];
       case 'dash': return [this.dashDir > 0 ? 'dashF' : 'dashB', this.st, expr];
       case 'thrown': return ['hit', 0, 'hurt'];
+      case 'caught': return ['idle', 0, 'hurt'];
       case 'win': return ['win', this.st, 'happy'];
       case 'intro': return [this.introAnim || 'idle', this.st, expr];
       case 'lose': return ['lie', 0, 'ko'];
@@ -288,6 +303,12 @@ class Fighter {
   }
   draw(g, camX) {
     if (this.ov) { drawFighterOv(this, g, camX); return; } // posed by a super cinematic
+    const fx = this.fx, T = FIGHT_REF ? FIGHT_REF.tick : 0;
+    if (this.state === 'caught') { // inside the Poké Ball, which shakes three times
+      const left = fx.caught || 0, w = left > 10 && Math.floor(left / 24) % 1 === 0 && left % 24 < 10 ? Math.sin(left * .9) * .35 : 0;
+      shadow(g, this.x - camX, GROUND, 12, .35); drawSprEx(g, ballFrames('pokeball', 14)[0], this.x - camX, GROUND - 7, 1, { rot: w });
+      return;
+    }
     const [anim, t, expr] = this.animState();
     const spr = getSprite(this.def, anim, t, expr);
     const sx = this.x - camX, sy = GROUND + this.y;
@@ -303,7 +324,15 @@ class Fighter {
       img = tintedOf(spr, '#40ff60', .5); x += rndi(-3, 3);
       if (FIGHT_REF && FIGHT_REF.tick % 3 === 0) { g.globalAlpha = .5; g.fillStyle = '#40ff60'; g.fillRect(Math.round(x) - 14, Math.round(sy - 40 - rndi(0, 30)), 28, 1); g.globalAlpha = 1; }
     }
+    if (!img && fx.slow > 0) img = tintedOf(spr, '#ffffff', .4);                             // covered in yogurt
+    if (!img && fx.armor > 0 && T % 10 < 3) img = tintedOf(spr, '#c8d4e8', .45);            // the ration's armour gleams
     drawSpr(g, spr, x, sy, facing, img);
+    const top = sy - 63 * this.s;
+    if (fx.slow > 0 && T % 6 === 0 && FIGHT_REF) FIGHT_REF.parts.push({ type: 'sweat', x: this.x + rnd(-8, 8), y: this.y - rnd(20, 50) * this.s, vx: 0, vy: .4, t: 0, life: 18 }); // drips
+    if (fx.stuck > 0 && ITEMS.flotador) drawItem(g, ITEMS.flotador, Math.round(x), Math.round(sy - 26 * this.s), { facing: this.facing }); // the float around the waist
+    if (fx.tied > 0 && this.state === 'hitstun') for (const k of [.42, .62]) { g.fillStyle = OUTL; g.fillRect(Math.round(x) - 12, Math.round(sy - 63 * this.s * k) - 1, 24, 4); g.fillStyle = '#24222c'; g.fillRect(Math.round(x) - 11, Math.round(sy - 63 * this.s * k), 22, 2); } // the belt
+    if (fx.hacked > 0 && T % 3 === 0) { g.fillStyle = T % 2 ? '#40ff60' : '#20a040'; for (let i = 0; i < 4; i++) g.fillRect(Math.round(x) + rndi(-14, 14), Math.round(top) + rndi(-6, 16), rndi(2, 6), 1); } // glitching
+    if (this.held && ITEMS[this.held]) drawItemIcon(g, ITEMS[this.held], Math.round(x), Math.round(top - 10 + Math.sin(T * .12) * 1.5), 14); // the item in hand
     // [OLD CHARS] if (this.kind === 'fumeta' && Math.random() < .08 && this.state !== 'down') FIGHT_REF && FIGHT_REF.smokePuff(this.x + this.facing * 10, this.y - 66);
   }
 }
@@ -314,7 +343,8 @@ let FIGHT_REF = null;
 class PadCtrl {
   constructor(f, src = Input) { this.f = f; this.src = src; this.hist = []; }
   update() {
-    const f = this.f, I = this.src.held, L = I.left, Rr = I.right, U = I.up, D = I.down;
+    const f = this.f, I = this.src.held, U = I.up, D = I.down;
+    let L = I.left, Rr = I.right; if (f.fx.hacked > 0) [L, Rr] = [Rr, L]; // the laptop item: left and right swapped
     const fw = f.facing > 0 ? Rr : L, bk = f.facing > 0 ? L : Rr;
     let n = 5; if (D && bk) n = 1; else if (D && fw) n = 3; else if (D) n = 2; else if (U) n = 8; else if (fw) n = 6; else if (bk) n = 4;
     this.hist.push(n); if (this.hist.length > 24) this.hist.shift();
@@ -378,6 +408,22 @@ class AICtrl {
       return;
     }
     if (!['idle', 'walk', 'crouch'].includes(me.state)) return;
+    // items (items.js): go and crouch on one, then use it
+    if (itemsOn() && F.items) {
+      if (!me.held) {
+        const it = F.items.find(i => i.state === 'floor');
+        if (it && Math.random() < .5 + P.aggr * .3) {
+          const dMe = Math.abs(it.x - me.x), dOp = Math.abs(it.x - o.x);
+          if (dMe < dOp + 30 || dist > 140) {
+            if (dMe < 16 * me.s) { this.h = { fwd: 0, back: 0, up: 0, down: 1 }; this.pt = 3; return; }
+            const toward = Math.sign(it.x - me.x) === me.facing; this.h = { fwd: toward ? 1 : 0, back: toward ? 0 : 1, up: 0, down: 0 }; this.pt = 4; return;
+          }
+        }
+      } else {
+        const k = ITEMS[me.held].kind;
+        if (((k === 'throw' && dist > 50 && dist < 230) || (k === 'floor' && dist > 70) || (k === 'trap' && dist < 120 && dist > 40)) && Math.random() < .08 + P.special) { this.pr.punch = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = 8; return; }
+      }
+    }
     const bomb = F.projs.find(p => p.type === 'bomb' && Math.abs(p.x - me.x) < 56);
     if (bomb) { const away = Math.sign(me.x - bomb.x) === me.facing; this.h = { fwd: away ? 1 : 0, back: away ? 0 : 1, up: 0, down: 0 }; this.pt = 4; return; } // get away from a bomb
     // up close against a blocker (or someone standing still): throw
@@ -419,7 +465,7 @@ class AICtrl {
       else { this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = rndi(4, 16); }
     }
   }
-  fwd() { return !!this.h.fwd; } back() { return !!this.h.back; } up() { return !!this.h.up; } down() { return !!this.h.down; }
+  fwd() { return !!(this.me.fx.hacked > 0 ? this.h.back : this.h.fwd); } back() { return !!(this.me.fx.hacked > 0 ? this.h.fwd : this.h.back); } up() { return !!this.h.up; } down() { return !!this.h.down; }
   press(b) { return !!this.pr[b]; } qcf() { return false; } qcb() { return false; }
   dash() { const d = this.h.dash || 0; this.h.dash = 0; return d; }
 }
@@ -453,6 +499,7 @@ class Proj {
     if (type === 'bomb') { this.x = owner.x + f * 34 * s; this.y = -7; this.dmg = 12; this.w = 12; this.h = 12; this.fuse = 90; this.custom = true; this.noClash = true; }
     if (type === 'catPounce') { this.vx = f * 4.4; this.vy = -3; this.g = .17; this.dmg = 2.5; this.hs = 14; this.w = 20; this.h = 12; this.y = -44 * s; this.custom = true; }
     this.ang = 0; this.trail = []; this.hitCD = 0; // spin angle (balls), the last positions (motion trail), ticks before it can hit again
+    if (type === 'item') itemProjInit(this, owner); // a thrown item (items.js)
   }
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }
   update(F) {
@@ -479,6 +526,7 @@ class Proj {
       const a = cur + clamp(d, -.12, .12); this.vx = Math.cos(a) * sp; this.vy = Math.sin(a) * sp;
     }
     if (this.type === 'bomb') this.updateBomb(F);
+    if (this.type === 'item') itemProjUpdate(this, F);
     if (this.type === 'catPounce') this.updateCat(F);
     if (this.type === 'smoke') { this.w = Math.min(28, 16 + this.t * .1); this.h = Math.min(24, 14 + this.t * .08); this.vx *= .996; if (this.t > this.life) this.dead = true; if (this.t % 3 === 0) F.smokePuff(this.x + rnd(-6, 6), this.y + rnd(-5, 5), true); }
     if (this.type === 'ball' && this.y >= -BALL_R.ball && this.vy > 0) { this.y = -BALL_R.ball; this.vy = -Math.max(1.4, this.vy * .7); sfx('land'); }
@@ -554,6 +602,7 @@ class Proj {
       }
     }
     if (this.type === 'cat') { objShadow(g, sx, this.y, 20); drawSpr(g, catFrames()[Math.floor(t / 4) % 2], sx, sy + Math.round(Math.sin(t * .35) * 1.5), dir); }
+    if (this.type === 'item') itemProjDraw(this, g, camX);
     if (this.type === 'lob') { objShadow(g, sx, this.y, 14); for (const k of [4, 2]) ghost((x, y) => drawBall(g, 'football', x, y, 16, this.ang), k); drawBall(g, 'football', sx, sy, 16, this.ang); }
     if (this.type === 'boomerang') { objShadow(g, sx, this.y, 14); drawSpr(g, objFrames('cap', 'flip')[Math.floor(t / 2) % 4], sx, sy, dir); }
     if (this.type === 'smash') {
@@ -633,7 +682,7 @@ class Fight {
       this.e.ctrl = new AICtrl(this.e, o.ai);
       this.e.dmgMul = o.ai.dmg || 1; this.e.spd *= (o.ai.speed || 1); // everyone has 100 HP: the difficulty only changes how the CPU plays
     } else this.e.ctrl = new PadCtrl(this.e, Input.pl[1]);
-    this.round = 1; this.wins = [0, 0]; this.projs = []; this.parts = []; this.pops = []; this.hitstop = 0; this.slow = 0; this.cutin = null; this.sup = null;
+    this.round = 1; this.wins = [0, 0]; this.projs = []; this.parts = []; this.pops = []; this.hitstop = 0; this.slow = 0; this.cutin = null; this.sup = null; this.items = []; this.itemT = 0;
     this.camX = clamp(o.center - W / 2, this.arena.l, this.arena.r - W); this.tick = 0;
     FIGHT_REF = this;
     this.startRound(o.skipIntro);
@@ -648,10 +697,12 @@ class Fight {
     this.sup = null; this.cutin = null;
     for (const [f, x, fc] of [[this.p, c - 60, 1], [this.e, c + 60, -1]]) {
       f.x = x; f.y = 0; f.vx = f.vy = 0; f.facing = fc; f.hp = f.hpShow = f.maxHp; f.setState('idle'); f.move = null; f.combo = 0; f.comboN = 0; f.inv = 0; f.flash = 0; f.stun = 0; f.projCD = 0; f.downKO = false; f.bounced = false; f.ov = null;
+      f.held = null; f.fx = {}; f.grabbed = f.thrower = null;
     }
     // the super bar carries over between rounds; the super itself is once per match
     if (this.round === 1) for (const f of [this.p, this.e]) { f.meter = 0; f.superUsed = false; }
     this.projs = []; this.timer = 60 * 60; this.phase = 'intro'; this.pt = 0; this.koBy = null; this.result = null;
+    this.items = []; this.itemT = rndi(ITEM_EVERY[0], ITEM_EVERY[1]); // the first item of the round comes 12–20 s in
   }
   popup(x, y, txt, col = '#fff') { if (txt) this.pops.push({ x, y, txt, col, t: 0 }); }
   dust(x, n) { for (let i = 0; i < n; i++) this.parts.push({ type: 'dust', x: x + rnd(-8, 8), y: -rnd(0, 3), vx: rnd(-1, 1), vy: rnd(-.8, -.1), t: 0, life: rndi(14, 24) }); }
@@ -687,7 +738,7 @@ class Fight {
     const lvl = m.lvl || 'mid';
     const holdBack = def.ctrl && def.ctrl.back();
     const crouching = def.ctrl && def.ctrl.down();
-    const canB = def.canBlock() && holdBack && !(lvl === 'low' && !crouching) && !(lvl === 'high' && crouching);
+    const canB = !m.unblockable && def.canBlock() && holdBack && !(lvl === 'low' && !crouching) && !(lvl === 'high' && crouching);
     const hx = px != null ? px : def.x - facing * 8, hy = isProj ? isProj.y : m.box ? (m.box[1] + m.box[3] / 2) * att.s : -30 * att.s;
     // ¡CONTRA!: caught while starting an attack (not a throw)
     const counterHit = !canB && def.state === 'attack' && dm && !dm.grab && !dm.counter && def.mt < dm.s;
@@ -709,12 +760,15 @@ class Fight {
     this.gain(att, m.meter || 5); this.gain(def, dmg * .7);
     att.hitConfirmed = true;
     const air = def.y < -2 || def.state === 'jump';
-    if (def.hp <= 0 || m.kd || air || isProj && isProj.kd) {
+    if (def.held) this.dropItem(def); // hit while holding an item: it falls
+    if (def.fx.armor > 0 && def.hp > 0) { def.vx = facing * .8; } // the ration's armour: it hurts but doesn't stop you
+    else if (def.hp <= 0 || m.kd || air || isProj && isProj.kd) {
       def.setState('knock'); def.vy = def.hp <= 0 ? -5.5 : (m.kd && !air ? -3.8 : -4.2); def.vx = facing * (def.hp <= 0 ? 2.8 : 2.2); def.y = Math.min(def.y, -2); def.bounced = false; def.move = null;
     } else {
       def.setState('hitstun'); def.stun = (m.hs || 14) + (counterHit ? 6 : 0); def.crouchHit = def.state === 'crouch' || (def.ctrl && def.ctrl.down() && def.y >= 0); def.vx = facing * (m.push || 2.5); def.move = null;
     }
     if (m.dive && !isProj) { att.vy = -3.2; att.vx = -att.facing * 1.4; } // the dive kick bounces off
+    if (isProj && isProj.item) itemHitFx(this, def, isProj.item);
     // pushback into walls transfers to attacker
     if (!isProj && (def.x <= this.camX + 18 || def.x >= this.camX + W - 18)) att.vx = -facing * (m.push || 2.5) * .8;
     this.spark(hx, hy, dmg >= 9 ? 'big' : 'hit');
@@ -788,6 +842,7 @@ class Fight {
       }
     }
     this.projs = this.projs.filter(p => !p.dead);
+    this.updateItems();
     // melee
     if (this.phase === 'fight') for (const [a, d] of [[P, E], [E, P]]) {
       const hb = a.hitbox(); if (!hb) continue;
@@ -841,6 +896,7 @@ class Fight {
   drawWorld(g) {
     const camX = Math.round(this.camX), P = this.p, E = this.e, S = this.sup;
     if (S) S.draw(g, camX, 'back');
+    this.drawItems(g, camX);
     const order = (S ? S.a === P : P.state === 'attack') ? [E, P] : [P, E];
     for (const f of order) f.draw(g, camX);
     if (S) S.draw(g, camX, 'front');
@@ -901,6 +957,7 @@ class Fight {
       g.restore();
       // name, player tag & wins
       text(g, f.def.name, side ? W - XL : XL, 28, { color: '#fff', outline: OUTL, align: side ? 'right' : 'left' });
+      if (f.held && ITEMS[f.held]) { const nw = twidth(f.def.name); drawItemIcon(g, ITEMS[f.held], side ? W - XL - nw - 10 : XL + nw + 10, 32, 11); } // the item in hand
       const tag = this.tags[side]; tiny(g, tag, side ? W - 4 - tinyW(tag) : 4, 40, side ? '#ff8a8a' : '#8fe0ff');
       for (let i = 0; i < WINS_TO_WIN; i++) {
         const wx = side ? W - XL - BW + 2 + i * 9 : XL + BW - 8 - i * 9, wy = 29;

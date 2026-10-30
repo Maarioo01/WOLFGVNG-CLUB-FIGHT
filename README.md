@@ -36,6 +36,32 @@ En modo **vs CPU** el jugador 1 puede usar cualquiera de los dos lados del tecla
 
 A partir de 3 golpes seguidos sale el rango del combo (¡BIEN!, ¡BRUTAL!, ¡WOLFGVNG!) y el público lo celebra. La lista completa de cada luchador está en el menú de pausa, en **MOVIMIENTOS**.
 
+### Objetos
+
+Cada 12–20 segundos un amigo del público lanza **su objeto** a la pista (solo lanzan los que están mirando, así que cambian de un combate a otro). Está 10 segundos en el suelo y parpadea antes de desaparecer.
+
+- **Cogerlo:** agacharse encima (↓ / R2).
+- **Usarlo:** puño (□). Si te golpean mientras lo llevas, se te cae.
+- Se ve encima de tu cabeza y al lado de tu nombre.
+- **OBJETOS: SÍ / NO** en el menú principal y en el de pausa (se guarda en el navegador).
+
+| Amigo | Objeto | Qué hace |
+|---|---|---|
+| Mario | Mancuerna | se lanza en arco: mucho daño y derriba |
+| Peño | Balón | rebota por la pantalla 5 s y golpea a quien toque, también a quien lo lanzó |
+| Alba | Cinturón negro | ata al rival 1,5 s (¡OSAEKOMI!) |
+| Álvaro | Coche teledirigido | se deja en el suelo y va a por el rival (golpe bajo) |
+| Belli | Portátil | ¡HACKEADO!: izquierda y derecha cambiadas 3 s |
+| Bene | Flotador unicornio | el rival se queda metido en el flotador 2 s: no puede atacar y anda despacio |
+| Carlottis | Botiquín | cura 25 al cogerlo (nunca más de 100) |
+| Marcos | Yogur griego | lo pringa: va a la mitad de velocidad 3 s |
+| Oso | Código Penal | libro gordo: mucho daño y derriba |
+| Manu | Caca de Isaac | se deja en el suelo; quien la pise resbala y cae (también tú) |
+| Casado | Ración de combate | al cogerla, 6 s en los que los golpes duelen pero no te paran |
+| MadeverXP | Poké Ball | encierra al rival 1,5 s |
+
+Los objetos están en `ITEMS` en `js/items.js`. Sus dibujos salen de la hoja de objetos O2 ([`docs/object-prompts.md`](docs/object-prompts.md)); mientras no exista, el juego los dibuja por código.
+
 | Tecla | Acción |
 |---|---|
 | Enter / Espacio | Confirmar · pausa en combate |
@@ -154,6 +180,7 @@ Guía para hacer cambios a mano (dónde están los sprites, golpes, rondas, mús
 - `js/world.js` — los escenarios antiguos del Raval (desactivados) y el suelo en perspectiva
 - `js/stages.js` — los escenarios: fondo, suelo y el público (los luchadores que no pelean) reaccionando al combate
 - `js/objects.js` — los objetos: balones y pelotas dibujados como esferas que giran de verdad, y la gorra, la chancla y el gato (de la hoja de objetos, o dibujados por código mientras no exista)
+- `js/items.js` — los objetos del suelo que lanza el público: cuáles hay, cómo se cogen y usan, y sus efectos
 - `js/fight.js` — luchadores, frame data, IA, proyectiles, HUD
 - `js/supers.js` — los súpers: escena de cada personaje (guion, objetos y efectos)
 - `js/story.js` — título, controles, datos de escenarios (el modo historia está comentado)

@@ -27,6 +27,7 @@ A practical map for anyone who wants to change **WOLFGVNG FIGHT CLUB** by hand: 
 | `js/world.js` | the old Raval street stages (no longer in the list) and the perspective-floor maths the new stages reuse |
 | `js/stages.js` | the **stages**: background strip, floor, and the **crowd** of fighters reacting to the fight |
 | `js/objects.js` | the **objects**: balls drawn as shaded spheres that spin, and the cap, sandal and cat (from the objects atlas, or code-drawn stand-ins) |
+| `js/items.js` | the **floor items** the crowd throws in: the list (`ITEMS`), picking up, using, effects |
 | `js/fight.js` | **moves and hits, specials, projectiles, rounds, timer, KO, CPU AI, the HUD** |
 | `js/supers.js` | the **supers** (one scripted scene per fighter) and the super bar speed |
 | `js/story.js` | screen switching (`go`, `goFade`), difficulty, **stage list (`STAGES`)**, **title menu**, **controls screen**. The old story mode is commented out at the bottom |
@@ -160,6 +161,13 @@ jab: { anim: 'jab', s: 4, a: 3, r: 8, dmg: 5, hs: 14, bs: 8, push: 2.4, box: [6,
 - Each extra hit in a combo does 12% less damage, down to a minimum of 50%.
 
 **Health:** every fighter starts at 100 (`this.maxHp = 100` in the `Fighter` constructor).
+
+**Floor items** (`js/items.js`): every 12–20 s (`ITEM_EVERY`) a friend in the crowd throws their own item in (`Fight.spawnItem`, `stage.toss`).
+- One line per item in `ITEMS`: `owner` (whose item it is), `name`, `kind` (`'throw'`, `'floor'`: the toy car, `'trap'`: the poop, `'power'`: works when picked up), `obj` (its drawing) or `ball` + `d`, `dmg`, `kd`, `fx` (effect) and `pop` (text).
+- Effects and how long they last: `ITEM_FX` (ticks). Where they act: `Fighter.spdK` (slow, stuck), the `'caught'` state (Poké Ball), `PadCtrl.update` (hacked: left/right swapped), `Fight.hit` (armour), `Fighter.draw` (their look).
+- Crouching on an item picks it up (`Fight.tryPickup`); punch uses it (`Fight.useItem` → the `toss` move → a `Proj` of type `'item'`); a hit drops it (`Fight.dropItem`).
+- On/off: `GAME.items` (`itemsOn()`, `setItems()` in `js/story.js`), the OBJETOS option.
+- To add an item: a line in `ITEMS`, its drawing (sheet O2 or a stand-in in `OBJ_STANDIN`), and its effect if it's new.
 
 **Hit and hurt boxes** (the areas that can hit and be hit): `Fighter.hurtbox()` and `Fighter.hitbox()`.
 
