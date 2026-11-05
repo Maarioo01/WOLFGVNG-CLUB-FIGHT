@@ -18,7 +18,7 @@ For "where is X / how do I change Y", see `docs/GUIDE.md`. It's the human-facing
   - A match goes to 3 round wins.
   - Everyone has 100 HP, including the CPU. The first-aid item heals, but never above 100.
   - Each fighter's super is once per match and an instant K.O.
-  - Pad layout (PlayStation names): □ punch, ✕ kick, △ special, ○ super, L2 jump, R2 crouch. In menus ✕ confirms and ○ goes back.
+  - Pad layout (PlayStation names): □ punch, ✕ kick, △ special, ○ super, L2 jump, R2 crouch. In menus ✕ confirms and ○ goes back. That's the default: each player can rebind their pad in CONFIGURAR MANDO (`PAD_MAP` in core.js, `PadConfigScene` in story.js); menu ✕ / ○ and the d-pad stay fixed.
   - Combinations (no extra buttons): ↓ + △ second special (or ↓↙← + □), □ + ✕ up close throw, □ □ ✕ chain ending in ¡REMATE!, → → / ← ← dash, ↓ + ✕ in the air dive kick. The move list is in the pause menu (MOVIMIENTOS).
   - Floor items: crouch on one to pick it up, □ to use it. Each friend has one, thrown in only by that friend from the crowd. OBJETOS: SÍ / NO in the menus.
 

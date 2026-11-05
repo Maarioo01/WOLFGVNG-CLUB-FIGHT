@@ -274,7 +274,8 @@ class BootScene {
 class TitleScene {
   init() {
     // this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES']; // [STORY]
-    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'OBJETOS', 'CONTROLES'];
+    // this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'OBJETOS', 'CONTROLES']; // before CONFIGURAR MANDO
+    this.t = 0; this.sel = 0; this.items = ['1 JUGADOR VS CPU', '2 JUGADORES', 'DIFICULTAD', 'MÚSICA', 'OBJETOS', 'CONTROLES', 'CONFIGURAR MANDO'];
     // this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 })); // [OLD STAGES]
     // its own copy of Bene's garden at dusk, with Mario and Peño in front and the others watching
     this.stage = TITLE_STAGE || (TITLE_STAGE = buildPhotoStage(STAGES.find(s => s.art === 'parcela_bene_2') || STAGES[0], { center: 620 }));
@@ -297,6 +298,7 @@ class TitleScene {
       if (it === '1 JUGADOR VS CPU') goFade(() => new SelectScene('cpu'));
       if (it === '2 JUGADORES') goFade(() => new SelectScene('2p'));
       if (it === 'CONTROLES') goFade(() => new ControlsScene());
+      if (it === 'CONFIGURAR MANDO') goFade(() => new PadConfigScene());
     }
   }
   draw(g) {
@@ -329,6 +331,8 @@ class TitleScene {
   }
 }
 let TITLE_STAGE = null;
+// a pad's name for the screen: the browser's id without the vendor / product numbers
+const padName = P => P.id.replace(/\(.*?\)/g, '').replace(/^[0-9a-f]{1,4}-[0-9a-f]{1,4}-/i, '').trim().toUpperCase().slice(0, P.std ? 30 : 18) + (P.std ? '' : ' (SIN MAPEO)');
 class ControlsScene {
   init() { this.t = 0; }
   // the pad's face buttons light up their row here (button test), so only start / pause leave the screen
@@ -352,20 +356,94 @@ class ControlsScene {
     tip('VS CPU: EL J1 PUEDE USAR CUALQUIERA DE LOS DOS LADOS DEL TECLADO', 123, '#8a80b0');
     // gamepads (PlayStation name / Xbox name); a row lights up while a connected pad holds its button
     text(g, 'MANDOS  PS5 / XBOX', cA, 134, { color: '#9fe8ff' });
-    const padName = P => P.id.replace(/\(.*?\)/g, '').replace(/^[0-9a-f]{1,4}-[0-9a-f]{1,4}-/i, '').trim().toUpperCase().slice(0, P.std ? 30 : 18) + (P.std ? '' : ' (SIN MAPEO)');
+    // padName: top level, shared with CONFIGURAR MANDO
     const on = Input.pads.filter(Boolean);
     tip(on.length ? Input.pads.map((P, i) => 'MANDO ' + (i + 1) + ': ' + (P ? padName(P) : '-')).join('   ·   ') : 'MANDO 1: J1   ·   MANDO 2: J2   (PULSA UN BOTON PARA ACTIVARLO)', 146, '#8a80b0');
+    /* [FIXED PAD] before CONFIGURAR MANDO:
     const pad = [
       [['CRUCETA / STICK', 'MOVERSE', ['left', 'right']], ['L2 / LT', 'SALTAR', ['up']], ['R2 / RT', 'AGACHARSE', ['down']], ['OPTIONS / MENU', 'PAUSA', ['start', 'pause']]],
-      [['CUADRADO / X', 'PUÑETAZO', ['punch']], ['EQUIS / A', 'PATADA', ['kick']], ['TRIANGULO / Y', 'ESPECIAL', ['special']], ['CIRCULO / B', 'SUPER', ['super']]]];
+      [['CUADRADO / X', 'PUÑETAZO', ['punch']], ['EQUIS / A', 'PATADA', ['kick']], ['TRIANGULO / Y', 'ESPECIAL', ['special']], ['CIRCULO / B', 'SUPER', ['super']]]]; */
+    // mando 1's buttons (PlayStation name / Xbox name of the first button of each action)
+    const nm = a => { const i = PAD_MAP[0][a][0]; return padBtnName(i, 'ps') + ' / ' + padBtnName(i, 'xb'); };
+    const pad = [
+      [['CRUCETA / STICK', 'MOVERSE', ['left', 'right']], [nm('up'), 'SALTAR', ['up']], [nm('down'), 'AGACHARSE', ['down']], [nm('start'), 'PAUSA', ['start', 'pause']]],
+      [[nm('punch'), 'PUÑETAZO', ['punch']], [nm('kick'), 'PATADA', ['kick']], [nm('special'), 'ESPECIAL', ['special']], [nm('super'), 'SUPER', ['super']]]];
     pad.forEach((col, c) => col.forEach(([k, v, acts], i) => {
       const y = 156 + i * 9, x = c ? 296 : 116, held = on.some(P => acts.some(a => P.st[a]));
       if (held) { g.fillStyle = 'rgba(255,216,74,.28)'; g.fillRect(x - tinyW(k) - 9, y - 2, tinyW(k) + tinyW(v) + 18, 9); }
       tiny(g, k, x - tinyW(k) - 4, y, held ? '#fff' : '#ffd84a'); tiny(g, v, x + 4, y, held ? '#fff' : '#e8e0ff');
     }));
-    tip('L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 194, '#c8c0e0');
-    tip('PULSA LOS BOTONES DEL MANDO PARA PROBARLOS', 203, '#8a80b0');
+    // tip('L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 194, '#c8c0e0'); // [FIXED PAD]
+    tip(padIsDefault(0) ? 'L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE'
+      : 'MANDO 1 PERSONALIZADO  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 194, '#c8c0e0');
+    tip('PULSA LOS BOTONES DEL MANDO PARA PROBARLOS  ·  CAMBIALOS EN CONFIGURAR MANDO', 203, '#8a80b0');
     tip('ENTER / ESC / OPTIONS: VOLVER   M: SONIDO', 214, '#8a80b0');
+  }
+}
+// ============================================================
+//  CONFIGURAR MANDO — each player changes their own pad's buttons (PAD_MAP in core.js, saved in the browser).
+//  It reads the raw buttons (Input.pads[p].btn), so the mapping being changed never gets in the way:
+//  ↑↓ (d-pad / stick) choose a row, Cross starts listening and the next button pressed is the new one.
+// ============================================================
+const PAD_ROWS = [['punch', 'PUÑO'], ['kick', 'PATADA'], ['special', 'ESPECIAL'], ['super', 'SUPER'], ['up', 'SALTAR'], ['down', 'AGACHAR'], ['start', 'PAUSA'], [null, 'RESTABLECER']];
+const PAD_WAIT = 300; // 5 s to press the new button
+class PadConfigScene {
+  init() { this.t = 0; this.pl = [0, 1].map(() => ({ sel: 0, wait: 0, done: 0, dir: 0, prev: [] })); }
+  update() {
+    this.t++;
+    // Circle / Create / ESC / Backspace leave, but not while someone is choosing a button (Circle may be the new one)
+    if (this.t > 10 && !this.pl.some(s => s.wait) && (Input.hit('back') || Input.hit('pause'))) { sfx('back'); goFade(() => new TitleScene()); return; }
+    const n = PAD_ROWS.length;
+    this.pl.forEach((s, p) => {
+      const P = Input.pads[p]; if (s.done > 0) s.done--;
+      if (!P) { s.wait = 0; s.prev = []; s.dir = 0; return; }
+      const btn = P.btn, edge = i => btn[i] && !s.prev[i];
+      const dir = btn[12] || P.ax[1] < -.5 ? -1 : btn[13] || P.ax[1] > .5 ? 1 : 0;
+      if (s.wait) {
+        const b = btn.findIndex((v, i) => v && !s.prev[i] && (i < 12 || i > 15)); // the d-pad always moves
+        if (b >= 0) { bindPad(p, PAD_ROWS[s.sel][0], b); s.wait = 0; s.done = 40; sfx('confirm'); }
+        else if (--s.wait === 0) sfx('back');
+      } else if (this.t > 10) {
+        if (dir && dir !== s.dir) { s.sel = (s.sel + dir + n) % n; sfx('select'); }
+        if (edge(0)) {
+          if (PAD_ROWS[s.sel][0]) { s.wait = PAD_WAIT; sfx('select'); }
+          else { resetPad(p); s.done = 40; sfx('confirm'); }
+        }
+      }
+      s.dir = dir; s.prev = btn.slice();
+    });
+  }
+  draw(g) {
+    g.fillStyle = '#0e0a1c'; g.fillRect(0, 0, W, H);
+    for (let y = 0; y < H; y += 4) { g.fillStyle = '#130e24'; g.fillRect(0, y, W, 2); }
+    textGrad(g, 'CONFIGURAR MANDO', W / 2, 8, 16, ['#fff', '#ffd860', '#ff9030']);
+    const tip = (s, y, col) => tiny(g, s, Math.round(W / 2 - tinyW(s) / 2), y, col);
+    this.pl.forEach((s, p) => {
+      const x0 = p ? 206 : 8, cw = 186, P = Input.pads[p], pc = p ? '#ff8a8a' : '#8fe0ff';
+      g.fillStyle = p ? 'rgba(255,74,90,.10)' : 'rgba(79,179,255,.10)'; g.fillRect(x0, 30, cw, 150);
+      text(g, 'MANDO ' + (p + 1) + ' · J' + (p + 1), x0 + 6, 34, { color: pc, outline: OUTL });
+      if (!P) {
+        text(g, 'SIN MANDO', x0 + cw / 2, 96, { align: 'center', color: '#8a80b0', outline: OUTL });
+        const m = 'CONECTALO Y PULSA UN BOTON'; tiny(g, m, Math.round(x0 + cw / 2 - tinyW(m) / 2), 110, '#8a80b0');
+        return;
+      }
+      const kind = padKind(P), nm = padName(P).slice(0, 44); tiny(g, nm, x0 + 6, 45, '#8a80b0');
+      PAD_ROWS.forEach(([act, label], i) => {
+        const y = 56 + i * 15, on = i === s.sel, held = act && P.st[act];
+        if (on) { g.fillStyle = s.wait ? 'rgba(255,90,90,.25)' : 'rgba(255,216,74,.18)'; g.fillRect(x0 + 2, y - 3, cw - 4, 13); }
+        else if (held) { g.fillStyle = 'rgba(255,255,255,.10)'; g.fillRect(x0 + 2, y - 3, cw - 4, 13); }
+        text(g, (on ? '▶' : ' ') + label, x0 + 4, y, { color: on ? '#ffd84a' : '#e8e0ff', outline: OUTL });
+        if (!act) { if (on && s.done) text(g, '¡OK!', x0 + cw - 6, y, { align: 'right', color: '#8fe08a', outline: OUTL }); return; }
+        const val = on && s.wait ? ((this.t >> 3) % 2 ? 'PULSA...' : '') : padActName(p, act, kind);
+        const col = on && s.wait ? '#ff8a8a' : on && s.done ? '#8fe08a' : held ? '#fff' : '#ffd84a';
+        text(g, val, x0 + cw - 6, y, { align: 'right', color: col, outline: OUTL });
+      });
+      if (s.wait) { const m = 'PULSA EL BOTON NUEVO  (' + Math.ceil(s.wait / 60) + ')'; tiny(g, m, Math.round(x0 + cw / 2 - tinyW(m) / 2), 172, '#ff8a8a'); }
+    });
+    tip('CADA JUGADOR CON SU MANDO  ·  ↑↓ ELEGIR  ·  EQUIS: CAMBIAR Y PULSAR EL BOTON NUEVO', 186, '#c8c0e0');
+    tip('SI EL BOTON YA TENIA OTRA ACCION, SE INTERCAMBIAN  ·  SE GUARDA EN ESTE NAVEGADOR', 195, '#8ff0ff');
+    tip('LA CRUCETA Y EL STICK SIEMPRE MUEVEN  ·  EN LOS MENUS EQUIS ACEPTA Y CIRCULO VUELVE', 204, '#8a80b0');
+    tip('CIRCULO / ESC: VOLVER', 214, '#8a80b0');
   }
 }
 

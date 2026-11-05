@@ -243,7 +243,37 @@ function padButtons(gp) {
   } else if (raw.length >= 18) [12, 13, 14, 15].forEach((s, k) => { B[s] = raw[raw.length - 4 + k]; });
   return B;
 }
-// Input.pads[p]: the pad of player p ({ id, std, st }), for the CONTROLES screen's button test
+// Custom pad buttons (CONFIGURAR MANDO, story.js): PAD_MAP[p][action] = the standard button indices of player p's pad.
+// The d-pad / left stick always move, and in menus Cross (0) always confirms and Circle (1) always goes back.
+const PAD_ACTS = ['punch', 'kick', 'special', 'super', 'up', 'down', 'start'];
+const PAD_DEFAULT = { punch: [2], kick: [0], special: [3, 4], super: [1, 5], up: [6], down: [7], start: [9] };
+const padDefault = () => JSON.parse(JSON.stringify(PAD_DEFAULT));
+const PAD_MAP = [padDefault(), padDefault()];
+try {
+  const v = JSON.parse(localStorage.getItem('wolfgvng.pad') || 'null');
+  if (Array.isArray(v)) v.slice(0, 2).forEach((m, p) => {
+    if (m && PAD_ACTS.every(a => Array.isArray(m[a]) && m[a].length && m[a].every(i => Number.isInteger(i) && i >= 0 && i < 32))) PAD_MAP[p] = m;
+  });
+} catch (e) { }
+const savePads = () => { try { localStorage.setItem('wolfgvng.pad', JSON.stringify(PAD_MAP)); } catch (e) { } };
+// give action `act` the button `b`; an action that loses its only button gets act's old one (the two swap)
+function bindPad(p, act, b) {
+  const M = PAD_MAP[p], old = M[act].filter(i => i !== b);
+  for (const a of PAD_ACTS) if (a !== act && M[a].includes(b)) { M[a] = M[a].filter(i => i !== b); if (!M[a].length) M[a] = old.slice(0, 1); }
+  M[act] = [b]; savePads();
+}
+function resetPad(p) { PAD_MAP[p] = padDefault(); savePads(); }
+const padIsDefault = p => JSON.stringify(PAD_MAP[p]) === JSON.stringify(PAD_DEFAULT);
+// button names: PlayStation pads get their names, everything else the Xbox ones
+const PAD_NAMES = {
+  ps: ['EQUIS', 'CIRCULO', 'CUADRADO', 'TRIANGULO', 'L1', 'R1', 'L2', 'R2', 'CREATE', 'OPTIONS', 'L3', 'R3', '↑', '↓', '←', '→', 'PS', 'PANEL'],
+  xb: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'VIEW', 'MENU', 'LS', 'RS', '↑', '↓', '←', '→', 'XBOX', 'BOTON 17']
+};
+const padKind = P => P && !/xbox|xinput|045e/i.test(P.id) && /054c|dualsense|dualshock|playstation|wireless controller/i.test(P.id) ? 'ps' : 'xb';
+const padBtnName = (i, kind) => PAD_NAMES[kind][i] || 'BOTON ' + i;
+const padActName = (p, act, kind) => PAD_MAP[p][act].map(i => padBtnName(i, kind)).join('/');
+// Input.pads[p]: the pad of player p ({ id, std, st, btn, ax }): st = its actions, btn = raw buttons in standard order
+// (CONTROLES button test, CONFIGURAR MANDO)
 Input.pads = [null, null];
 Input.poll = () => {
   const all = navigator.getGamepads ? [...navigator.getGamepads()] : [];
@@ -253,15 +283,22 @@ Input.poll = () => {
   pads.slice(0, 2).forEach((gp, p) => {
     const B = padButtons(gp), b = i => !!(B[i] && B[i].pressed), ax = i => gp.axes[i] || 0;
     const trig = i => !!B[i] && (B[i].value > .4 || (B[i].pressed && !B[i].value)); // analog L2 / R2: a light touch isn't a press
+    const btn = Array.from({ length: Math.max(18, B.length) }, (_, i) => trig(i)), M = PAD_MAP[p], has = a => M[a].some(i => btn[i]);
+    /* [FIXED PAD] before CONFIGURAR MANDO:
     const st = {
       left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5 || trig(6), down: b(13) || ax(1) > 0.5 || trig(7),
       punch: b(2), kick: b(0), special: b(3) || b(4), super: b(1) || b(5),
       confirm: b(0), back: b(1), start: b(9), pause: b(8)
+    }; */
+    const st = {
+      left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5 || has('up'), down: b(13) || ax(1) > 0.5 || has('down'),
+      punch: has('punch'), kick: has('kick'), special: has('special'), super: has('super'),
+      confirm: b(0), back: b(1), start: has('start'), pause: b(8)
     };
     const id = 'pad' + gp.index; seen[id] = true;
     for (const k in st) setSrc(id, p, k, st[k]);
     Input._pad[id] = p;
-    Input.pads[p] = { id: gp.id, std: B !== gp.buttons || gp.mapping === 'standard', st };
+    Input.pads[p] = { id: gp.id, std: B !== gp.buttons || gp.mapping === 'standard', st, btn, ax: [ax(0), ax(1)] };
   });
   // release everything from pads that disappeared or changed slot
   for (const id in Input._pad) if (!seen[id]) { for (const k of [...Input._on]) if (k.startsWith(id + '|')) { const [, p, a] = k.split('|'); setSrc(id, +p, a, false); } delete Input._pad[id]; }

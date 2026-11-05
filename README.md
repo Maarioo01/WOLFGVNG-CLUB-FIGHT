@@ -73,6 +73,10 @@ Los objetos están en `ITEMS` en `js/items.js`. Sus dibujos salen de la hoja de 
 
 El primer mando conectado es el J1 y el segundo el J2 (pulsa un botón para que el navegador lo detecte). En **CONTROLES** (menú principal) se ve el nombre de cada mando y, al pulsar un botón, se ilumina lo que hace.
 
+**CONFIGURAR MANDO** (menú principal): cada jugador cambia los botones de su propio mando. Con ↑↓ eliges la acción, ✕ / A y luego pulsas el botón nuevo. Si ese botón ya tenía otra acción, se intercambian. RESTABLECER vuelve a la configuración de abajo. Se guarda en el navegador. La cruceta y el stick siempre mueven, y en los menús ✕ acepta y ○ vuelve aunque cambies los botones.
+
+Botones por defecto:
+
 | Botón (PS5 / Xbox) | Acción |
 |---|---|
 | Cruceta / stick izquierdo | Moverse (atrás = bloquear) |
