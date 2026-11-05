@@ -366,7 +366,7 @@ class ControlsScene {
     // mando 1's buttons (PlayStation name / Xbox name of the first button of each action)
     const nm = a => { const i = PAD_MAP[0][a][0]; return padBtnName(i, 'ps') + ' / ' + padBtnName(i, 'xb'); };
     const pad = [
-      [['CRUCETA / STICK', 'MOVERSE', ['left', 'right']], [nm('up'), 'SALTAR', ['up']], [nm('down'), 'AGACHARSE', ['down']], [nm('start'), 'PAUSA', ['start', 'pause']]],
+      [['STICK / CRUCETA', 'MOVERSE', ['left', 'right']], ['STICK ↑', 'SALTAR', ['up']], ['STICK ↓', 'AGACHARSE', ['down']], [nm('start'), 'PAUSA', ['start', 'pause']]],
       [[nm('punch'), 'PUÑETAZO', ['punch']], [nm('kick'), 'PATADA', ['kick']], [nm('special'), 'ESPECIAL', ['special']], [nm('super'), 'SUPER', ['super']]]];
     pad.forEach((col, c) => col.forEach(([k, v, acts], i) => {
       const y = 156 + i * 9, x = c ? 296 : 116, held = on.some(P => acts.some(a => P.st[a]));
@@ -374,7 +374,7 @@ class ControlsScene {
       tiny(g, k, x - tinyW(k) - 4, y, held ? '#fff' : '#ffd84a'); tiny(g, v, x + 4, y, held ? '#fff' : '#e8e0ff');
     }));
     // tip('L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 194, '#c8c0e0'); // [FIXED PAD]
-    tip(padIsDefault(0) ? 'L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE'
+    tip(padIsDefault(0) ? 'L1 / LB: ESPECIAL  ·  R1 / RB: SUPER  ·  L2 / R2: SALTAR / AGACHARSE'
       : 'MANDO 1 PERSONALIZADO  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 194, '#c8c0e0');
     tip('PULSA LOS BOTONES DEL MANDO PARA PROBARLOS  ·  CAMBIALOS EN CONFIGURAR MANDO', 203, '#8a80b0');
     tip('ENTER / ESC / OPTIONS: VOLVER   M: SONIDO', 214, '#8a80b0');
@@ -385,7 +385,8 @@ class ControlsScene {
 //  It reads the raw buttons (Input.pads[p].btn), so the mapping being changed never gets in the way:
 //  ↑↓ (d-pad / stick) choose a row, Cross starts listening and the next button pressed is the new one.
 // ============================================================
-const PAD_ROWS = [['punch', 'PUÑO'], ['kick', 'PATADA'], ['special', 'ESPECIAL'], ['super', 'SUPER'], ['up', 'SALTAR'], ['down', 'AGACHAR'], ['start', 'PAUSA'], [null, 'RESTABLECER']];
+// const PAD_ROWS = [['punch', 'PUÑO'], ['kick', 'PATADA'], ['special', 'ESPECIAL'], ['super', 'SUPER'], ['up', 'SALTAR'], ['down', 'AGACHAR'], ['start', 'PAUSA'], [null, 'RESTABLECER']]; // [ARCADE PAD]
+const PAD_ROWS = [['punch', 'PUÑO'], ['kick', 'PATADA'], ['special', 'ESPECIAL'], ['super', 'SUPER'], ['start', 'PAUSA'], [null, 'RESTABLECER']];
 const PAD_WAIT = 300; // 5 s to press the new button
 class PadConfigScene {
   init() { this.t = 0; this.pl = [0, 1].map(() => ({ sel: 0, wait: 0, done: 0, dir: 0, prev: [] })); }
@@ -438,11 +439,20 @@ class PadConfigScene {
         const col = on && s.wait ? '#ff8a8a' : on && s.done ? '#8fe08a' : held ? '#fff' : '#ffd84a';
         text(g, val, x0 + cw - 6, y, { align: 'right', color: col, outline: OUTL });
       });
+      // the stick (or d-pad) always moves: not a button to choose, but it lights up here to test it
+      const sy = 56 + PAD_ROWS.length * 15 + 4, st = P.st;
+      g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x0 + 6, sy - 4, cw - 12, 1);
+      text(g, 'STICK', x0 + 4, sy + 2, { color: '#9fe8ff', outline: OUTL });
+      [['←', st.left], ['→', st.right], ['↑SALTA', st.up], ['↓AGACHA', st.down]].reduce((x, [lbl, on]) => {
+        const w = tinyW(lbl) + 6; if (on) { g.fillStyle = 'rgba(255,216,74,.4)'; g.fillRect(x - 3, sy + 1, w, 9); }
+        tiny(g, lbl, x, sy + 3, on ? '#fff' : '#c8c0e0'); return x + w + 3;
+      }, x0 + 50);
       if (s.wait) { const m = 'PULSA EL BOTON NUEVO  (' + Math.ceil(s.wait / 60) + ')'; tiny(g, m, Math.round(x0 + cw / 2 - tinyW(m) / 2), 172, '#ff8a8a'); }
     });
     tip('CADA JUGADOR CON SU MANDO  ·  ↑↓ ELEGIR  ·  EQUIS: CAMBIAR Y PULSAR EL BOTON NUEVO', 186, '#c8c0e0');
     tip('SI EL BOTON YA TENIA OTRA ACCION, SE INTERCAMBIAN  ·  SE GUARDA EN ESTE NAVEGADOR', 195, '#8ff0ff');
-    tip('LA CRUCETA Y EL STICK SIEMPRE MUEVEN  ·  EN LOS MENUS EQUIS ACEPTA Y CIRCULO VUELVE', 204, '#8a80b0');
+    // tip('LA CRUCETA Y EL STICK SIEMPRE MUEVEN  ·  EN LOS MENUS EQUIS ACEPTA Y CIRCULO VUELVE', 204, '#8a80b0'); // [ARCADE PAD]
+    tip('EL STICK (O LA CRUCETA) MUEVE, SALTA Y AGACHA  ·  MENUS: EQUIS ACEPTA, CIRCULO VUELVE', 204, '#8a80b0');
     tip('CIRCULO / ESC: VOLVER', 214, '#8a80b0');
   }
 }

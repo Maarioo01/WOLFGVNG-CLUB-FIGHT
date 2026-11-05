@@ -240,7 +240,7 @@ KeyK: [1, 'punch'],   // player 2 (1) punches with K
 - Key names are the browser's `KeyboardEvent.code` (e.g. `KeyF`, `ArrowUp`, `Numpad1`, `Semicolon`).
 
 **Gamepads (PS5 / Xbox):** `Input.poll` in `js/core.js`, in the `st` object. It uses the standard button numbers listed in the comment above it.
-- Custom buttons: `PAD_MAP[p]` (action → standard button numbers) per player, defaults in `PAD_DEFAULT`, saved in `localStorage` as `wolfgvng.pad`. The players change them on the CONFIGURAR MANDO screen (`PadConfigScene` in `js/story.js`), which reads the raw buttons (`Input.pads[p].btn`). `bindPad` swaps two actions when the new button was the other one's only button. The d-pad / stick (movement), Cross = confirm, Circle = back and Create = pause are fixed.
+- Custom buttons: `PAD_MAP[p]` (action → standard button numbers) per player, defaults in `PAD_DEFAULT`, saved in `localStorage` as `wolfgvng.pad`. The players change them on the CONFIGURAR MANDO screen (`PadConfigScene` in `js/story.js`), which reads the raw buttons (`Input.pads[p].btn`). `bindPad` swaps two actions when the new button was the other one's only button. Only the attacks and pause are rebindable: the left stick / d-pad always move, jump (↑) and crouch (↓); L2 / R2 also jump / crouch while no attack uses them. Cross = confirm, Circle = back and Create = pause are fixed.
 - Default layout: Square punch, Cross kick, Triangle special, Circle super (L1 / R1 repeat special / super), L2 jump, R2 crouch, d-pad or left stick to move, Options pause. In menus Cross confirms and Circle goes back.
 - The first pad connected is player 1, the second player 2.
 - If the browser doesn't recognise a PlayStation pad (no "standard" mapping), `padButtons` puts its buttons back in the standard order.

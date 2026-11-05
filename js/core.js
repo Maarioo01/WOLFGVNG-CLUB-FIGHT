@@ -244,15 +244,18 @@ function padButtons(gp) {
   return B;
 }
 // Custom pad buttons (CONFIGURAR MANDO, story.js): PAD_MAP[p][action] = the standard button indices of player p's pad.
-// The d-pad / left stick always move, and in menus Cross (0) always confirms and Circle (1) always goes back.
-const PAD_ACTS = ['punch', 'kick', 'special', 'super', 'up', 'down', 'start'];
-const PAD_DEFAULT = { punch: [2], kick: [0], special: [3, 4], super: [1, 5], up: [6], down: [7], start: [9] };
+// A console pad: the left stick (or the d-pad) moves, jumps (↑) and crouches (↓); the buttons attack.
+// L2 / R2 also jump / crouch while no attack uses them. In menus Cross (0) always confirms and Circle (1) goes back.
+// const PAD_ACTS = ['punch', 'kick', 'special', 'super', 'up', 'down', 'start']; // [ARCADE PAD] jump / crouch were buttons too
+// const PAD_DEFAULT = { punch: [2], kick: [0], special: [3, 4], super: [1, 5], up: [6], down: [7], start: [9] };
+const PAD_ACTS = ['punch', 'kick', 'special', 'super', 'start'];
+const PAD_DEFAULT = { punch: [2], kick: [0], special: [3, 4], super: [1, 5], start: [9] };
 const padDefault = () => JSON.parse(JSON.stringify(PAD_DEFAULT));
 const PAD_MAP = [padDefault(), padDefault()];
 try {
   const v = JSON.parse(localStorage.getItem('wolfgvng.pad') || 'null');
   if (Array.isArray(v)) v.slice(0, 2).forEach((m, p) => {
-    if (m && PAD_ACTS.every(a => Array.isArray(m[a]) && m[a].length && m[a].every(i => Number.isInteger(i) && i >= 0 && i < 32))) PAD_MAP[p] = m;
+    if (m && PAD_ACTS.every(a => Array.isArray(m[a]) && m[a].length && m[a].every(i => Number.isInteger(i) && i >= 0 && i < 32))) PAD_MAP[p] = Object.fromEntries(PAD_ACTS.map(a => [a, m[a]]));
   });
 } catch (e) { }
 const savePads = () => { try { localStorage.setItem('wolfgvng.pad', JSON.stringify(PAD_MAP)); } catch (e) { } };
@@ -284,6 +287,7 @@ Input.poll = () => {
     const B = padButtons(gp), b = i => !!(B[i] && B[i].pressed), ax = i => gp.axes[i] || 0;
     const trig = i => !!B[i] && (B[i].value > .4 || (B[i].pressed && !B[i].value)); // analog L2 / R2: a light touch isn't a press
     const btn = Array.from({ length: Math.max(18, B.length) }, (_, i) => trig(i)), M = PAD_MAP[p], has = a => M[a].some(i => btn[i]);
+    const free = i => btn[i] && !PAD_ACTS.some(a => M[a].includes(i)); // L2 / R2 jump / crouch unless an attack took them
     /* [FIXED PAD] before CONFIGURAR MANDO:
     const st = {
       left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5 || trig(6), down: b(13) || ax(1) > 0.5 || trig(7),
@@ -291,7 +295,7 @@ Input.poll = () => {
       confirm: b(0), back: b(1), start: b(9), pause: b(8)
     }; */
     const st = {
-      left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5 || has('up'), down: b(13) || ax(1) > 0.5 || has('down'),
+      left: b(14) || ax(0) < -0.5, right: b(15) || ax(0) > 0.5, up: b(12) || ax(1) < -0.5 || free(6), down: b(13) || ax(1) > 0.5 || free(7),
       punch: has('punch'), kick: has('kick'), special: has('special'), super: has('super'),
       confirm: b(0), back: b(1), start: has('start'), pause: b(8)
     };
